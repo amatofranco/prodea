@@ -6,8 +6,48 @@ App mobile-first de prode futbolero entre amigos para el Mundial 2026, con motes
 
 - **Backend:** .NET 9 — ASP.NET Core Web API + SignalR
 - **Base de datos:** PostgreSQL (EF Core + Npgsql)
-- **Frontend:** React + Tailwind CSS (PWA) — próximamente
+- **Frontend:** React + Tailwind CSS (PWA)
 - **Hosting:** Railway (backend + DB) / Vercel (frontend)
+
+---
+
+## Flujo de trabajo con Git
+
+### Branches
+
+| Branch | Propósito |
+|--------|-----------|
+| `main` | Producción — código deployado en Railway/Vercel. **Nunca commitear directo.** |
+| `dev` | Desarrollo — branch base para todo el trabajo nuevo. |
+
+### Cómo trabajar
+
+```bash
+# Siempre partir de dev actualizado
+git checkout dev
+git pull origin dev
+
+# Crear un branch para la feature
+git checkout -b feat/nombre-de-la-feature
+
+# ... trabajar, commitear ...
+
+# Pushear y abrir PR hacia dev
+git push -u origin feat/nombre-de-la-feature
+gh pr create --base dev --title "feat: descripción"
+```
+
+### Pasar dev a producción (main)
+
+```bash
+# Desde GitHub: abrir un PR de dev → main
+gh pr create --base main --head dev --title "release: vX.X"
+# Revisar, aprobar y mergear
+```
+
+Railway y Vercel deployán automáticamente cuando se mergea a `main`.
+
+---
 
 ## Setup local
 
@@ -15,55 +55,80 @@ App mobile-first de prode futbolero entre amigos para el Mundial 2026, con motes
 
 - .NET 9 SDK
 - PostgreSQL 14+
-- Node.js 20+ (para el frontend)
+- Node.js 20+
 
 ### Backend
 
-1. Clonar el repo y entrar al directorio:
-   ```bash
-   cd backend/src/Prodea.Api
-   ```
+```bash
+cd backend/src/Prodea.Api
+```
 
-2. Crear `appsettings.Development.json` (ya incluido con valores de ejemplo) y ajustar:
-   - `ConnectionStrings:DefaultConnection` — tu string de conexión a PostgreSQL local
-   - `Jwt:Secret` — mínimo 32 caracteres
-   - `FootballData:ApiKey` — clave de [football-data.org](https://www.football-data.org/)
+Ajustar `appsettings.Development.json`:
+- `ConnectionStrings:DefaultConnection` — PostgreSQL local
+- `Jwt:Secret` — mínimo 32 caracteres
+- `FootballData:ApiKey` — clave de [football-data.org](https://www.football-data.org/)
 
-3. Aplicar migraciones y levantar:
-   ```bash
-   dotnet ef database update
-   dotnet run
-   ```
+```bash
+dotnet ef database update
+dotnet run
+```
 
-4. Cargar el fixture del Mundial (solo en desarrollo):
-   ```bash
-   curl -X POST http://localhost:5000/api/admin/seed-fixture
-   ```
+Cargar el fixture (una vez):
+```bash
+curl -X POST http://localhost:5000/api/admin/seed-fixture
+```
 
-### Variables de entorno (Railway)
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev   # → http://localhost:5173
+```
+
+### Variables de entorno (Railway — producción)
 
 | Variable | Descripción |
 |----------|-------------|
-| `ConnectionStrings__DefaultConnection` | PostgreSQL connection string |
+| `DATABASE_URL` | Inyectada automáticamente por Railway al agregar PostgreSQL |
 | `Jwt__Secret` | Clave secreta JWT (mínimo 32 chars) |
 | `Jwt__Issuer` | `Prodea` |
 | `Jwt__Audience` | `ProdeaApp` |
 | `FootballData__ApiKey` | API key de football-data.org |
 | `Cors__AllowedOrigins__0` | URL del frontend en Vercel |
+| `ASPNETCORE_ENVIRONMENT` | `Production` |
+
+### Variables de entorno (Vercel — producción)
+
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_API_URL` | URL del backend en Railway (sin slash final) |
+
+---
 
 ## Estructura del proyecto
 
 ```
-backend/
-  src/
-    Prodea.Api/
-      Controllers/     — Auth, Tournaments, Matches, Profile, Admin
-      Data/            — DbContext, Migrations, WorldCup2026Seed
-      DTOs/            — Request/Response records
-      Hubs/            — SignalR TournamentHub
-      Models/          — Entidades EF Core
-      Services/        — JwtService, ScoringService, BadgeService, FootballDataService
+prodea/
+├── backend/
+│   └── src/Prodea.Api/
+│       ├── Controllers/   — Auth, Tournaments, Matches, Profile, Admin
+│       ├── Data/          — DbContext, Migrations, WorldCup2026Seed
+│       ├── DTOs/          — Request/Response records
+│       ├── Hubs/          — SignalR TournamentHub
+│       ├── Models/        — Entidades EF Core
+│       └── Services/      — JwtService, ScoringService, BadgeService, FootballDataService
+├── frontend/
+│   └── src/
+│       ├── components/    — Layout, GoalPicker, FigurineCard, BadgePill
+│       ├── pages/         — Login, Register, Home, Tournament, Prediction, Profile
+│       ├── services/      — api.js, signalr.js
+│       └── store/         — authStore, tournamentStore (Zustand)
+├── Dockerfile             — Build del backend para Railway
+└── railway.toml           — Configuración de deploy
 ```
+
+---
 
 ## API Endpoints
 
@@ -80,12 +145,12 @@ backend/
 | POST | `/api/tournaments/{id}/matches/{matchId}/predictions` | Cargar/actualizar predicción |
 | POST | `/api/tournaments/{id}/matches/{matchId}/result` | Cargar resultado (admin) |
 | GET | `/api/tournaments/{id}/profile/{userId}` | Perfil y motes del jugador |
+| GET | `/health` | Health check |
 
 ## WebSocket (SignalR)
 
-Conectar a `/hubs/tournament?access_token=<JWT>` y unirse al grupo:
-
 ```js
+// Conectar a /hubs/tournament?access_token=<JWT>
 connection.invoke("JoinTournament", tournamentId)
 // Recibe: "MatchUpdated" { matchId, homeScore, awayScore, status }
 ```
@@ -94,9 +159,9 @@ connection.invoke("JoinTournament", tournamentId)
 
 | Prioridad | Mote | Condición |
 |-----------|------|-----------|
-| 1 | El Crack | Mayor puntaje de la fecha |
-| 2 | El Mufa | Menor puntaje de la fecha |
-| 3 | El Adivino | 3+ resultados exactos |
-| 4 | El Francotirador | 1+ resultado exacto |
-| 5 | El Payaso | Ningún ganador acertado |
-| 6 | El Dormido | Sin predicciones cargadas |
+| 1 | 🏆 El Crack | Mayor puntaje de la fecha |
+| 2 | 💀 El Mufa | Menor puntaje de la fecha |
+| 3 | 🔮 El Adivino | 3+ resultados exactos |
+| 4 | 🎯 El Francotirador | 1+ resultado exacto |
+| 5 | 🤡 El Payaso | Ningún ganador acertado |
+| 6 | 😴 El Dormido | Sin predicciones cargadas |
