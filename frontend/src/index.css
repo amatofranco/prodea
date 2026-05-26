@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0D0D0D;
+  --color-surface: #1A1A2E;
+  --color-surface-2: #16213E;
+  --color-neon: #00FF87;
+  --color-orange: #FF6B35;
+  --color-text: #FFFFFF;
+  --color-muted: #8A8A9A;
+  --color-border: #2A2A3E;
+
+  --font-display: 'Bebas Neue', 'Barlow Condensed', sans-serif;
+  --font-condensed: 'Barlow Condensed', sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+  background-color: #0D0D0D;
+  color: #FFFFFF;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  overscroll-behavior: none;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0D0D0D; }
+::-webkit-scrollbar-thumb { background: #2A2A3E; border-radius: 2px; }
+
+/* Safe area padding for iOS */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Neon glow utilities */
+.neon-text { text-shadow: 0 0 20px rgba(0, 255, 135, 0.5); }
+.neon-border { box-shadow: 0 0 0 1px #00FF87, 0 0 20px rgba(0, 255, 135, 0.2); }
+.orange-glow { box-shadow: 0 0 20px rgba(255, 107, 53, 0.3); }
+
+/* Animated gradient border for cards */
+@keyframes borderRotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-border {
+  background: linear-gradient(135deg, #00FF87, #FF6B35, #9B59B6, #00FF87);
+  background-size: 300% 300%;
+  animation: borderRotate 4s ease infinite;
+}
+
+/* Goal picker wheel */
+.wheel-digit {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Leaderboard position animation */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.rank-animate { animation: slideIn 0.3s ease forwards; }
+
+/* Badge colors */
+.badge-crack    { background: linear-gradient(135deg, #F59E0B, #D97706); }
+.badge-mufa     { background: linear-gradient(135deg, #DC2626, #991B1B); }
+.badge-adivino  { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
+.badge-franco   { background: linear-gradient(135deg, #0891B2, #0E7490); }
+.badge-payaso   { background: linear-gradient(135deg, #EC4899, #BE185D); }
+.badge-dormido  { background: linear-gradient(135deg, #6B7280, #374151); }

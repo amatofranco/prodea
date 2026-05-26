@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\)+\";\"+[System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); [System.Convert]::ToBase64String\\([System.Security.Cryptography.RandomNumberGenerator]::GetBytes\\(48\\)\\))"
+    ]
+  }
+}

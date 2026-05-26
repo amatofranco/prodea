@@ -1,0 +1,6 @@
+@Prodea.Api_HostAddress = http://localhost:5168
+
+GET {{Prodea.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
