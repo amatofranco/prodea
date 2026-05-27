@@ -95,6 +95,10 @@ npm run dev   # → http://localhost:5173
 | `Jwt__Issuer` | `Prodea` |
 | `Jwt__Audience` | `ProdeaApp` |
 | `FootballData__ApiKey` | API key de football-data.org |
+| `Google__ClientId` | Client ID de Google OAuth (console.cloud.google.com) |
+| `Resend__ApiKey` | API key de Resend para emails transaccionales |
+| `Resend__From` | Dirección remitente, ej: `Prodeá <noreply@prodea.app>` |
+| `Frontend__Url` | URL del frontend en Vercel (para links en emails) |
 | `Cors__AllowedOrigins__0` | URL del frontend en Vercel |
 | `ASPNETCORE_ENVIRONMENT` | `Production` |
 
@@ -103,6 +107,7 @@ npm run dev   # → http://localhost:5173
 | Variable | Descripción |
 |----------|-------------|
 | `VITE_API_URL` | URL del backend en Railway (sin slash final) |
+| `VITE_GOOGLE_CLIENT_ID` | Client ID de Google OAuth (igual que `Google__ClientId`) |
 
 ---
 

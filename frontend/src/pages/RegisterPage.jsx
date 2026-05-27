@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ username: '', email: '', password: '' })
@@ -9,6 +11,36 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.onload = () => {
+      window.google?.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+      })
+      window.google?.accounts.id.renderButton(
+        document.getElementById('google-btn-register'),
+        { theme: 'filled_black', size: 'large', width: 360, text: 'signup_with' }
+      )
+    }
+    document.head.appendChild(script)
+    return () => script.remove()
+  }, [])
+
+  async function handleGoogleResponse({ credential }) {
+    setError('')
+    try {
+      const data = await api.googleLogin(credential)
+      setAuth(data.token, data.user)
+      navigate('/')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -63,6 +95,17 @@ export default function RegisterPage() {
         >
           {loading ? 'Creando cuenta...' : 'Crear cuenta'}
         </button>
+
+        {GOOGLE_CLIENT_ID && (
+          <>
+            <div className="flex items-center gap-3 my-1">
+              <div className="flex-1 h-px bg-[#2A2A3E]" />
+              <span className="text-[#8A8A9A] text-xs">o</span>
+              <div className="flex-1 h-px bg-[#2A2A3E]" />
+            </div>
+            <div id="google-btn-register" className="flex justify-center" />
+          </>
+        )}
 
         <p className="text-center text-[#8A8A9A] text-sm">
           ¿Ya tenés cuenta?{' '}

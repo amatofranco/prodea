@@ -12,6 +12,7 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
     public DbSet<Prediction> Predictions => Set<Prediction>();
     public DbSet<MatchdayBadge> MatchdayBadges => Set<MatchdayBadge>();
     public DbSet<AccumulativeBadge> AccumulativeBadges => Set<AccumulativeBadge>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,8 +22,18 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
         {
             e.HasIndex(u => u.Username).IsUnique();
             e.HasIndex(u => u.Email).IsUnique();
+            e.HasIndex(u => u.GoogleId).IsUnique();
             e.Property(u => u.Username).HasMaxLength(50);
             e.Property(u => u.Email).HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(e =>
+        {
+            e.HasIndex(t => t.Token).IsUnique();
+            e.HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Tournament>(e =>

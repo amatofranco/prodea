@@ -24,3 +24,16 @@ public record UserDto(
     string Email,
     string? AvatarUrl
 );
+
+public record ForgotPasswordRequest(
+    [Required, EmailAddress] string Email
+);
+
+public record ResetPasswordRequest(
+    [Required] string Token,
+    [Required, MinLength(6)] string NewPassword
+);
+
+public record GoogleLoginRequest(
+    [Required] string IdToken
+);

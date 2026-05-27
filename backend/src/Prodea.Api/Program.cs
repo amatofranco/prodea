@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Prodea.Api.Data;
 using Prodea.Api.Hubs;
 using Prodea.Api.Services;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,7 +84,12 @@ builder.Services.AddHttpClient("FootballData", client =>
 // App services
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<BadgeService>();
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddHostedService<FootballDataService>();
+
+// Resend email
+var resendApiKey = builder.Configuration["Resend:ApiKey"] ?? "";
+builder.Services.AddResend(opts => opts.ApiToken = resendApiKey);
 
 var app = builder.Build();
 
