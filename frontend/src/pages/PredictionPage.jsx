@@ -5,6 +5,8 @@ import { api } from '../services/api'
 import GoalPicker from '../components/GoalPicker'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
+const PREDICTION_PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
+
 function FlagCard({ name }) {
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
@@ -33,14 +35,17 @@ function Countdown({ matchDate }) {
     return () => clearInterval(iv)
   }, [matchDate])
 
-  if (diff <= 0) return <span className="text-red-400 font-semibold text-sm">Predicciones cerradas</span>
+  if (diff <= PREDICTION_CLOSE_BEFORE_MS)
+    return <span className="text-red-400 font-semibold text-sm">Predicciones cerradas</span>
 
-  const h = Math.floor(diff / 3600000)
-  const m = Math.floor((diff % 3600000) / 60000)
-  const s = Math.floor((diff % 60000) / 1000)
+  const remaining = diff - PREDICTION_CLOSE_BEFORE_MS
+  const h = Math.floor(remaining / 3600000)
+  const m = Math.floor((remaining % 3600000) / 60000)
+  const s = Math.floor((remaining % 60000) / 1000)
+  const isUrgent = remaining < 30 * 60 * 1000
 
   return (
-    <span className="font-mono text-[#00FF87] font-bold text-sm">
+    <span className={`font-mono font-bold text-sm ${isUrgent ? 'text-[#FF6B35]' : 'text-[#00FF87]'}`}>
       {h > 0 ? `${h}h ` : ''}{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
     </span>
   )
@@ -72,7 +77,20 @@ export default function PredictionPage() {
   }, [matchId])
 
   const teamsConfirmed = match?.homeTeam !== 'TBD' && match?.awayTeam !== 'TBD'
-  const isLocked = match?.status !== 'Scheduled' || !teamsConfirmed
+  const [isPastDeadline, setIsPastDeadline] = useState(false)
+
+  useEffect(() => {
+    if (!match?.matchDate) return
+    function check() {
+      const msLeft = new Date(match.matchDate) - Date.now()
+      setIsPastDeadline(msLeft < 15 * 60 * 1000)
+    }
+    check()
+    const iv = setInterval(check, 10000)
+    return () => clearInterval(iv)
+  }, [match?.matchDate])
+
+  const isLocked = match?.status !== 'Scheduled' || !teamsConfirmed || isPastDeadline
 
   async function handleSubmit() {
     if (isLocked || saving) return
@@ -135,6 +153,8 @@ export default function PredictionPage() {
             <p className="text-[#8A8A9A] text-sm mt-1">
               {!teamsConfirmed
                 ? 'Podrás predecir cuando se definan los cruces'
+                : isPastDeadline && match?.status === 'Scheduled'
+                ? 'Las predicciones cerraron 15 minutos antes del partido'
                 : 'El partido ya empezó o terminó'}
             </p>
             {match.userPrediction && (

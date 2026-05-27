@@ -13,6 +13,8 @@ namespace Prodea.Api.Controllers;
 [Authorize]
 public class PredictionsController(ProdeaDbContext db) : ControllerBase
 {
+    private static readonly TimeSpan PredictionCloseBeforeKickoff = TimeSpan.FromMinutes(15);
+
     private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
@@ -47,6 +49,8 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
             return BadRequest(new { message = "Los equipos de este partido aún no están confirmados" });
         if (match.Status != MatchStatus.Scheduled)
             return BadRequest(new { message = "Las predicciones están cerradas para este partido" });
+        if (match.MatchDate - DateTime.UtcNow < PredictionCloseBeforeKickoff)
+            return BadRequest(new { message = "Las predicciones cierran 15 minutos antes del partido" });
 
         var existing = await db.Predictions.FirstOrDefaultAsync(p => p.UserId == userId && p.MatchId == matchId);
 
