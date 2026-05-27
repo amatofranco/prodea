@@ -137,8 +137,8 @@ using (var scope = app.Services.CreateScope())
     bool noMatches = !await db.Matches.AnyAsync();
     bool hasLocalSeedOnly = !noMatches && !await db.Matches.AnyAsync(m => m.ExternalId != null);
 
-    // Detecta matchdays mal calculados: todos los partidos de grupos con el mismo matchday
-    bool badMatchdays = false;
+    // Detecta fixture corrupto: matchdays iguales en grupos O sin fases eliminatorias
+    bool badFixture = false;
     if (!noMatches && !hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey))
     {
         var groupMatchdays = await db.Matches
@@ -146,10 +146,15 @@ using (var scope = app.Services.CreateScope())
             .Select(m => m.Matchday)
             .Distinct()
             .CountAsync();
-        badMatchdays = groupMatchdays <= 1;
+        bool badMatchdays = groupMatchdays <= 1;
+
+        // Si no hay ningún partido eliminatorio, la clasificación está mal
+        bool noKnockouts = !await db.Matches.AnyAsync(m => m.Phase != Prodea.Api.Models.MatchPhase.Group);
+
+        badFixture = badMatchdays || noKnockouts;
     }
 
-    bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey)) || badMatchdays;
+    bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey)) || badFixture;
 
     if (shouldImport)
     {
