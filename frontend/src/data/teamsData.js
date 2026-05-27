@@ -37,6 +37,7 @@ export const TEAMS = {
   // CAF
   'Argelia':              { flag: 'dz' },
   'Cabo Verde':           { flag: 'cv' },
+  'Cape Verde Islands':   { flag: 'cv' },
   'Camerún':              { flag: 'cm' },
   'Costa de Marfil':      { flag: 'ci' },
   'Egipto':               { flag: 'eg' },

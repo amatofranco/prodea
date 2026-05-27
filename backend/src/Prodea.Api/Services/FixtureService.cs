@@ -338,6 +338,7 @@ public class FixtureService(
         // CAF
         ["Algeria"]                      = "Argelia",
         ["Cape Verde"]                   = "Cabo Verde",
+        ["Cape Verde Islands"]           = "Cabo Verde",
         ["Cameroon"]                     = "Camerún",
         ["Ivory Coast"]                  = "Costa de Marfil",
         ["Côte d'Ivoire"]                = "Costa de Marfil",
