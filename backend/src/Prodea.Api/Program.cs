@@ -12,11 +12,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Database — acepta ConnectionStrings__DefaultConnection o DATABASE_URL (Railway)
+// Database — acepta ConnectionStrings__DefaultConnection o DATABASE_URL (Render/Railway)
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? throw new InvalidOperationException("No database connection string configured");
+
+// Render pasa DATABASE_URL en formato postgresql://user:pass@host/db
+// Npgsql necesita el formato Host=...;Username=...;Password=...;Database=...
+if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith("postgres://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Username={userInfo[0]};Password={userInfo[1]};Database={uri.AbsolutePath.TrimStart('/')};SSL Mode=Require;Trust Server Certificate=true";
+}
 
 builder.Services.AddDbContext<ProdeaDbContext>(options =>
     options.UseNpgsql(connectionString));
