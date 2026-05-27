@@ -12,6 +12,58 @@ public class FixtureService(
     IConfiguration config,
     ILogger<FixtureService> logger)
 {
+    public async Task<int> UpdateKnockoutTeamNamesAsync()
+    {
+        var tbdMatches = await db.Matches
+            .Where(m => m.Phase != MatchPhase.Group && m.Status == MatchStatus.Scheduled && m.HomeTeam == "TBD")
+            .ToListAsync();
+
+        if (tbdMatches.Count == 0) return 0;
+
+        if (string.IsNullOrEmpty(config["FootballData:ApiKey"])) return 0;
+
+        try
+        {
+            var client = httpClientFactory.CreateClient("FootballData");
+            var response = await client.GetAsync("/v4/competitions/WC/matches");
+            if (!response.IsSuccessStatusCode) return 0;
+
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<FdMatchesResponse>(json, JsonOptions);
+            if (result?.Matches == null) return 0;
+
+            var apiById = result.Matches.ToDictionary(m => m.Id);
+            int updated = 0;
+
+            foreach (var match in tbdMatches)
+            {
+                if (match.ExternalId == null) continue;
+                if (!apiById.TryGetValue(match.ExternalId.Value, out var api)) continue;
+
+                var homeName = api.HomeTeam?.Name ?? api.HomeTeam?.ShortName;
+                var awayName = api.AwayTeam?.Name ?? api.AwayTeam?.ShortName;
+                if (homeName == null && awayName == null) continue;
+
+                if (homeName != null) { match.HomeTeam = TranslateTeam(homeName); match.HomeTeamLabel = TranslateLabel(homeName); }
+                if (awayName != null) { match.AwayTeam = TranslateTeam(awayName); match.AwayTeamLabel = TranslateLabel(awayName); }
+                updated++;
+            }
+
+            if (updated > 0)
+            {
+                await db.SaveChangesAsync();
+                logger.LogInformation("Equipos knockout actualizados: {Count}", updated);
+            }
+
+            return updated;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error al sincronizar equipos knockout");
+            return 0;
+        }
+    }
+
     public async Task<(int count, string source)> ImportAsync(bool force = false)
     {
         if (await db.Matches.AnyAsync())
@@ -142,7 +194,9 @@ public class FixtureService(
 
     private static MatchPhase MapKnockoutPhase(string? stage) => stage switch
     {
+        "LAST_32"        => MatchPhase.R32,
         "ROUND_OF_32"    => MatchPhase.R32,
+        "LAST_16"        => MatchPhase.R16,
         "ROUND_OF_16"    => MatchPhase.R16,
         "QUARTER_FINALS" => MatchPhase.QF,
         "SEMI_FINALS"    => MatchPhase.SF,

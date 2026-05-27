@@ -18,6 +18,8 @@ public class FootballDataService(
     : BackgroundService
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan KnockoutSyncInterval = TimeSpan.FromHours(6);
+    private DateTime _lastKnockoutSync = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -32,6 +34,21 @@ public class FootballDataService(
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error polling football-data.org");
+            }
+
+            if (DateTime.UtcNow - _lastKnockoutSync > KnockoutSyncInterval)
+            {
+                try
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    var fixtureService = scope.ServiceProvider.GetRequiredService<FixtureService>();
+                    await fixtureService.UpdateKnockoutTeamNamesAsync();
+                    _lastKnockoutSync = DateTime.UtcNow;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error sincronizando equipos knockout");
+                }
             }
 
             await Task.Delay(PollingInterval, stoppingToken);
