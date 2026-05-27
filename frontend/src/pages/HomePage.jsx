@@ -36,28 +36,49 @@ function TeamMini({ name, label }) {
 
 function LiveCard({ match }) {
   return (
-    <div className="p-4 rounded-2xl bg-[#FF6B35]/10 border border-[#FF6B35]/40 flex items-center gap-4">
-      <TeamMini name={match.homeTeam} label={match.homeTeamLabel} />
-
-      <div className="flex-1 flex flex-col items-center gap-1">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-          <span className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
-        </div>
-        <span className="text-3xl font-black text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
-          {match.homeScore ?? 0} – {match.awayScore ?? 0}
-        </span>
-        {match.userPrediction && (
-          <div className="flex flex-col items-center gap-0.5 mt-0.5">
-            <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A]">Tu predicción</span>
-            <span className="text-xs font-bold text-[#8A8A9A]">
-              {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
-            </span>
-          </div>
-        )}
+    <div className="p-4 rounded-2xl bg-[#FF6B35]/10 border border-[#FF6B35]/40">
+      {/* Badge en vivo */}
+      <div className="flex items-center justify-center gap-1.5 mb-3">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
+        <span className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
       </div>
 
-      <TeamMini name={match.awayTeam} label={match.awayTeamLabel} />
+      {/* Scoreboard */}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+          <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>
+            {match.homeTeamLabel ?? match.homeTeam}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 px-2">
+          <span className="text-4xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+            {match.homeScore ?? 0}
+          </span>
+          <span className="text-2xl text-[#3A3A4E] font-light">–</span>
+          <span className="text-4xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+            {match.awayScore ?? 0}
+          </span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+          <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
+          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>
+            {match.awayTeamLabel ?? match.awayTeam}
+          </p>
+        </div>
+      </div>
+
+      {/* Predicción */}
+      {match.userPrediction && (
+        <div className="mt-3 pt-3 border-t border-[#FF6B35]/20 flex items-center justify-between">
+          <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+          <span className="text-sm font-bold text-[#8A8A9A]">
+            {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
