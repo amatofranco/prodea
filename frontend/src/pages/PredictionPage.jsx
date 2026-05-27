@@ -164,35 +164,34 @@ export default function PredictionPage() {
           </p>
         </div>
 
-        {/* Navegación entre partidos */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#2A2A3E]">
-          {prevMatch ? (
-            <button
-              onClick={() => navigate(`/predicciones/${prevMatch.id}`)}
-              className="flex items-center gap-1 text-xs text-[#8A8A9A] active:text-white transition-colors"
-            >
-              <ChevronLeft size={14} />
-              <span>Anterior</span>
-            </button>
-          ) : <div />}
-
-          {allMatches.length > 0 && (
-            <span className="text-[10px] text-[#3A3A4E] font-semibold">
-              {currentIndex + 1} / {allMatches.length}
-            </span>
-          )}
-
-          {nextMatch ? (
-            <button
-              onClick={() => navigate(`/predicciones/${nextMatch.id}`)}
-              className="flex items-center gap-1 text-xs text-[#8A8A9A] active:text-white transition-colors"
-            >
-              <span>Siguiente</span>
-              <ChevronRight size={14} />
-            </button>
-          ) : <div />}
-        </div>
       </div>
+
+      {/* Barra de navegación entre partidos */}
+      {allMatches.length > 0 && (
+        <div className="flex items-center justify-center gap-3 px-4 py-3 bg-[#0D0D0D] border-b border-[#1A1A2E]">
+          <button
+            onClick={() => prevMatch && navigate(`/predicciones/${prevMatch.id}`)}
+            disabled={!prevMatch}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
+          >
+            <ChevronLeft size={15} />
+            Anterior
+          </button>
+
+          <span className="text-[11px] text-[#3A3A4E] font-semibold w-14 text-center tabular-nums">
+            {currentIndex + 1} / {allMatches.length}
+          </span>
+
+          <button
+            onClick={() => nextMatch && navigate(`/predicciones/${nextMatch.id}`)}
+            disabled={!nextMatch}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
+          >
+            Siguiente
+            <ChevronRight size={15} />
+          </button>
+        </div>
+      )}
 
       {/* Picker area */}
       <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6">
