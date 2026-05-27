@@ -15,7 +15,7 @@ public class MatchdayBadge
     public int Id { get; set; }
     public int UserId { get; set; }
     public int TournamentId { get; set; }
-    public int Matchday { get; set; }
+    public DateOnly Date { get; set; }
     public MatchdayBadgeType BadgeType { get; set; }
     public int PointsInMatchday { get; set; }
     public DateTime AwardedAt { get; set; } = DateTime.UtcNow;

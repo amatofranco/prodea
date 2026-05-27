@@ -60,7 +60,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var lastBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == id)
             .GroupBy(mb => mb.UserId)
-            .Select(g => g.OrderByDescending(mb => mb.Matchday).First())
+            .Select(g => g.OrderByDescending(mb => mb.Date).First())
             .ToListAsync();
 
         var pointsMap = points.ToDictionary(p => p.UserId, p => p.Total);
@@ -170,7 +170,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var lastBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == id)
             .GroupBy(mb => mb.UserId)
-            .Select(g => g.OrderByDescending(mb => mb.Matchday).First())
+            .Select(g => g.OrderByDescending(mb => mb.Date).First())
             .ToListAsync();
 
         var pointsMap = points.ToDictionary(p => p.UserId, p => p.Total);

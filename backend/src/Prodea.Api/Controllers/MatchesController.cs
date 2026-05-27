@@ -73,16 +73,14 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         await db.SaveChangesAsync();
 
-        if (match.Matchday.HasValue)
-        {
-            var badgeService = new BadgeService(db);
-            var allTournamentIds = await db.TournamentParticipants
-                .Select(tp => tp.TournamentId)
-                .Distinct()
-                .ToListAsync();
-            foreach (var tid in allTournamentIds)
-                await badgeService.AssignMatchdayBadgesAsync(tid, match.Matchday.Value);
-        }
+        var badgeService = new BadgeService(db);
+        var allTournamentIds = await db.TournamentParticipants
+            .Select(tp => tp.TournamentId)
+            .Distinct()
+            .ToListAsync();
+        var matchDate = DateOnly.FromDateTime(match.MatchDate);
+        foreach (var tid in allTournamentIds)
+            await badgeService.AssignDailyBadgesAsync(tid, matchDate);
 
         var payload = new
         {

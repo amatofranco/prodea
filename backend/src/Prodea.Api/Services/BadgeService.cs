@@ -11,7 +11,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Crack] = ["Clarividencia pura", "¿Sos DT o qué?", "Messi te manda saludos"],
         [MatchdayBadgeType.Mufa] = ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo"],
         [MatchdayBadgeType.Francotirador] = ["Un tiro, un gol", "Cuando apuntás, no fallás", "La mira calibrada"],
-        [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Todos los ganadores. Todos.", "Brujo confirmado"],
+        [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Dos exactos. Brujo confirmado.", "Doble clarividencia"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error"],
         [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, dormido", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento"],
     };
@@ -43,19 +43,22 @@ public class BadgeService(ProdeaDbContext db)
         return options[Random.Shared.Next(options.Length)];
     }
 
-    public async Task AssignMatchdayBadgesAsync(int tournamentId, int matchday)
+    public async Task AssignDailyBadgesAsync(int tournamentId, DateOnly date)
     {
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == tournamentId)
             .Select(tp => tp.UserId)
             .ToListAsync();
 
-        var matchIds = await db.Matches
-            .Where(m => m.Matchday == matchday && m.Status == MatchStatus.Finished)
-            .Select(m => m.Id)
+        // Solo asignar cuando todos los partidos del día estén terminados
+        var dayMatches = await db.Matches
+            .Where(m => DateOnly.FromDateTime(m.MatchDate) == date)
             .ToListAsync();
 
-        if (matchIds.Count == 0) return;
+        if (dayMatches.Count == 0) return;
+        if (dayMatches.Any(m => m.Status != MatchStatus.Finished)) return;
+
+        var matchIds = dayMatches.Select(m => m.Id).ToList();
 
         var predictions = await db.Predictions
             .Where(p => participants.Contains(p.UserId) && matchIds.Contains(p.MatchId))
@@ -87,7 +90,7 @@ public class BadgeService(ProdeaDbContext db)
                 badge = MatchdayBadgeType.Crack;
             else if (stats.TotalPoints == minPoints && participants.Count > 1)
                 badge = MatchdayBadgeType.Mufa;
-            else if (stats.ExactCount >= 3)
+            else if (stats.ExactCount >= 2)
                 badge = MatchdayBadgeType.Adivino;
             else if (stats.ExactCount >= 1)
                 badge = MatchdayBadgeType.Francotirador;
@@ -97,7 +100,7 @@ public class BadgeService(ProdeaDbContext db)
                 badge = MatchdayBadgeType.Payaso;
 
             var existing = await db.MatchdayBadges
-                .FirstOrDefaultAsync(mb => mb.UserId == userId && mb.TournamentId == tournamentId && mb.Matchday == matchday);
+                .FirstOrDefaultAsync(mb => mb.UserId == userId && mb.TournamentId == tournamentId && mb.Date == date);
 
             if (existing != null)
             {
@@ -111,7 +114,7 @@ public class BadgeService(ProdeaDbContext db)
                 {
                     UserId = userId,
                     TournamentId = tournamentId,
-                    Matchday = matchday,
+                    Date = date,
                     BadgeType = badge,
                     PointsInMatchday = stats.TotalPoints,
                 });
@@ -131,14 +134,14 @@ public class BadgeService(ProdeaDbContext db)
 
         var allBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == tournamentId)
-            .OrderBy(mb => mb.Matchday)
+            .OrderBy(mb => mb.Date)
             .ToListAsync();
 
-        int totalMatchdays = allBadges.Select(b => b.Matchday).Distinct().Count();
+        int totalDays = allBadges.Select(b => b.Date).Distinct().Count();
 
         foreach (var userId in participants)
         {
-            var userBadges = allBadges.Where(b => b.UserId == userId).OrderBy(b => b.Matchday).ToList();
+            var userBadges = allBadges.Where(b => b.UserId == userId).OrderBy(b => b.Date).ToList();
             var dormidoCount = userBadges.Count(b => b.BadgeType == MatchdayBadgeType.Dormido);
 
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElFantasma, dormidoCount > 3);
@@ -147,7 +150,7 @@ public class BadgeService(ProdeaDbContext db)
                 userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Crack);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.RachaInfernal, rachaInfernal);
 
-            bool neverLast = totalMatchdays >= 3 && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
+            bool neverLast = totalDays >= 3 && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElMuro, neverLast);
         }
 

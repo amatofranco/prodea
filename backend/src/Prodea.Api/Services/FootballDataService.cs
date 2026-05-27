@@ -139,17 +139,15 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
         await BroadcastMatchUpdateAsync(db, match, ct);
 
-        if (match.Matchday.HasValue)
-        {
-            var badgeService = new BadgeService(db);
-            var tournamentIds = await db.TournamentParticipants
-                .Select(tp => tp.TournamentId)
-                .Distinct()
-                .ToListAsync(ct);
+        var badgeService = new BadgeService(db);
+        var tournamentIds = await db.TournamentParticipants
+            .Select(tp => tp.TournamentId)
+            .Distinct()
+            .ToListAsync(ct);
 
-            foreach (var tid in tournamentIds)
-                await badgeService.AssignMatchdayBadgesAsync(tid, match.Matchday.Value);
-        }
+        var matchDate = DateOnly.FromDateTime(match.MatchDate);
+        foreach (var tid in tournamentIds)
+            await badgeService.AssignDailyBadgesAsync(tid, matchDate);
     }
 
     private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, CancellationToken ct)

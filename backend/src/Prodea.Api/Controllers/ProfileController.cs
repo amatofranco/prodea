@@ -45,7 +45,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
 
         var matchdayBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == tournamentId && mb.UserId == userId)
-            .OrderByDescending(mb => mb.Matchday)
+            .OrderByDescending(mb => mb.Date)
             .ToListAsync();
 
         var accumulativeBadges = await db.AccumulativeBadges
@@ -55,7 +55,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
         return Ok(new PlayerProfileDto(
             userId, user.Username, user.AvatarUrl, totalPoints, rank,
             matchdayBadges.Select(mb => new MatchdayBadgeDto(
-                mb.Matchday,
+                mb.Date,
                 mb.BadgeType.ToString(),
                 BadgeService.GetEmoji(mb.BadgeType),
                 mb.BadgeType.ToString(),
