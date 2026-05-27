@@ -162,7 +162,8 @@ using (var scope = app.Services.CreateScope())
             groupMatchdays, noKnockouts, groupCount, tooManyGroups, badFixture);
     }
 
-    bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey)) || badFixture;
+    bool forceReimport = app.Configuration.GetValue<bool>("ForceFixtureReimport");
+    bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey)) || badFixture || forceReimport;
 
     if (shouldImport)
     {
