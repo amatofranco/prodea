@@ -66,16 +66,12 @@ public class FixtureService(
 
     public async Task<(int count, string source)> ImportAsync(bool force = false)
     {
-        if (await db.Matches.AnyAsync())
-        {
-            if (!force) return (0, "ya cargado");
-            var existing = await db.Matches.ToListAsync();
-            db.Matches.RemoveRange(existing);
-            await db.SaveChangesAsync();
-            logger.LogInformation("Fixture eliminado para reimportar ({Count} partidos)", existing.Count);
-        }
+        var hasMatches = await db.Matches.AnyAsync();
+        if (hasMatches && !force) return (0, "ya cargado");
 
-        List<Match> matches;
+        var hasApiData = hasMatches && await db.Matches.AnyAsync(m => m.ExternalId != null);
+
+        List<Match> incoming;
         string source;
 
         var apiKey = config["FootballData:ApiKey"];
@@ -83,26 +79,68 @@ public class FixtureService(
         {
             try
             {
-                matches = await FetchFromApiAsync();
+                incoming = await FetchFromApiAsync();
                 source = "football-data.org";
             }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "No se pudo obtener el fixture de football-data.org, usando seed local");
-                matches = WorldCup2026Seed.GetGroupStageMatches();
+                incoming = WorldCup2026Seed.GetGroupStageMatches();
                 source = "seed local (fallback)";
             }
         }
         else
         {
             logger.LogWarning("FootballData:ApiKey no configurado, usando seed local");
-            matches = WorldCup2026Seed.GetGroupStageMatches();
+            incoming = WorldCup2026Seed.GetGroupStageMatches();
             source = "seed local (sin API key)";
         }
 
-        db.Matches.AddRange(matches);
+        if (hasApiData)
+        {
+            // Upsert: actualiza partidos existentes preservando predicciones, agrega los nuevos
+            var existingByExtId = await db.Matches
+                .Where(m => m.ExternalId != null)
+                .ToDictionaryAsync(m => m.ExternalId!.Value);
+
+            int nextId = await db.Matches.MaxAsync(m => m.Id) + 1;
+
+            foreach (var m in incoming)
+            {
+                if (m.ExternalId.HasValue && existingByExtId.TryGetValue(m.ExternalId.Value, out var existing))
+                {
+                    existing.HomeTeam      = m.HomeTeam;
+                    existing.AwayTeam      = m.AwayTeam;
+                    existing.HomeTeamLabel = m.HomeTeamLabel;
+                    existing.AwayTeamLabel = m.AwayTeamLabel;
+                    existing.MatchDate     = m.MatchDate;
+                    existing.Phase         = m.Phase;
+                    existing.Matchday      = m.Matchday;
+                    existing.Status        = m.Status;
+                    existing.HomeScore     = m.HomeScore;
+                    existing.AwayScore     = m.AwayScore;
+                }
+                else
+                {
+                    m.Id = nextId++;
+                    db.Matches.Add(m);
+                }
+            }
+        }
+        else
+        {
+            // DB vacía o solo seed: reemplaza todo (sin predicciones que preservar)
+            if (hasMatches)
+            {
+                var seed = await db.Matches.ToListAsync();
+                db.Matches.RemoveRange(seed);
+                await db.SaveChangesAsync();
+            }
+            db.Matches.AddRange(incoming);
+        }
+
         await db.SaveChangesAsync();
-        return (matches.Count, source);
+        return (incoming.Count, source);
     }
 
     private async Task<List<Match>> FetchFromApiAsync()
@@ -161,6 +199,10 @@ public class FixtureService(
                 .ToDictionary(x => x.Id, x => x.Matchday);
         }
 
+        // Mapa de número de partido FIFA para knockout (ordenados por fecha dentro de cada fase)
+        var knockoutMatchNumbers = Wc2026Bracket.BuildMatchNumberMap(
+            knockoutApiMatches.Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)));
+
         var matches = new List<Match>();
         int localId = 1;
 
@@ -170,7 +212,19 @@ public class FixtureService(
             var phase = isGroup ? MatchPhase.Group : MapKnockoutPhase(m.Stage);
             int? matchday = isGroup
                 ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : null)
-                : null; // knockout matchday no se usa en frontend; se agrupa por phase
+                : null;
+
+            string? homeLabel, awayLabel;
+            if (isGroup)
+            {
+                homeLabel = TranslateLabel(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
+                awayLabel = TranslateLabel(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
+            }
+            else
+            {
+                var matchNum = knockoutMatchNumbers.TryGetValue(m.Id, out var mn) ? mn : 0;
+                (homeLabel, awayLabel) = Wc2026Bracket.GetSlotLabels(matchNum);
+            }
 
             matches.Add(new Match
             {
@@ -178,8 +232,8 @@ public class FixtureService(
                 ExternalId = m.Id,
                 HomeTeam = TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
                 AwayTeam = TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
-                HomeTeamLabel = TranslateLabel(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
-                AwayTeamLabel = TranslateLabel(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
+                HomeTeamLabel = homeLabel,
+                AwayTeamLabel = awayLabel,
                 MatchDate = m.UtcDate,
                 Status = MapStatus(m.Status),
                 Phase = phase,

@@ -156,10 +156,16 @@ using (var scope = app.Services.CreateScope())
         var groupCount = await db.Matches.CountAsync(m => m.Phase == Prodea.Api.Models.MatchPhase.Group);
         bool tooManyGroups = groupCount > Wc2026GroupMatchCount;
 
-        badFixture = badMatchdays || noKnockouts || tooManyGroups;
+        // Knockout sin labels del bracket = primera vez que se corre el código con Wc2026Bracket
+        bool knockoutsNeedLabels = await db.Matches.AnyAsync(
+            m => m.Phase != Prodea.Api.Models.MatchPhase.Group &&
+                 m.HomeTeam == "TBD" &&
+                 m.HomeTeamLabel == null);
+
+        badFixture = badMatchdays || noKnockouts || tooManyGroups || knockoutsNeedLabels;
         startupLogger.LogInformation(
-            "Check fixture: groupMatchdays={MD} noKnockouts={NK} groupCount={GC} tooManyGroups={TMG} → reimport={RI}",
-            groupMatchdays, noKnockouts, groupCount, tooManyGroups, badFixture);
+            "Check fixture: groupMatchdays={MD} noKnockouts={NK} groupCount={GC} tooManyGroups={TMG} knockoutsNeedLabels={KNL} → reimport={RI}",
+            groupMatchdays, noKnockouts, groupCount, tooManyGroups, knockoutsNeedLabels, badFixture);
     }
 
     bool forceReimport = app.Configuration.GetValue<bool>("ForceFixtureReimport");
