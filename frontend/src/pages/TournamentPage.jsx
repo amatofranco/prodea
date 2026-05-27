@@ -228,12 +228,7 @@ function TeamDisplay({ name }) {
           <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
         )}
       </div>
-      <div className="text-center px-1">
-        <p className="text-xs font-semibold text-white leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{name}</p>
-        {team.player && (
-          <p className="text-[10px] text-[#8A8A9A] leading-none mt-0.5 truncate" style={{ maxWidth: 72 }}>{team.player}</p>
-        )}
-      </div>
+      <p className="text-xs font-semibold text-white leading-tight text-center px-1" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{name}</p>
     </div>
   )
 }
