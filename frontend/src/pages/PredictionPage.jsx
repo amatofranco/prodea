@@ -147,6 +147,14 @@ export default function PredictionPage() {
   const slideDir = useRef(0)
   const submitGuard = useRef(false)
 
+  // Refs siempre actualizados — se leen en setTimeouts para evitar closures stale
+  const allMatchesRef = useRef([])
+  const matchIdRef = useRef(matchId)
+  const turboModeRef = useRef(false)
+  allMatchesRef.current = allMatches
+  matchIdRef.current = matchId
+  turboModeRef.current = turboMode
+
   // Carga inicial
   useEffect(() => {
     api.getMyPredictions().then(setAllMatches).catch(() => navigate(-1))
@@ -178,16 +186,13 @@ export default function PredictionPage() {
     setLoading(false)
   }, [matchId, allMatches])
 
-  // Turbo activado mientras el partido ya estaba predicho → auto-avance
+  // Turbo activado en partido ya predicho → skip automático
   useEffect(() => {
-    if (!turboMode || !saved) return
-    const currentIdx = allMatches.findIndex((m) => m.id === Number(matchId))
-    const next = allMatches.slice(currentIdx + 1).find(canPredictMatch)
-    const t = setTimeout(() => {
-      slideDir.current = 1
-      if (next) navigate(`/predicciones/${next.id}`)
-      else { setTurboComplete(true); setTimeout(() => navigate('/predicciones'), 1800) }
-    }, 700)
+    if (!turboMode) return
+    // Solo aplica si el partido actual YA tiene predicción (justSaved lo maneja handleSubmit)
+    const m = allMatchesRef.current.find((m) => m.id === Number(matchIdRef.current))
+    if (!m?.userPrediction) return
+    const t = setTimeout(() => turboAdvance(), 700)
     return () => clearTimeout(t)
   }, [turboMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -196,6 +201,20 @@ export default function PredictionPage() {
     if (turboMode && !prevTurboRef.current) setTurboFlash(true)
     prevTurboRef.current = turboMode
   }, [turboMode])
+
+  function turboAdvance() {
+    const matches = allMatchesRef.current
+    const id = Number(matchIdRef.current)
+    const idx = matches.findIndex((m) => m.id === id)
+    const next = matches.slice(idx + 1).find(canPredictMatch)
+    slideDir.current = 1
+    if (next) {
+      navigate(`/predicciones/${next.id}`)
+    } else {
+      setTurboComplete(true)
+      setTimeout(() => navigate('/predicciones'), 1800)
+    }
+  }
 
   const currentIndex = allMatches.findIndex((m) => m.id === Number(matchId))
   const prevMatch = currentIndex > 0 ? allMatches[currentIndex - 1] : null
@@ -220,12 +239,6 @@ export default function PredictionPage() {
   async function handleSubmit() {
     if (submitGuard.current || isLocked || saving) return
     submitGuard.current = true
-
-    // Pre-calcula el siguiente antes del await para evitar closures stale
-    const nextInTurbo = turboMode
-      ? allMatches.slice(currentIndex + 1).find(canPredictMatch)
-      : null
-
     setSaving(true)
     setError('')
     try {
@@ -240,12 +253,9 @@ export default function PredictionPage() {
       setSaved(true)
       setJustSaved(true)
 
-      if (turboMode) {
-        setTimeout(() => {
-          slideDir.current = 1
-          if (nextInTurbo) navigate(`/predicciones/${nextInTurbo.id}`)
-          else { setTurboComplete(true); setTimeout(() => navigate('/predicciones'), 1800) }
-        }, 700)
+      if (turboModeRef.current) {
+        // Usa refs: siempre tienen los valores actuales, sin closures stale
+        setTimeout(() => turboAdvance(), 700)
       }
     } catch (err) {
       setError(err.message)
