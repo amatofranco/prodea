@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore'
 import { joinTournament, leaveTournament, onMatchUpdated } from '../services/signalr'
 import { BadgePill } from '../components/BadgePill'
 import ApiStatusBanner from '../components/ApiStatusBanner'
+import { getTeam, getFlagUrl } from '../data/teamsData'
 
 const MATCHDAY_TAB_LABEL = {
   1: 'Fecha 1', 2: 'Fecha 2', 3: 'Fecha 3',
@@ -216,6 +217,41 @@ export default function TournamentPage() {
   )
 }
 
+function TeamDisplay({ name }) {
+  const [photoFailed, setPhotoFailed] = useState(false)
+  const team = getTeam(name)
+  const flagUrl = getFlagUrl(team.flag)
+  const showPhoto = !!team.img && !photoFailed
+
+  return (
+    <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+      <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-[#2A2A3E]">
+        {flagUrl && (
+          <img
+            src={flagUrl}
+            alt=""
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity ${showPhoto ? 'opacity-20' : 'opacity-85'}`}
+          />
+        )}
+        {showPhoto && (
+          <img
+            src={team.img}
+            alt={team.player}
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            onError={() => setPhotoFailed(true)}
+          />
+        )}
+      </div>
+      <div className="text-center px-1">
+        <p className="text-xs font-semibold text-white leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{name}</p>
+        {team.player && (
+          <p className="text-[10px] text-[#8A8A9A] leading-none mt-0.5 truncate" style={{ maxWidth: 72 }}>{team.player}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function MatchRow({ match, tournamentId, navigate }) {
   const isLive = match.status === 'InProgress'
   const isFinished = match.status === 'Finished'
@@ -240,12 +276,10 @@ function MatchRow({ match, tournamentId, navigate }) {
         </span>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex-1 text-center">
-          <p className="text-sm font-semibold text-white leading-tight">{match.homeTeam}</p>
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <TeamDisplay name={match.homeTeam} />
 
-        <div className="flex items-center gap-2 px-3">
+        <div className="flex flex-col items-center shrink-0 px-1">
           {isFinished || isLive ? (
             <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
               {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
@@ -260,11 +294,10 @@ function MatchRow({ match, tournamentId, navigate }) {
               </span>
             </div>
           )}
+          <span className="text-[10px] text-[#3A3A4E] font-semibold mt-1">VS</span>
         </div>
 
-        <div className="flex-1 text-center">
-          <p className="text-sm font-semibold text-white leading-tight">{match.awayTeam}</p>
-        </div>
+        <TeamDisplay name={match.awayTeam} />
       </div>
 
       {hasPred && (
