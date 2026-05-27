@@ -124,12 +124,25 @@ using (var scope = app.Services.CreateScope())
 
     bool noMatches = !await db.Matches.AnyAsync();
     bool hasLocalSeedOnly = !noMatches && !await db.Matches.AnyAsync(m => m.ExternalId != null);
-    bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey));
+
+    // Detecta matchdays mal calculados: todos los partidos de grupos con el mismo matchday
+    bool badMatchdays = false;
+    if (!noMatches && !hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey))
+    {
+        var groupMatchdays = await db.Matches
+            .Where(m => m.Phase == Prodea.Api.Models.MatchPhase.Group)
+            .Select(m => m.Matchday)
+            .Distinct()
+            .CountAsync();
+        badMatchdays = groupMatchdays <= 1;
+    }
+
+    bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey)) || badMatchdays;
 
     if (shouldImport)
     {
         var fixtureService = scope.ServiceProvider.GetRequiredService<FixtureService>();
-        var (count, source) = await fixtureService.ImportAsync(force: hasLocalSeedOnly);
+        var (count, source) = await fixtureService.ImportAsync(force: !noMatches);
         startupLogger.LogInformation("Fixture importado al arrancar: {Count} partidos desde {Source}", count, source);
     }
 }

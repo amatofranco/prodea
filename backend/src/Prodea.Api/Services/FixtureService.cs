@@ -63,12 +63,28 @@ public class FixtureService(
         var result = JsonSerializer.Deserialize<FdMatchesResponse>(json, JsonOptions)
             ?? throw new InvalidOperationException("Respuesta vacía de football-data.org");
 
+        // Calcula matchday de fase de grupos por posición dentro de cada grupo
+        // (la API puede devolver matchday=1 para todos los partidos de grupos)
+        var groupMatchdays = result.Matches
+            .Where(m => MapPhase(m.Stage) == MatchPhase.Group && m.Group != null)
+            .GroupBy(m => m.Group)
+            .SelectMany(g =>
+            {
+                var sorted = g.OrderBy(m => m.UtcDate).ToList();
+                return sorted.Select((m, i) => (m.Id, Matchday: i / 2 + 1));
+            })
+            .ToDictionary(x => x.Id, x => x.Matchday);
+
         var matches = new List<Match>();
         int localId = 1;
 
         foreach (var m in result.Matches)
         {
             var phase = MapPhase(m.Stage);
+            int? matchday = phase == MatchPhase.Group
+                ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : m.Matchday)
+                : MapKnockoutMatchday(phase);
+
             matches.Add(new Match
             {
                 Id = localId++,
@@ -78,7 +94,7 @@ public class FixtureService(
                 MatchDate = m.UtcDate,
                 Status = MapStatus(m.Status),
                 Phase = phase,
-                Matchday = phase == MatchPhase.Group ? m.Matchday : MapKnockoutMatchday(phase),
+                Matchday = matchday,
                 HomeScore = m.Score?.FullTime?.Home,
                 AwayScore = m.Score?.FullTime?.Away,
             });
@@ -216,6 +232,7 @@ public class FixtureService(
         string? Status,
         int? Matchday,
         string? Stage,
+        string? Group,
         FdTeam? HomeTeam,
         FdTeam? AwayTeam,
         FdScore? Score);
