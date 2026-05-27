@@ -34,7 +34,7 @@ function FlagCard({ name }) {
   )
 }
 
-function Countdown({ matchDate }) {
+function MatchCountdown({ matchDate }) {
   const [diff, setDiff] = useState(0)
   useEffect(() => {
     function tick() { setDiff(Math.max(0, new Date(matchDate) - Date.now())) }
@@ -62,10 +62,12 @@ function Countdown({ matchDate }) {
 function TurboCountdown({ onComplete, onSkip, resetKey }) {
   const [progress, setProgress] = useState(1)
   const [display, setDisplay] = useState(TURBO_COUNTDOWN_SECS)
+  const doneRef = useRef(false)
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
 
   useEffect(() => {
+    doneRef.current = false
     setProgress(1)
     setDisplay(TURBO_COUNTDOWN_SECS)
     const start = Date.now()
@@ -78,7 +80,10 @@ function TurboCountdown({ onComplete, onSkip, resetKey }) {
       setProgress(remaining / totalMs)
       setDisplay(Math.ceil(remaining / 1000))
       if (remaining <= 0) {
-        onCompleteRef.current()
+        if (!doneRef.current) {
+          doneRef.current = true
+          onCompleteRef.current()
+        }
       } else {
         rafId = requestAnimationFrame(tick)
       }
@@ -88,38 +93,45 @@ function TurboCountdown({ onComplete, onSkip, resetKey }) {
     return () => cancelAnimationFrame(rafId)
   }, [resetKey])
 
-  const r = 30
+  const r = 44
   const circumference = 2 * Math.PI * r
-  const strokeDashoffset = circumference * (1 - progress)
 
   return (
     <motion.div
       initial={{ scale: 0.7, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className="flex flex-col items-center gap-2"
+      transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+      className="flex flex-col items-center gap-3"
     >
       <button
         onClick={onSkip}
-        className="relative flex items-center justify-center w-20 h-20 active:scale-95 transition-transform"
+        className="relative flex items-center justify-center w-28 h-28 active:scale-95 transition-transform"
         aria-label="Confirmar ya"
       >
-        <svg width="80" height="80" className="-rotate-90">
-          <circle cx="40" cy="40" r={r} fill="none" stroke="#2A2A3E" strokeWidth="4" />
+        <svg width="112" height="112" className="-rotate-90">
+          <circle cx="56" cy="56" r={r} fill="none" stroke="#2A2A3E" strokeWidth="5" />
           <circle
-            cx="40" cy="40" r={r}
-            fill="none" stroke="#FF6B35" strokeWidth="4"
+            cx="56" cy="56" r={r}
+            fill="none"
+            stroke="#FF6B35"
+            strokeWidth="5"
             strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
+            strokeDashoffset={circumference * (1 - progress)}
             strokeLinecap="round"
           />
         </svg>
-        <span className="absolute text-2xl font-bold text-[#FF6B35]">{display}</span>
+        <div className="absolute flex flex-col items-center leading-none select-none">
+          <span className="text-4xl font-black text-[#FF6B35] tabular-nums">{display}</span>
+          <span className="text-[10px] text-[#8A8A9A] mt-0.5">seg</span>
+        </div>
       </button>
-      <p className="text-[11px] text-[#8A8A9A]">
-        Guardando en {display} seg ·{' '}
-        <button onClick={onSkip} className="text-[#FF6B35] font-semibold">confirmar ya</button>
-      </p>
+
+      <button
+        onClick={onSkip}
+        className="text-xs font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60"
+      >
+        Confirmar ya →
+      </button>
     </motion.div>
   )
 }
@@ -133,6 +145,7 @@ export default function PredictionPage() {
   const [home, setHome] = useState(0)
   const [away, setAway] = useState(0)
   const [saved, setSaved] = useState(false)
+  const [justSaved, setJustSaved] = useState(false) // true solo cuando el usuario acaba de confirmar
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -143,12 +156,14 @@ export default function PredictionPage() {
   const slideDir = useRef(0)
   const submitGuard = useRef(false)
 
+  // Carga inicial
   useEffect(() => {
     api.getMyPredictions()
       .then(setAllMatches)
       .catch(() => navigate(-1))
   }, [])
 
+  // Sincroniza al cambiar de partido
   useEffect(() => {
     if (allMatches.length === 0) return
     const m = allMatches.find((m) => m.id === Number(matchId))
@@ -156,6 +171,7 @@ export default function PredictionPage() {
     setMatch(m)
     setError('')
     setTurboComplete(false)
+    setJustSaved(false)
     submitGuard.current = false
     if (m.userPrediction) {
       setHome(m.userPrediction.predictedHomeScore)
@@ -169,6 +185,24 @@ export default function PredictionPage() {
     setLoading(false)
   }, [matchId, allMatches])
 
+  // Auto-avance en turbo: solo cuando el usuario acaba de confirmar (no al navegar a partido ya predicho)
+  useEffect(() => {
+    if (!justSaved || !turboMode) return
+    const currentIdx = allMatches.findIndex((m) => m.id === Number(matchId))
+    const next = allMatches.slice(currentIdx + 1).find(canPredictMatch)
+    const t = setTimeout(() => {
+      slideDir.current = 1
+      if (next) {
+        navigate(`/predicciones/${next.id}`)
+      } else {
+        setTurboComplete(true)
+        setTimeout(() => navigate('/predicciones'), 1800)
+      }
+    }, 700)
+    return () => clearTimeout(t)
+  }, [justSaved, turboMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Flash al activar turbo
   useEffect(() => {
     if (turboMode && !prevTurboRef.current) setTurboFlash(true)
     prevTurboRef.current = turboMode
@@ -198,6 +232,7 @@ export default function PredictionPage() {
   }, [match?.matchDate])
 
   const isLocked = match?.status !== 'Scheduled' || !teamsConfirmed || isPastDeadline
+  const showTurboCountdown = turboMode && !isLocked && !saved && !saving
 
   async function handleSubmit() {
     if (submitGuard.current || isLocked || saving) return
@@ -206,30 +241,15 @@ export default function PredictionPage() {
     setError('')
     try {
       await api.submitPrediction(matchId, { predictedHomeScore: home, predictedAwayScore: away })
-
-      const updatedMatches = allMatches.map((m) =>
-        m.id === Number(matchId)
-          ? { ...m, userPrediction: { predictedHomeScore: home, predictedAwayScore: away, pointsEarned: 0 } }
-          : m
+      setAllMatches((prev) =>
+        prev.map((m) =>
+          m.id === Number(matchId)
+            ? { ...m, userPrediction: { predictedHomeScore: home, predictedAwayScore: away, pointsEarned: 0 } }
+            : m
+        )
       )
-      setAllMatches(updatedMatches)
       setSaved(true)
-
-      if (turboMode) {
-        const next = updatedMatches
-          .slice(currentIndex + 1)
-          .find(canPredictMatch)
-
-        setTimeout(() => {
-          if (next) {
-            slideDir.current = 1
-            navigate(`/predicciones/${next.id}`)
-          } else {
-            setTurboComplete(true)
-            setTimeout(() => navigate('/predicciones'), 2000)
-          }
-        }, 600)
-      }
+      setJustSaved(true)
     } catch (err) {
       setError(err.message)
       submitGuard.current = false
@@ -239,8 +259,6 @@ export default function PredictionPage() {
   }
 
   if (loading) return <div className="flex-1 bg-[#0D0D0D]" />
-
-  const showTurboCountdown = turboMode && !isLocked && !saved && !saving
 
   const resultLabel =
     home > away ? `Gana ${match.homeTeam}` :
@@ -386,7 +404,7 @@ export default function PredictionPage() {
             <>
               <div className="flex flex-col items-center gap-1">
                 <p className="text-[#8A8A9A] text-xs uppercase tracking-wider">Cierra en</p>
-                <Countdown matchDate={match.matchDate} />
+                <MatchCountdown matchDate={match.matchDate} />
               </div>
 
               <div className="flex items-center gap-6 w-full">
@@ -422,14 +440,15 @@ export default function PredictionPage() {
                   onSkip={handleSubmit}
                   resetKey={matchId}
                 />
-              ) : saved && turboMode ? (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-[#00FF87] font-semibold text-sm"
+              ) : justSaved && turboMode ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 text-[#00FF87] font-semibold text-sm"
                 >
-                  ✓ Yendo al siguiente...
-                </motion.p>
+                  <Check size={16} />
+                  Guardado · cargando siguiente...
+                </motion.div>
               ) : (
                 <button
                   onClick={handleSubmit}
@@ -453,7 +472,6 @@ export default function PredictionPage() {
       <AnimatePresence>
         {turboFlash && (
           <>
-            {/* Flash naranja */}
             <motion.div
               className="fixed inset-0 pointer-events-none z-50 bg-[#FF6B35]"
               initial={{ opacity: 0.3 }}
@@ -462,7 +480,6 @@ export default function PredictionPage() {
               transition={{ duration: 0.5 }}
               onAnimationComplete={() => setTurboFlash(false)}
             />
-            {/* Rayos volando hacia arriba */}
             {[
               { left: 12, delay: 0,    rot: -15 },
               { left: 35, delay: 0.1,  rot: -5  },
