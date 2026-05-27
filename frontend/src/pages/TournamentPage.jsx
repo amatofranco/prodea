@@ -218,28 +218,14 @@ export default function TournamentPage() {
 }
 
 function TeamDisplay({ name }) {
-  const [photoFailed, setPhotoFailed] = useState(false)
   const team = getTeam(name)
   const flagUrl = getFlagUrl(team.flag)
-  const showPhoto = !!team.img && !photoFailed
 
   return (
     <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
       <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-[#2A2A3E]">
         {flagUrl && (
-          <img
-            src={flagUrl}
-            alt=""
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity ${showPhoto ? 'opacity-20' : 'opacity-85'}`}
-          />
-        )}
-        {showPhoto && (
-          <img
-            src={team.img}
-            alt={team.player}
-            className="absolute inset-0 w-full h-full object-cover object-top"
-            onError={() => setPhotoFailed(true)}
-          />
+          <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
         )}
       </div>
       <div className="text-center px-1">
