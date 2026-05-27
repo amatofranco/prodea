@@ -22,10 +22,11 @@ export default function LoginPage() {
       window.google?.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
+        locale: 'es',
       })
       window.google?.accounts.id.renderButton(
         document.getElementById('google-btn'),
-        { theme: 'filled_black', size: 'large', width: 360, text: 'signin_with' }
+        { theme: 'filled_black', size: 'large', width: 360, text: 'signin_with', locale: 'es' }
       )
     }
     document.head.appendChild(script)

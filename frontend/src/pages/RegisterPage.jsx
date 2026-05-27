@@ -21,10 +21,11 @@ export default function RegisterPage() {
       window.google?.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
+        locale: 'es',
       })
       window.google?.accounts.id.renderButton(
         document.getElementById('google-btn-register'),
-        { theme: 'filled_black', size: 'large', width: 360, text: 'signup_with' }
+        { theme: 'filled_black', size: 'large', width: 360, text: 'signup_with', locale: 'es' }
       )
     }
     document.head.appendChild(script)
