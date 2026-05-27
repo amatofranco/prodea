@@ -96,6 +96,7 @@ builder.Services.AddHttpClient("FootballData", client =>
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<BadgeService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<FixtureService>();
 builder.Services.AddSingleton<PollingStatusService>();
 builder.Services.AddHostedService<FootballDataService>();
 
@@ -112,11 +113,19 @@ app.MapControllers();
 app.MapHub<TournamentHub>("/hubs/tournament");
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
-// Auto-migrate on startup (production + development)
+// Auto-migrate y seed del fixture al arrancar
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
     await db.Database.MigrateAsync();
+
+    if (!await db.Matches.AnyAsync())
+    {
+        var fixtureService = scope.ServiceProvider.GetRequiredService<FixtureService>();
+        var (count, source) = await fixtureService.ImportAsync();
+        var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        startupLogger.LogInformation("Fixture importado al arrancar: {Count} partidos desde {Source}", count, source);
+    }
 }
 
 app.Run();
