@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import { api } from '../services/api'
 import GoalPicker from '../components/GoalPicker'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
-const PREDICTION_PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
+const PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
 
 function FlagCard({ name }) {
   const { flag } = getTeam(name)
@@ -54,6 +54,8 @@ function Countdown({ matchDate }) {
 export default function PredictionPage() {
   const { matchId } = useParams()
   const navigate = useNavigate()
+
+  const [allMatches, setAllMatches] = useState([])
   const [match, setMatch] = useState(null)
   const [home, setHome] = useState(0)
   const [away, setAway] = useState(0)
@@ -62,19 +64,35 @@ export default function PredictionPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Carga la lista completa una sola vez
   useEffect(() => {
-    api.getMyPredictions().then((matches) => {
-      const m = matches.find((m) => m.id === Number(matchId))
-      if (!m) { navigate(-1); return }
-      setMatch(m)
-      if (m.userPrediction) {
-        setHome(m.userPrediction.predictedHomeScore)
-        setAway(m.userPrediction.predictedAwayScore)
-        setSaved(true)
-      }
-      setLoading(false)
-    })
-  }, [matchId])
+    api.getMyPredictions()
+      .then(setAllMatches)
+      .catch(() => navigate(-1))
+  }, [])
+
+  // Sincroniza el partido actual y resetea el formulario al navegar
+  useEffect(() => {
+    if (allMatches.length === 0) return
+    const m = allMatches.find((m) => m.id === Number(matchId))
+    if (!m) { navigate(-1); return }
+    setMatch(m)
+    setError('')
+    if (m.userPrediction) {
+      setHome(m.userPrediction.predictedHomeScore)
+      setAway(m.userPrediction.predictedAwayScore)
+      setSaved(true)
+    } else {
+      setHome(0)
+      setAway(0)
+      setSaved(false)
+    }
+    setLoading(false)
+  }, [matchId, allMatches])
+
+  const currentIndex = allMatches.findIndex((m) => m.id === Number(matchId))
+  const prevMatch = currentIndex > 0 ? allMatches[currentIndex - 1] : null
+  const nextMatch = currentIndex < allMatches.length - 1 ? allMatches[currentIndex + 1] : null
 
   const teamsConfirmed = match?.homeTeam !== 'TBD' && match?.awayTeam !== 'TBD'
   const [isPastDeadline, setIsPastDeadline] = useState(false)
@@ -82,8 +100,7 @@ export default function PredictionPage() {
   useEffect(() => {
     if (!match?.matchDate) return
     function check() {
-      const msLeft = new Date(match.matchDate) - Date.now()
-      setIsPastDeadline(msLeft < 15 * 60 * 1000)
+      setIsPastDeadline(new Date(match.matchDate) - Date.now() < PREDICTION_CLOSE_BEFORE_MS)
     }
     check()
     const iv = setInterval(check, 10000)
@@ -120,6 +137,7 @@ export default function PredictionPage() {
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
       <div className="px-4 pt-12 pb-4 bg-[#1A1A2E]">
+        {/* Fila superior: volver + fecha */}
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => navigate(-1)} className="text-[#8A8A9A]">
             <ChevronLeft size={24} />
@@ -131,15 +149,48 @@ export default function PredictionPage() {
           </p>
         </div>
 
-        {/* Teams header */}
+        {/* Equipos */}
         <div className="flex items-center justify-center gap-4">
           <p className="flex-1 text-right text-lg font-bold text-white leading-tight">
-            {match.homeTeam === 'TBD' && !match.homeTeamLabel ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span> : (match.homeTeamLabel ?? match.homeTeam)}
+            {match.homeTeam === 'TBD' && !match.homeTeamLabel
+              ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
+              : (match.homeTeamLabel ?? match.homeTeam)}
           </p>
           <span className="text-[#8A8A9A] text-xl font-light">vs</span>
           <p className="flex-1 text-left text-lg font-bold text-white leading-tight">
-            {match.awayTeam === 'TBD' && !match.awayTeamLabel ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span> : (match.awayTeamLabel ?? match.awayTeam)}
+            {match.awayTeam === 'TBD' && !match.awayTeamLabel
+              ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
+              : (match.awayTeamLabel ?? match.awayTeam)}
           </p>
+        </div>
+
+        {/* Navegación entre partidos */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#2A2A3E]">
+          {prevMatch ? (
+            <button
+              onClick={() => navigate(`/predicciones/${prevMatch.id}`)}
+              className="flex items-center gap-1 text-xs text-[#8A8A9A] active:text-white transition-colors"
+            >
+              <ChevronLeft size={14} />
+              <span>Anterior</span>
+            </button>
+          ) : <div />}
+
+          {allMatches.length > 0 && (
+            <span className="text-[10px] text-[#3A3A4E] font-semibold">
+              {currentIndex + 1} / {allMatches.length}
+            </span>
+          )}
+
+          {nextMatch ? (
+            <button
+              onClick={() => navigate(`/predicciones/${nextMatch.id}`)}
+              className="flex items-center gap-1 text-xs text-[#8A8A9A] active:text-white transition-colors"
+            >
+              <span>Siguiente</span>
+              <ChevronRight size={14} />
+            </button>
+          ) : <div />}
         </div>
       </div>
 
@@ -194,7 +245,7 @@ export default function PredictionPage() {
               </div>
             </div>
 
-            {/* Dynamic summary */}
+            {/* Resumen dinámico */}
             <div className="w-full p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] text-center">
               <p className="text-white font-bold text-lg">
                 {match.homeTeam} <span className="text-[#00FF87]">{home}</span>
@@ -209,7 +260,7 @@ export default function PredictionPage() {
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
-            {/* Submit button */}
+            {/* Botón confirmar */}
             <button
               onClick={handleSubmit}
               disabled={saving || isLocked}
