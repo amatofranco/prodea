@@ -66,7 +66,7 @@ public class FixtureService(
         // Calcula matchday de fase de grupos por posición dentro de cada grupo
         // (la API puede devolver matchday=1 para todos los partidos de grupos)
         var groupMatchdays = result.Matches
-            .Where(m => MapPhase(m.Stage) == MatchPhase.Group && m.Group != null)
+            .Where(m => MapPhase(m.Stage, m.Group) == MatchPhase.Group && m.Group != null)
             .GroupBy(m => m.Group)
             .SelectMany(g =>
             {
@@ -80,7 +80,7 @@ public class FixtureService(
 
         foreach (var m in result.Matches)
         {
-            var phase = MapPhase(m.Stage);
+            var phase = MapPhase(m.Stage, m.Group);
             int? matchday = phase == MatchPhase.Group
                 ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : m.Matchday)
                 : MapKnockoutMatchday(phase);
@@ -103,7 +103,7 @@ public class FixtureService(
         return matches;
     }
 
-    private static MatchPhase MapPhase(string? stage) => stage switch
+    private static MatchPhase MapPhase(string? stage, string? group = null) => stage switch
     {
         "GROUP_STAGE"    => MatchPhase.Group,
         "ROUND_OF_32"    => MatchPhase.R32,
@@ -112,7 +112,9 @@ public class FixtureService(
         "SEMI_FINALS"    => MatchPhase.SF,
         "THIRD_PLACE"    => MatchPhase.ThirdPlace,
         "FINAL"          => MatchPhase.Final,
-        _                => MatchPhase.Group,
+        // Si tiene grupo asignado es fase de grupos aunque el stage sea desconocido;
+        // si no tiene grupo es fase eliminatoria
+        _ => group != null ? MatchPhase.Group : MatchPhase.R32,
     };
 
     private static int MapKnockoutMatchday(MatchPhase phase) => phase switch
