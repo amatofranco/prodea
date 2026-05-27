@@ -106,7 +106,7 @@ export default function PredictionPage() {
             <ChevronLeft size={24} />
           </button>
           <p className="text-[#8A8A9A] text-sm">
-            {new Date(match.matchDate).toLocaleDateString('es-AR', {
+            {new Date(match.matchDate).toLocaleDateString(undefined, {
               weekday: 'long', day: 'numeric', month: 'long',
             })}
           </p>

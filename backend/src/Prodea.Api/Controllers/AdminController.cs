@@ -20,14 +20,24 @@ public class AdminController(
     PollingStatusService pollingStatus) : ControllerBase
 {
     [HttpPost("seed-fixture")]
-    public async Task<IActionResult> SeedFixture([FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> SeedFixture(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromQuery] bool force = false)
     {
         var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
         if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
             return Forbid();
 
         if (await db.Matches.AnyAsync())
-            return Conflict(new { message = "Fixture ya cargado" });
+        {
+            if (!force)
+                return Conflict(new { message = "Fixture ya cargado. Usá ?force=true para reimportar." });
+
+            var existing = await db.Matches.ToListAsync();
+            db.Matches.RemoveRange(existing);
+            await db.SaveChangesAsync();
+            logger.LogInformation("Fixture eliminado para reimportar ({Count} partidos)", existing.Count);
+        }
 
         List<Match> matches;
         string source;
@@ -164,48 +174,58 @@ public class AdminController(
     // Los 48 equipos del Mundial 2026 + variantes de nombres que usa football-data.org
     private static readonly Dictionary<string, string> TeamNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        // CONMEBOL (6)
+        // CONMEBOL
         ["Argentina"]               = "Argentina",
         ["Brazil"]                  = "Brasil",
         ["Colombia"]                = "Colombia",
         ["Ecuador"]                 = "Ecuador",
         ["Paraguay"]                = "Paraguay",
+        ["Peru"]                    = "Perú",
         ["Uruguay"]                 = "Uruguay",
-        // UEFA (16)
+        ["Venezuela"]               = "Venezuela",
+        // UEFA
         ["Germany"]                 = "Alemania",
         ["Austria"]                 = "Austria",
         ["Belgium"]                 = "Bélgica",
         ["Bosnia and Herzegovina"]  = "Bosnia y Herzegovina",
         ["Bosnia-Herzegovina"]      = "Bosnia y Herzegovina",
         ["Croatia"]                 = "Croacia",
+        ["Denmark"]                 = "Dinamarca",
         ["Spain"]                   = "España",
         ["Scotland"]                = "Escocia",
         ["France"]                  = "Francia",
+        ["Wales"]                   = "Gales",
         ["England"]                 = "Inglaterra",
+        ["Italy"]                   = "Italia",
         ["Netherlands"]             = "Países Bajos",
+        ["Poland"]                  = "Polonia",
         ["Norway"]                  = "Noruega",
         ["Portugal"]                = "Portugal",
         ["Czech Republic"]          = "República Checa",
         ["Czechia"]                 = "República Checa",
+        ["Romania"]                 = "Rumania",
+        ["Serbia"]                  = "Serbia",
         ["Sweden"]                  = "Suecia",
         ["Switzerland"]             = "Suiza",
         ["Turkey"]                  = "Turquía",
         ["Türkiye"]                 = "Turquía",
-        // CAF (10)
+        // CAF
         ["Algeria"]                 = "Argelia",
         ["Cape Verde"]              = "Cabo Verde",
+        ["Cameroon"]                = "Camerún",
         ["Ivory Coast"]             = "Costa de Marfil",
         ["Côte d'Ivoire"]           = "Costa de Marfil",
         ["Egypt"]                   = "Egipto",
         ["Ghana"]                   = "Ghana",
         ["Morocco"]                 = "Marruecos",
+        ["Nigeria"]                 = "Nigeria",
         ["DR Congo"]                = "R. D. del Congo",
         ["Congo DR"]                = "R. D. del Congo",
         ["Democratic Republic of Congo"] = "R. D. del Congo",
         ["Senegal"]                 = "Senegal",
         ["South Africa"]            = "Sudáfrica",
         ["Tunisia"]                 = "Túnez",
-        // AFC (9)
+        // AFC
         ["Saudi Arabia"]            = "Arabia Saudita",
         ["Australia"]               = "Australia",
         ["Qatar"]                   = "Catar",
@@ -217,16 +237,20 @@ public class AdminController(
         ["Japan"]                   = "Japón",
         ["Jordan"]                  = "Jordania",
         ["Uzbekistan"]              = "Uzbekistán",
-        // CONCACAF (6)
+        // CONCACAF
         ["Canada"]                  = "Canadá",
+        ["Costa Rica"]              = "Costa Rica",
         ["Curaçao"]                 = "Curazao",
         ["Curacao"]                 = "Curazao",
+        ["El Salvador"]             = "El Salvador",
         ["United States"]           = "Estados Unidos",
         ["USA"]                     = "Estados Unidos",
         ["Haiti"]                   = "Haití",
+        ["Honduras"]                = "Honduras",
+        ["Jamaica"]                 = "Jamaica",
         ["Mexico"]                  = "México",
         ["Panama"]                  = "Panamá",
-        // OFC (1)
+        // OFC
         ["New Zealand"]             = "Nueva Zelanda",
     };
 

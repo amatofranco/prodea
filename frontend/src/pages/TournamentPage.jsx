@@ -268,10 +268,10 @@ function MatchRow({ match, tournamentId, navigate }) {
           ) : (
             <div className="flex flex-col items-center">
               <span className="text-xs text-[#8A8A9A]">
-                {new Date(match.matchDate).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                {new Date(match.matchDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
               </span>
               <span className="text-xs text-[#8A8A9A]">
-                {new Date(match.matchDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           )}
