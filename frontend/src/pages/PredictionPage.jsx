@@ -19,6 +19,16 @@ function canPredictMatch(m) {
   )
 }
 
+// Para turbo: incluye partidos ya predichos, pero respeta el deadline
+function canPredictInTurbo(m) {
+  return (
+    m.status === 'Scheduled' &&
+    m.homeTeam !== 'TBD' &&
+    m.awayTeam !== 'TBD' &&
+    new Date(m.matchDate) - Date.now() >= PREDICTION_CLOSE_BEFORE_MS
+  )
+}
+
 function FlagCard({ name }) {
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
@@ -186,16 +196,6 @@ export default function PredictionPage() {
     setLoading(false)
   }, [matchId, allMatches])
 
-  // Turbo activado en partido ya predicho → skip automático
-  useEffect(() => {
-    if (!turboMode) return
-    // Solo aplica si el partido actual YA tiene predicción (justSaved lo maneja handleSubmit)
-    const m = allMatchesRef.current.find((m) => m.id === Number(matchIdRef.current))
-    if (!m?.userPrediction) return
-    const t = setTimeout(() => turboAdvance(), 700)
-    return () => clearTimeout(t)
-  }, [turboMode]) // eslint-disable-line react-hooks/exhaustive-deps
-
   // Flash al activar turbo
   useEffect(() => {
     if (turboMode && !prevTurboRef.current) setTurboFlash(true)
@@ -206,7 +206,7 @@ export default function PredictionPage() {
     const matches = allMatchesRef.current
     const id = Number(matchIdRef.current)
     const idx = matches.findIndex((m) => m.id === id)
-    const next = matches.slice(idx + 1).find(canPredictMatch)
+    const next = matches.slice(idx + 1).find(canPredictInTurbo)
     slideDir.current = 1
     if (next) {
       navigate(`/predicciones/${next.id}`)
@@ -234,7 +234,7 @@ export default function PredictionPage() {
   }, [match?.matchDate])
 
   const isLocked = match?.status !== 'Scheduled' || !teamsConfirmed || isPastDeadline
-  const showTurboCountdown = turboMode && !isLocked && !saved && !saving
+  const showTurboCountdown = turboMode && !isLocked && !saving && !justSaved
 
   async function handleSubmit() {
     if (submitGuard.current || isLocked || saving) return
