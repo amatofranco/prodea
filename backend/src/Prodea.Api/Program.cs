@@ -99,6 +99,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<FixtureService>();
 builder.Services.AddSingleton<PollingStatusService>();
 builder.Services.AddHostedService<FootballDataService>();
+builder.Services.AddHostedService<BackupService>();
 
 // Resend email
 var resendApiKey = builder.Configuration["Resend:ApiKey"] ?? "";

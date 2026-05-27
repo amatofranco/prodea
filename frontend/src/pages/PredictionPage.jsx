@@ -115,11 +115,11 @@ export default function PredictionPage() {
         {/* Teams header */}
         <div className="flex items-center justify-center gap-4">
           <p className="flex-1 text-right text-lg font-bold text-white leading-tight">
-            {match.homeTeam === 'TBD' ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span> : (match.homeTeamLabel ?? match.homeTeam)}
+            {match.homeTeam === 'TBD' && !match.homeTeamLabel ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span> : (match.homeTeamLabel ?? match.homeTeam)}
           </p>
           <span className="text-[#8A8A9A] text-xl font-light">vs</span>
           <p className="flex-1 text-left text-lg font-bold text-white leading-tight">
-            {match.awayTeam === 'TBD' ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span> : (match.awayTeamLabel ?? match.awayTeam)}
+            {match.awayTeam === 'TBD' && !match.awayTeamLabel ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span> : (match.awayTeamLabel ?? match.awayTeam)}
           </p>
         </div>
       </div>
