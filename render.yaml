@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: prodea-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prodea-db
+          property: connectionString
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Jwt__Issuer
+        value: Prodea
+      - key: Jwt__Audience
+        value: ProdeaApp
+      - key: Jwt__Secret
+        generateValue: true
+      - key: FootballData__ApiKey
+        sync: false
+      - key: Google__ClientId
+        sync: false
+      - key: Resend__ApiKey
+        sync: false
+      - key: Resend__From
+        value: "Prodeá <noreply@prodea.app>"
+      - key: Frontend__Url
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        sync: false
+
+databases:
+  - name: prodea-db
+    databaseName: prodea
+    user: prodea_user
+    plan: free

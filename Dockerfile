@@ -16,7 +16,7 @@ USER appuser
 
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Prodea.Api.dll"]

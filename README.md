@@ -7,7 +7,7 @@ App mobile-first de prode futbolero entre amigos para el Mundial 2026, con motes
 - **Backend:** .NET 9 — ASP.NET Core Web API + SignalR
 - **Base de datos:** PostgreSQL (EF Core + Npgsql)
 - **Frontend:** React + Tailwind CSS (PWA)
-- **Hosting:** Railway (backend + DB) / Vercel (frontend)
+- **Hosting:** Render (backend + DB) / Vercel (frontend)
 
 ---
 
@@ -17,7 +17,7 @@ App mobile-first de prode futbolero entre amigos para el Mundial 2026, con motes
 
 | Branch | Propósito |
 |--------|-----------|
-| `main` | Producción — código deployado en Railway/Vercel. **Nunca commitear directo.** |
+| `main` | Producción — código deployado en Render/Vercel. **Nunca commitear directo.** |
 | `dev` | Desarrollo — branch base para todo el trabajo nuevo. |
 
 ### Cómo trabajar
@@ -45,7 +45,7 @@ gh pr create --base main --head dev --title "release: vX.X"
 # Revisar, aprobar y mergear
 ```
 
-Railway y Vercel deployán automáticamente cuando se mergea a `main`.
+Render y Vercel deployán automáticamente cuando se mergea a `main`.
 
 ---
 
@@ -86,27 +86,35 @@ npm install
 npm run dev   # → http://localhost:5173
 ```
 
-### Variables de entorno (Railway — producción)
+### Deploy en Render
+
+El archivo `render.yaml` en la raíz define todo: el servicio web (Docker) y la base de datos PostgreSQL.
+
+1. En **render.com** → **New** → **Blueprint** → conectar repo `amatofranco/prodea`
+2. Render lee el `render.yaml` y crea los servicios automáticamente
+3. Las variables marcadas con `sync: false` hay que setearlas manualmente en el dashboard
+
+### Variables de entorno (Render — producción)
 
 | Variable | Descripción |
 |----------|-------------|
-| `DATABASE_URL` | Inyectada automáticamente por Railway al agregar PostgreSQL |
-| `Jwt__Secret` | Clave secreta JWT (mínimo 32 chars) |
-| `Jwt__Issuer` | `Prodea` |
-| `Jwt__Audience` | `ProdeaApp` |
-| `FootballData__ApiKey` | API key de football-data.org |
-| `Google__ClientId` | Client ID de Google OAuth (console.cloud.google.com) |
-| `Resend__ApiKey` | API key de Resend para emails transaccionales |
-| `Resend__From` | Dirección remitente, ej: `Prodeá <noreply@prodea.app>` |
-| `Frontend__Url` | URL del frontend en Vercel (para links en emails) |
-| `Cors__AllowedOrigins__0` | URL del frontend en Vercel |
-| `ASPNETCORE_ENVIRONMENT` | `Production` |
+| `DATABASE_URL` | Inyectada automáticamente desde la DB de Render |
+| `Jwt__Secret` | Generado automáticamente por Render (`generateValue: true`) |
+| `Jwt__Issuer` | `Prodea` (en `render.yaml`) |
+| `Jwt__Audience` | `ProdeaApp` (en `render.yaml`) |
+| `FootballData__ApiKey` | Setear manualmente — API key de football-data.org |
+| `Google__ClientId` | Setear manualmente — Client ID de Google OAuth |
+| `Resend__ApiKey` | Setear manualmente — API key de Resend |
+| `Resend__From` | `Prodeá <noreply@prodea.app>` (en `render.yaml`) |
+| `Frontend__Url` | Setear manualmente — URL del frontend en Vercel |
+| `Cors__AllowedOrigins__0` | Setear manualmente — URL del frontend en Vercel |
+| `ASPNETCORE_ENVIRONMENT` | `Production` (en `render.yaml`) |
 
 ### Variables de entorno (Vercel — producción)
 
 | Variable | Descripción |
 |----------|-------------|
-| `VITE_API_URL` | URL del backend en Railway (sin slash final) |
+| `VITE_API_URL` | URL del backend en Render (sin slash final) |
 | `VITE_GOOGLE_CLIENT_ID` | Client ID de Google OAuth (igual que `Google__ClientId`) |
 
 ---
@@ -129,8 +137,8 @@ prodea/
 │       ├── pages/         — Login, Register, Home, Tournament, Prediction, Profile
 │       ├── services/      — api.js, signalr.js
 │       └── store/         — authStore, tournamentStore (Zustand)
-├── Dockerfile             — Build del backend para Railway
-└── railway.toml           — Configuración de deploy
+├── Dockerfile             — Build del backend (usado por Render)
+└── render.yaml            — Configuración de deploy en Render (Blueprint)
 ```
 
 ---
