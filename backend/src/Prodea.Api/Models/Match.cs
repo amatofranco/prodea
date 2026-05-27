@@ -3,9 +3,11 @@ namespace Prodea.Api.Models;
 public enum MatchPhase
 {
     Group,
+    R32,
     R16,
     QF,
     SF,
+    ThirdPlace,
     Final
 }
 
