@@ -8,6 +8,16 @@ import { getTeam, getFlagUrl } from '../data/teamsData'
 
 const LIVE_POLL_MS = 60_000
 
+function FlagOnly({ name, label }) {
+  const { flag } = getTeam(name)
+  const flagUrl = getFlagUrl(flag)
+  return (
+    <div className="w-9 h-10 rounded-md overflow-hidden bg-[#2A2A3E] flex-shrink-0">
+      {flagUrl && <img src={flagUrl} alt={label ?? name} className="w-full h-full object-cover opacity-85" />}
+    </div>
+  )
+}
+
 function TeamMini({ name, label }) {
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
@@ -38,9 +48,12 @@ function LiveCard({ match }) {
           {match.homeScore ?? 0} – {match.awayScore ?? 0}
         </span>
         {match.userPrediction && (
-          <span className="text-[10px] text-[#8A8A9A]">
-            Tu pred: {match.userPrediction.predictedHomeScore}–{match.userPrediction.predictedAwayScore}
-          </span>
+          <div className="flex flex-col items-center gap-0.5 mt-0.5">
+            <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A]">Tu predicción</span>
+            <span className="text-xs font-bold text-[#8A8A9A]">
+              {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
+            </span>
+          </div>
         )}
       </div>
 
@@ -63,25 +76,27 @@ function UpcomingCard({ match, navigate }) {
   return (
     <button
       onClick={() => navigate(`/predicciones/${match.id}`)}
-      className="w-full text-left p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] active:border-[#00FF87] transition-colors flex items-center gap-3"
+      className="w-full text-left p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] active:border-[#00FF87] transition-colors"
     >
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <TeamMini name={match.homeTeam} label={match.homeTeamLabel} />
-        <div className="flex flex-col items-center flex-1 min-w-0 gap-0.5">
+      <div className="flex items-center gap-3">
+        <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+        <div className="flex flex-col flex-1 min-w-0 gap-0.5">
           <span className="text-[10px] text-[#8A8A9A]">{dayLabel} · {timeLabel}</span>
-          <span className="text-xs font-semibold text-white text-center leading-tight">
+          <span className="text-xs font-semibold text-white leading-tight">
             {homeDisplay} <span className="text-[#3A3A4E]">vs</span> {awayDisplay}
           </span>
         </div>
-        <TeamMini name={match.awayTeam} label={match.awayTeamLabel} />
+        <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
       </div>
-      <div className="flex-shrink-0 ml-1">
+
+      <div className="mt-2.5 pt-2.5 border-t border-[#2A2A3E] flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
         {hasPred ? (
-          <span className="text-[10px] font-bold text-[#00FF87] bg-[#00FF87]/10 px-2 py-1 rounded-full">
-            {match.userPrediction.predictedHomeScore}–{match.userPrediction.predictedAwayScore}
+          <span className="text-sm font-bold text-[#00FF87]">
+            {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
           </span>
         ) : (
-          <span className="text-[10px] font-bold text-[#FF6B35]">Predecir →</span>
+          <span className="text-xs font-bold text-[#FF6B35]">Predecir →</span>
         )}
       </div>
     </button>
@@ -106,7 +121,6 @@ export default function HomePage() {
     api.getMyPredictions().then(setMatches)
   }, [])
 
-  // Polling cada 60s mientras haya partidos en curso
   useEffect(() => {
     function scheduleNext() {
       pollRef.current = setTimeout(async () => {
@@ -155,7 +169,7 @@ export default function HomePage() {
     <div className="flex flex-col min-h-full bg-[#0D0D0D] pb-4">
       {/* Header */}
       <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-[#8A8A9A] text-sm">Hola,</p>
             <h2 className="text-2xl font-bold text-white">{user?.username}</h2>
@@ -164,11 +178,27 @@ export default function HomePage() {
             {avatar}
           </div>
         </div>
+
+        {/* Action buttons — arriba, dentro del header */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setShowCreate(true); setError('') }}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#00FF87] text-black font-bold text-sm active:scale-95 transition-transform"
+          >
+            <Plus size={18} /> Crear torneo
+          </button>
+          <button
+            onClick={() => { setShowJoin(true); setError('') }}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white font-semibold text-sm active:scale-95 transition-transform"
+          >
+            <Users size={18} /> Unirse
+          </button>
+        </div>
       </div>
 
       {/* Partidos en curso */}
       {liveMatches.length > 0 && (
-        <div className="px-5 mb-5">
+        <div className="px-5 mt-5 mb-5">
           <h3 className="text-[#FF6B35] text-xs uppercase tracking-widest mb-2 font-semibold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
             En curso
@@ -181,29 +211,13 @@ export default function HomePage() {
 
       {/* Próximos partidos (solo si no hay en curso) */}
       {liveMatches.length === 0 && upcomingMatches.length > 0 && (
-        <div className="px-5 mb-5">
+        <div className="px-5 mt-5 mb-5">
           <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Próximos partidos</h3>
           <div className="flex flex-col gap-2">
             {upcomingMatches.map((m) => <UpcomingCard key={m.id} match={m} navigate={navigate} />)}
           </div>
         </div>
       )}
-
-      {/* Action buttons */}
-      <div className="px-5 flex gap-3 mb-6">
-        <button
-          onClick={() => { setShowCreate(true); setError('') }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#00FF87] text-black font-bold text-sm active:scale-95 transition-transform"
-        >
-          <Plus size={18} /> Crear torneo
-        </button>
-        <button
-          onClick={() => { setShowJoin(true); setError('') }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white font-semibold text-sm active:scale-95 transition-transform"
-        >
-          <Users size={18} /> Unirse
-        </button>
-      </div>
 
       {/* Tournaments list */}
       <div className="px-5 flex-1">
