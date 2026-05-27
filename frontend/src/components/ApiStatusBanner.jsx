@@ -26,7 +26,7 @@ export default function ApiStatusBanner({ hasLiveMatches }) {
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-yellow-400 text-sm">
       <span>⚠</span>
-      <span>Los marcadores pueden estar desactualizados — la API de resultados no responde</span>
+      <span>Los marcadores pueden demorar en actualizarse</span>
     </div>
   )
 }

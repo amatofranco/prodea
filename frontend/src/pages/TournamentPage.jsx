@@ -9,7 +9,7 @@ import { joinTournament, leaveTournament, onMatchUpdated } from '../services/sig
 import { BadgePill } from '../components/BadgePill'
 import ApiStatusBanner from '../components/ApiStatusBanner'
 
-const PHASE_LABELS = { Group: 'Fase de Grupos', R32: 'Ronda de 32', R16: 'Octavos de Final', QF: 'Cuartos de Final', SF: 'Semifinales', ThirdPlace: 'Tercer Puesto', Final: 'Final' }
+const PHASE_LABELS = { Group: 'Fase de Grupos', R32: 'Dieciseisavos de Final', R16: 'Octavos de Final', QF: 'Cuartos de Final', SF: 'Semifinales', ThirdPlace: 'Tercer Puesto', Final: 'Final' }
 const STATUS_LABELS = { Scheduled: 'Próximo', InProgress: 'En curso', Finished: 'Terminado' }
 
 export default function TournamentPage() {
