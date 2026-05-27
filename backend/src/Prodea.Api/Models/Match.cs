@@ -23,6 +23,8 @@ public class Match
     public int Id { get; set; }
     public string HomeTeam { get; set; } = string.Empty;
     public string AwayTeam { get; set; } = string.Empty;
+    public string? HomeTeamLabel { get; set; }
+    public string? AwayTeamLabel { get; set; }
     public string? HomeTeamFlag { get; set; }
     public string? AwayTeamFlag { get; set; }
     public DateTime MatchDate { get; set; }
