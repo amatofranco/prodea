@@ -73,7 +73,9 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(origin =>
+            allowedOrigins.Contains(origin) ||
+            new Uri(origin).Host.EndsWith(".vercel.app"))
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
