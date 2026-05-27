@@ -63,9 +63,15 @@ public class FixtureService(
         var result = JsonSerializer.Deserialize<FdMatchesResponse>(json, JsonOptions)
             ?? throw new InvalidOperationException("Respuesta vacía de football-data.org");
 
-        // Log stage names para debugging
         var stages = result.Matches.Select(m => $"{m.Stage}(group={m.Group})").Distinct();
-        logger.LogInformation("Stages en respuesta de football-data.org: {Stages}", string.Join(", ", stages));
+        logger.LogInformation("Stages API: {Stages}", string.Join(", ", stages));
+
+        // Log equipos de los primeros 5 partidos knockout para detectar si la API devuelve nombres TBD
+        var knockoutSample = result.Matches
+            .Where(m => m.Stage != "GROUP_STAGE" && m.Group == null)
+            .Take(5)
+            .Select(m => $"[{m.Stage}] home={m.HomeTeam?.Name ?? "NULL"} away={m.AwayTeam?.Name ?? "NULL"}");
+        logger.LogInformation("Muestra knockout teams: {Sample}", string.Join(" | ", knockoutSample));
 
         var allMatches = result.Matches.OrderBy(m => m.UtcDate).ToList();
 
