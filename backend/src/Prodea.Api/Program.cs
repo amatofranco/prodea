@@ -69,13 +69,16 @@ builder.Services.AddSignalR();
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? ["http://localhost:5173", "http://localhost:3000"];
 
+var allowedOriginSuffixes = builder.Configuration.GetSection("Cors:AllowedOriginSuffixes").Get<string[]>()
+    ?? [".vercel.app"];
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         policy.SetIsOriginAllowed(origin =>
             allowedOrigins.Contains(origin) ||
-            new Uri(origin).Host.EndsWith(".vercel.app"))
+            allowedOriginSuffixes.Any(suffix => new Uri(origin).Host.EndsWith(suffix)))
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
