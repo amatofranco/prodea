@@ -35,6 +35,7 @@ function getTabKey(match) {
 }
 
 function TeamFlag({ name, label }) {
+  const isTbd = name === 'TBD'
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
   const displayName = label ?? name
@@ -47,7 +48,11 @@ function TeamFlag({ name, label }) {
           <div className="absolute inset-0 flex items-center justify-center text-[#8A8A9A] text-lg">?</div>
         )}
       </div>
-      <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 64, wordBreak: 'break-word' }}>{displayName}</p>
+      {isTbd ? (
+        <p className="text-[10px] text-[#8A8A9A] text-center leading-tight italic" style={{ maxWidth: 64 }}>Por confirmar</p>
+      ) : (
+        <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 64, wordBreak: 'break-word' }}>{displayName}</p>
+      )}
     </div>
   )
 }
