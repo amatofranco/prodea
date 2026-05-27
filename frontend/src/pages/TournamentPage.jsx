@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Share2, ChevronLeft, Wifi } from 'lucide-react'
@@ -9,8 +9,21 @@ import { joinTournament, leaveTournament, onMatchUpdated } from '../services/sig
 import { BadgePill } from '../components/BadgePill'
 import ApiStatusBanner from '../components/ApiStatusBanner'
 
-const PHASE_LABELS = { Group: 'Fase de Grupos', R32: 'Dieciseisavos de Final', R16: 'Octavos de Final', QF: 'Cuartos de Final', SF: 'Semifinales', ThirdPlace: 'Tercer Puesto', Final: 'Final' }
-const STATUS_LABELS = { Scheduled: 'Próximo', InProgress: 'En curso', Finished: 'Terminado' }
+const MATCHDAY_TAB_LABEL = {
+  1: 'Fecha 1', 2: 'Fecha 2', 3: 'Fecha 3',
+  4: 'Dieciseisavos', 5: 'Octavos', 6: 'Cuartos',
+  7: 'Semis', 8: '3er Puesto', 9: 'Final',
+}
+
+const PHASE_LABELS = {
+  Group: 'Fase de Grupos',
+  R32: 'Dieciseisavos de Final',
+  R16: 'Octavos de Final',
+  QF: 'Cuartos de Final',
+  SF: 'Semifinales',
+  ThirdPlace: 'Tercer Puesto',
+  Final: 'Final',
+}
 
 export default function TournamentPage() {
   const { id } = useParams()
@@ -21,6 +34,8 @@ export default function TournamentPage() {
   const [tab, setTab] = useState('fixture')
   const [loading, setLoading] = useState(true)
   const [liveCount, setLiveCount] = useState(0)
+  const [selectedMatchday, setSelectedMatchday] = useState(1)
+  const tabBarRef = useRef(null)
 
   useEffect(() => {
     Promise.all([
@@ -34,12 +49,32 @@ export default function TournamentPage() {
       updateMatchLive(update)
       api.getLeaderboard(id).then(setLeaderboard)
     })
-
-    return () => {
-      off()
-      leaveTournament(id)
-    }
+    return () => { off(); leaveTournament(id) }
   }, [id])
+
+  // Seleccionar automáticamente la fecha más relevante
+  useEffect(() => {
+    if (matches.length === 0) return
+
+    const liveMatchday = matches.find((m) => m.status === 'InProgress')?.matchday
+    if (liveMatchday) { setSelectedMatchday(liveMatchday); return }
+
+    const nextMatchday = matches
+      .filter((m) => m.status === 'Scheduled')
+      .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))[0]?.matchday
+    if (nextMatchday) { setSelectedMatchday(nextMatchday); return }
+
+    const lastMatchday = Math.max(...matches.map((m) => m.matchday ?? 1))
+    setSelectedMatchday(lastMatchday)
+  }, [matches])
+
+  // Scroll al tab activo cuando cambia
+  useEffect(() => {
+    const bar = tabBarRef.current
+    if (!bar) return
+    const active = bar.querySelector('[data-active="true"]')
+    active?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [selectedMatchday])
 
   useEffect(() => {
     setLiveCount(matches.filter((m) => m.status === 'InProgress').length)
@@ -52,11 +87,9 @@ export default function TournamentPage() {
 
   if (loading) return <LoadingScreen />
 
-  const matchesByMatchday = matches.reduce((acc, m) => {
-    const key = m.matchday ?? 0
-    ;(acc[key] = acc[key] || []).push(m)
-    return acc
-  }, {})
+  const matchdays = [...new Set(matches.map((m) => m.matchday ?? 1))].sort((a, b) => a - b)
+  const visibleMatches = matches.filter((m) => (m.matchday ?? 1) === selectedMatchday)
+  const currentPhase = visibleMatches[0]?.phase
 
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
@@ -78,7 +111,6 @@ export default function TournamentPage() {
           </button>
         </div>
 
-        {/* Live banner */}
         {liveCount > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#FF6B35]/10 border border-[#FF6B35]/30 mb-2">
             <Wifi size={14} className="text-[#FF6B35] animate-pulse" />
@@ -89,7 +121,7 @@ export default function TournamentPage() {
         )}
         <ApiStatusBanner hasLiveMatches={liveCount > 0} />
 
-        {/* Tabs */}
+        {/* Fixture / Tabla */}
         <div className="flex gap-1 mt-1 bg-[#0D0D0D]/60 rounded-xl p-1">
           {['fixture', 'tabla'].map((t) => (
             <button
@@ -105,38 +137,57 @@ export default function TournamentPage() {
         </div>
       </div>
 
+      {/* Tab bar de fechas */}
+      {tab === 'fixture' && (
+        <div
+          ref={tabBarRef}
+          className="flex gap-2 px-4 py-3 overflow-x-auto bg-[#0D0D0D] border-b border-[#1A1A2E] scrollbar-none"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {matchdays.map((md) => {
+            const isActive = md === selectedMatchday
+            const hasLive = matches.some((m) => (m.matchday ?? 1) === md && m.status === 'InProgress')
+            return (
+              <button
+                key={md}
+                data-active={isActive}
+                onClick={() => setSelectedMatchday(md)}
+                className={`relative shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'bg-[#00FF87] text-black'
+                    : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
+                }`}
+              >
+                {MATCHDAY_TAB_LABEL[md] ?? `Fecha ${md}`}
+                {hasLive && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#FF6B35]" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {tab === 'fixture' ? (
             <motion.div
-              key="fixture"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.2 }}
-              className="px-4 py-4 flex flex-col gap-6"
+              key={`fixture-${selectedMatchday}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18 }}
+              className="px-4 py-4 flex flex-col gap-2"
             >
-              {Object.entries(matchesByMatchday)
-                .sort(([a], [b]) => Number(a) - Number(b))
-                .map(([matchday, dayMatches]) => (
-                  <div key={matchday}>
-                    <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-3 font-semibold">
-                      {PHASE_LABELS[dayMatches[0].phase] || `Jornada ${matchday}`}
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      {dayMatches.map((m) => (
-                        <MatchRow
-                          key={m.id}
-                          match={m}
-                          tournamentId={id}
-                          userId={user?.id}
-                          navigate={navigate}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
+              {currentPhase && (
+                <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-1">
+                  {PHASE_LABELS[currentPhase]}
+                </p>
+              )}
+              {visibleMatches.map((m) => (
+                <MatchRow key={m.id} match={m} tournamentId={id} navigate={navigate} />
+              ))}
             </motion.div>
           ) : (
             <motion.div
@@ -165,19 +216,15 @@ export default function TournamentPage() {
   )
 }
 
-function MatchRow({ match, tournamentId, userId, navigate }) {
+function MatchRow({ match, tournamentId, navigate }) {
   const isLive = match.status === 'InProgress'
   const isFinished = match.status === 'Finished'
   const canPredict = match.status === 'Scheduled'
   const hasPred = match.userPrediction !== null
 
-  function handleClick() {
-    if (canPredict) navigate(`/torneos/${tournamentId}/match/${match.id}`)
-  }
-
   return (
     <div
-      onClick={handleClick}
+      onClick={() => canPredict && navigate(`/torneos/${tournamentId}/match/${match.id}`)}
       className={`relative p-3 rounded-2xl border transition-colors ${
         isLive
           ? 'bg-[#FF6B35]/5 border-[#FF6B35]/40'
@@ -194,18 +241,13 @@ function MatchRow({ match, tournamentId, userId, navigate }) {
       )}
 
       <div className="flex items-center justify-between">
-        {/* Home */}
         <div className="flex-1 text-center">
           <p className="text-sm font-semibold text-white leading-tight">{match.homeTeam}</p>
         </div>
 
-        {/* Score */}
         <div className="flex items-center gap-2 px-3">
           {isFinished || isLive ? (
-            <span
-              className="text-2xl font-bold text-white"
-              style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}
-            >
+            <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
               {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
             </span>
           ) : (
@@ -220,13 +262,11 @@ function MatchRow({ match, tournamentId, userId, navigate }) {
           )}
         </div>
 
-        {/* Away */}
         <div className="flex-1 text-center">
           <p className="text-sm font-semibold text-white leading-tight">{match.awayTeam}</p>
         </div>
       </div>
 
-      {/* Prediction row */}
       {hasPred && (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-center gap-2">
           <span className="text-xs text-[#8A8A9A]">Tu pred:</span>
@@ -251,7 +291,6 @@ function MatchRow({ match, tournamentId, userId, navigate }) {
 
 function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
   const rankColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600']
-  const rankColor = rankColors[index] || 'text-[#8A8A9A]'
 
   return (
     <motion.div
@@ -264,7 +303,7 @@ function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
         isMe ? 'bg-[#00FF87]/5 border-[#00FF87]/30' : 'bg-[#1A1A2E] border-[#2A2A3E]'
       }`}
     >
-      <span className={`w-7 text-center font-bold text-sm ${rankColor}`}>{entry.rank}</span>
+      <span className={`w-7 text-center font-bold text-sm ${rankColors[index] || 'text-[#8A8A9A]'}`}>{entry.rank}</span>
 
       <div className="w-9 h-9 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white font-bold text-sm shrink-0">
         {entry.username[0].toUpperCase()}
@@ -274,14 +313,11 @@ function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
         <p className={`font-semibold text-sm truncate ${isMe ? 'text-[#00FF87]' : 'text-white'}`}>
           {entry.username} {isMe && <span className="text-xs font-normal">(vos)</span>}
         </p>
-        {entry.currentBadge && (
-          <BadgePill type={entry.currentBadge} className="mt-0.5 text-[10px]" />
-        )}
+        {entry.currentBadge && <BadgePill type={entry.currentBadge} className="mt-0.5 text-[10px]" />}
       </div>
 
       <span className="text-xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-        {entry.totalPoints}
-        <span className="text-xs text-[#8A8A9A] ml-0.5">pts</span>
+        {entry.totalPoints}<span className="text-xs text-[#8A8A9A] ml-0.5">pts</span>
       </span>
     </motion.div>
   )
