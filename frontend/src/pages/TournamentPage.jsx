@@ -7,8 +7,9 @@ import { useTournamentStore } from '../store/tournamentStore'
 import { useAuthStore } from '../store/authStore'
 import { joinTournament, leaveTournament, onMatchUpdated } from '../services/signalr'
 import { BadgePill } from '../components/BadgePill'
+import ApiStatusBanner from '../components/ApiStatusBanner'
 
-const PHASE_LABELS = { Group: 'Fase de Grupos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', Final: 'Final' }
+const PHASE_LABELS = { Group: 'Fase de Grupos', R32: 'Ronda de 32', R16: 'Octavos de Final', QF: 'Cuartos de Final', SF: 'Semifinales', ThirdPlace: 'Tercer Puesto', Final: 'Final' }
 const STATUS_LABELS = { Scheduled: 'Próximo', InProgress: 'En curso', Finished: 'Terminado' }
 
 export default function TournamentPage() {
@@ -86,6 +87,7 @@ export default function TournamentPage() {
             </span>
           </div>
         )}
+        <ApiStatusBanner hasLiveMatches={liveCount > 0} />
 
         {/* Tabs */}
         <div className="flex gap-1 mt-1 bg-[#0D0D0D]/60 rounded-xl p-1">

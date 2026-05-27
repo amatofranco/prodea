@@ -13,7 +13,8 @@ public class FootballDataService(
     IServiceScopeFactory scopeFactory,
     IHubContext<TournamentHub> hubContext,
     ILogger<FootballDataService> logger,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    PollingStatusService pollingStatus)
     : BackgroundService
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(10);
@@ -66,12 +67,16 @@ public class FootballDataService(
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("FootballData API returned {Status}", response.StatusCode);
+                pollingStatus.ApiAvailable = false;
                 return;
             }
 
             var json = await response.Content.ReadAsStringAsync(ct);
             var result = JsonSerializer.Deserialize<FootballDataMatchesResponse>(json, JsonOptions);
             if (result?.Matches == null) return;
+
+            pollingStatus.LastSuccessfulPoll = DateTime.UtcNow;
+            pollingStatus.ApiAvailable = true;
 
             foreach (var apiMatch in result.Matches)
             {
@@ -112,6 +117,7 @@ public class FootballDataService(
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "HTTP error polling football-data.org");
+            pollingStatus.ApiAvailable = false;
         }
     }
 

@@ -91,6 +91,7 @@ builder.Services.AddHttpClient("FootballData", client =>
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<BadgeService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddSingleton<PollingStatusService>();
 builder.Services.AddHostedService<FootballDataService>();
 
 // Resend email

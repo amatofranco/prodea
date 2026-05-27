@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;
 using Prodea.Api.Models;
+using Prodea.Api.Services;
 
 namespace Prodea.Api.Controllers;
 
@@ -15,7 +16,8 @@ public class AdminController(
     IWebHostEnvironment env,
     IHttpClientFactory httpClientFactory,
     IConfiguration config,
-    ILogger<AdminController> logger) : ControllerBase
+    ILogger<AdminController> logger,
+    PollingStatusService pollingStatus) : ControllerBase
 {
     [HttpPost("seed-fixture")]
     public async Task<IActionResult> SeedFixture([FromHeader(Name = "X-Admin-Key")] string? adminKey)
@@ -58,7 +60,6 @@ public class AdminController(
     }
 
     [HttpGet("polling-status")]
-    [Authorize]
     public async Task<IActionResult> GetPollingStatus()
     {
         var inProgress = await db.Matches
@@ -69,7 +70,19 @@ public class AdminController(
             .Where(m => m.Status == MatchStatus.Scheduled && m.MatchDate <= DateTime.UtcNow.AddHours(1))
             .CountAsync();
 
-        return Ok(new { inProgressMatches = inProgress, upcomingInNextHour = upcoming });
+        var staleThreshold = TimeSpan.FromMinutes(15);
+        var isStale = inProgress > 0
+            && (pollingStatus.LastSuccessfulPoll == null
+                || DateTime.UtcNow - pollingStatus.LastSuccessfulPoll > staleThreshold);
+
+        return Ok(new
+        {
+            inProgressMatches = inProgress,
+            upcomingInNextHour = upcoming,
+            apiAvailable = pollingStatus.ApiAvailable,
+            lastSuccessfulPoll = pollingStatus.LastSuccessfulPoll,
+            isStale,
+        });
     }
 
     private async Task<List<Match>> FetchFixtureFromApiAsync()

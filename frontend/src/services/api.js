@@ -49,4 +49,6 @@ export const api = {
     request(`/tournaments/${tournamentId}/matches/${matchId}/result`, { method: 'POST', body: JSON.stringify(body) }),
 
   getProfile: (tournamentId, userId) => request(`/tournaments/${tournamentId}/profile/${userId}`),
+
+  getPollingStatus: () => request('/admin/polling-status'),
 }
