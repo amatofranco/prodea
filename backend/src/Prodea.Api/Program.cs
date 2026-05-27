@@ -137,7 +137,7 @@ using (var scope = app.Services.CreateScope())
     bool noMatches = !await db.Matches.AnyAsync();
     bool hasLocalSeedOnly = !noMatches && !await db.Matches.AnyAsync(m => m.ExternalId != null);
 
-    // Detecta fixture corrupto: matchdays iguales en grupos O sin fases eliminatorias
+    // Detecta fixture corrupto
     bool badFixture = false;
     if (!noMatches && !hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey))
     {
@@ -148,10 +148,18 @@ using (var scope = app.Services.CreateScope())
             .CountAsync();
         bool badMatchdays = groupMatchdays <= 1;
 
-        // Si no hay ningún partido eliminatorio, la clasificación está mal
+        // Sin ningún partido eliminatorio
         bool noKnockouts = !await db.Matches.AnyAsync(m => m.Phase != Prodea.Api.Models.MatchPhase.Group);
 
-        badFixture = badMatchdays || noKnockouts;
+        // WC 2026: 48 equipos, 12 grupos de 4, cada equipo juega 3 partidos → 48×3/2 = 72
+        const int Wc2026GroupMatchCount = 72;
+        var groupCount = await db.Matches.CountAsync(m => m.Phase == Prodea.Api.Models.MatchPhase.Group);
+        bool tooManyGroups = groupCount > Wc2026GroupMatchCount;
+
+        badFixture = badMatchdays || noKnockouts || tooManyGroups;
+        startupLogger.LogInformation(
+            "Check fixture: groupMatchdays={MD} noKnockouts={NK} groupCount={GC} tooManyGroups={TMG} → reimport={RI}",
+            groupMatchdays, noKnockouts, groupCount, tooManyGroups, badFixture);
     }
 
     bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey)) || badFixture;
