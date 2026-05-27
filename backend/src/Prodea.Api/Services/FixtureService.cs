@@ -66,12 +66,15 @@ public class FixtureService(
         var stages = result.Matches.Select(m => $"{m.Stage}(group={m.Group})").Distinct();
         logger.LogInformation("Stages API: {Stages}", string.Join(", ", stages));
 
-        // Log equipos de los primeros 5 partidos knockout para detectar si la API devuelve nombres TBD
+        // Log estructura completa de equipos en partidos knockout para ver qué devuelve la API
         var knockoutSample = result.Matches
             .Where(m => m.Stage != "GROUP_STAGE" && m.Group == null)
-            .Take(5)
-            .Select(m => $"[{m.Stage}] home={m.HomeTeam?.Name ?? "NULL"} away={m.AwayTeam?.Name ?? "NULL"}");
-        logger.LogInformation("Muestra knockout teams: {Sample}", string.Join(" | ", knockoutSample));
+            .Take(3)
+            .Select(m =>
+                $"[{m.Stage}] " +
+                $"home=(name={m.HomeTeam?.Name ?? "NULL"} short={m.HomeTeam?.ShortName ?? "NULL"} tla={m.HomeTeam?.Tla ?? "NULL"}) " +
+                $"away=(name={m.AwayTeam?.Name ?? "NULL"} short={m.AwayTeam?.ShortName ?? "NULL"} tla={m.AwayTeam?.Tla ?? "NULL"})");
+        logger.LogInformation("Knockout teams: {Sample}", string.Join(" || ", knockoutSample));
 
         var allMatches = result.Matches.OrderBy(m => m.UtcDate).ToList();
 
@@ -121,10 +124,10 @@ public class FixtureService(
             {
                 Id = localId++,
                 ExternalId = m.Id,
-                HomeTeam = TranslateTeam(m.HomeTeam?.Name),
-                AwayTeam = TranslateTeam(m.AwayTeam?.Name),
-                HomeTeamLabel = TranslateLabel(m.HomeTeam?.Name),
-                AwayTeamLabel = TranslateLabel(m.AwayTeam?.Name),
+                HomeTeam = TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
+                AwayTeam = TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
+                HomeTeamLabel = TranslateLabel(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
+                AwayTeamLabel = TranslateLabel(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
                 MatchDate = m.UtcDate,
                 Status = MapStatus(m.Status),
                 Phase = phase,
@@ -282,7 +285,10 @@ public class FixtureService(
         FdTeam? HomeTeam,
         FdTeam? AwayTeam,
         FdScore? Score);
-    private record FdTeam(string? Name);
+    private record FdTeam(
+        string? Name,
+        [property: JsonPropertyName("shortName")] string? ShortName,
+        string? Tla);
     private record FdScore([property: JsonPropertyName("fullTime")] FdFullTime? FullTime);
     private record FdFullTime(int? Home, int? Away);
 }
