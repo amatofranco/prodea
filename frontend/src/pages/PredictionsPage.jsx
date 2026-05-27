@@ -5,10 +5,18 @@ import { Target } from 'lucide-react'
 import { api } from '../services/api'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
-const MATCHDAY_TAB_LABEL = {
-  1: 'Fecha 1', 2: 'Fecha 2', 3: 'Fecha 3',
-  4: 'Dieciseisavos', 5: 'Octavos', 6: 'Cuartos',
-  7: 'Semis', 8: '3er Puesto', 9: 'Final',
+const PHASE_ORDER = ['group-1', 'group-2', 'group-3', 'R32', 'R16', 'QF', 'SF', 'ThirdPlace', 'Final']
+
+const TAB_LABELS = {
+  'group-1': 'Fecha 1',
+  'group-2': 'Fecha 2',
+  'group-3': 'Fecha 3',
+  R32: 'Dieciseisavos',
+  R16: 'Octavos',
+  QF: 'Cuartos',
+  SF: 'Semis',
+  ThirdPlace: '3er Puesto',
+  Final: 'Final',
 }
 
 const PHASE_LABELS = {
@@ -21,17 +29,25 @@ const PHASE_LABELS = {
   Final: 'Final',
 }
 
-function TeamFlag({ name }) {
+function getTabKey(match) {
+  if (match.phase === 'Group') return `group-${match.matchday ?? 1}`
+  return match.phase
+}
+
+function TeamFlag({ name, label }) {
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
+  const displayName = label ?? name
   return (
     <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
       <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-[#2A2A3E]">
-        {flagUrl && (
-          <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
+        {flagUrl ? (
+          <img src={flagUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover opacity-85" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-[#8A8A9A] text-lg">?</div>
         )}
       </div>
-      <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 64, wordBreak: 'break-word' }}>{name}</p>
+      <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 64, wordBreak: 'break-word' }}>{displayName}</p>
     </div>
   )
 }
@@ -61,7 +77,7 @@ function MatchCard({ match, navigate }) {
       )}
 
       <div className="flex items-center justify-between gap-2">
-        <TeamFlag name={match.homeTeam} />
+        <TeamFlag name={match.homeTeam} label={match.homeTeamLabel} />
 
         <div className="flex flex-col items-center shrink-0 px-1">
           {isFinished || isLive ? (
@@ -81,7 +97,7 @@ function MatchCard({ match, navigate }) {
           <span className="text-[10px] text-[#3A3A4E] font-semibold mt-1">VS</span>
         </div>
 
-        <TeamFlag name={match.awayTeam} />
+        <TeamFlag name={match.awayTeam} label={match.awayTeamLabel} />
       </div>
 
       {pred ? (
@@ -109,7 +125,7 @@ export default function PredictionsPage() {
   const navigate = useNavigate()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedMatchday, setSelectedMatchday] = useState(1)
+  const [selectedTab, setSelectedTab] = useState('group-1')
   const tabBarRef = useRef(null)
 
   useEffect(() => {
@@ -119,16 +135,18 @@ export default function PredictionsPage() {
   useEffect(() => {
     if (matches.length === 0) return
 
-    const liveMatchday = matches.find((m) => m.status === 'InProgress')?.matchday
-    if (liveMatchday) { setSelectedMatchday(liveMatchday); return }
+    const liveTab = matches.find((m) => m.status === 'InProgress')
+    if (liveTab) { setSelectedTab(getTabKey(liveTab)); return }
 
-    const nextMatchday = matches
+    const nextMatch = matches
       .filter((m) => m.status === 'Scheduled')
-      .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))[0]?.matchday
-    if (nextMatchday) { setSelectedMatchday(nextMatchday); return }
+      .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))[0]
+    if (nextMatch) { setSelectedTab(getTabKey(nextMatch)); return }
 
-    const last = Math.max(...matches.map((m) => m.matchday ?? 1))
-    setSelectedMatchday(last)
+    const tabs = [...new Set(matches.map(getTabKey))].sort(
+      (a, b) => PHASE_ORDER.indexOf(a) - PHASE_ORDER.indexOf(b)
+    )
+    if (tabs.length > 0) setSelectedTab(tabs[tabs.length - 1])
   }, [matches])
 
   useEffect(() => {
@@ -136,7 +154,7 @@ export default function PredictionsPage() {
     if (!bar) return
     const active = bar.querySelector('[data-active="true"]')
     active?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-  }, [selectedMatchday])
+  }, [selectedTab])
 
   if (loading) {
     return (
@@ -148,8 +166,10 @@ export default function PredictionsPage() {
     )
   }
 
-  const matchdays = [...new Set(matches.map((m) => m.matchday ?? 1))].sort((a, b) => a - b)
-  const visible = matches.filter((m) => (m.matchday ?? 1) === selectedMatchday)
+  const allTabs = [...new Set(matches.map(getTabKey))].sort(
+    (a, b) => PHASE_ORDER.indexOf(a) - PHASE_ORDER.indexOf(b)
+  )
+  const visible = matches.filter((m) => getTabKey(m) === selectedTab)
   const currentPhase = visible[0]?.phase
 
   const predCount = visible.filter((m) => m.userPrediction !== null).length
@@ -166,27 +186,27 @@ export default function PredictionsPage() {
         <p className="text-[#8A8A9A] text-xs">Cargá tus resultados antes de cada partido</p>
       </div>
 
-      {/* Matchday tabs */}
+      {/* Tabs */}
       <div
         ref={tabBarRef}
         className="flex gap-2 px-4 py-3 overflow-x-auto bg-[#0D0D0D] border-b border-[#1A1A2E] scrollbar-none"
         style={{ scrollbarWidth: 'none' }}
       >
-        {matchdays.map((md) => {
-          const isActive = md === selectedMatchday
-          const hasLive = matches.some((m) => (m.matchday ?? 1) === md && m.status === 'InProgress')
+        {allTabs.map((tab) => {
+          const isActive = tab === selectedTab
+          const hasLive = matches.some((m) => getTabKey(m) === tab && m.status === 'InProgress')
           return (
             <button
-              key={md}
+              key={tab}
               data-active={isActive}
-              onClick={() => setSelectedMatchday(md)}
+              onClick={() => setSelectedTab(tab)}
               className={`relative shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 isActive
                   ? 'bg-[#00FF87] text-black'
                   : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
               }`}
             >
-              {MATCHDAY_TAB_LABEL[md] ?? `Fecha ${md}`}
+              {TAB_LABELS[tab] ?? tab}
               {hasLive && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#FF6B35]" />
               )}
@@ -209,7 +229,7 @@ export default function PredictionsPage() {
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
-            key={selectedMatchday}
+            key={selectedTab}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}

@@ -117,7 +117,19 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
-    await db.Database.MigrateAsync();
+
+    // EnsureCreated crea el esquema completo en DBs nuevas; en DBs existentes es no-op
+    await db.Database.EnsureCreatedAsync();
+
+    // Agrega columnas nuevas si no existen (para DBs creadas antes de este cambio)
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "HomeTeamLabel" varchar(200);
+            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "AwayTeamLabel" varchar(200);
+            """);
+    }
+    catch { /* columnas ya existen o la tabla aún no existe — EnsureCreated se encarga */ }
 
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var apiKey = app.Configuration["FootballData:ApiKey"];

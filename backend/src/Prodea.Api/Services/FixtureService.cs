@@ -63,27 +63,53 @@ public class FixtureService(
         var result = JsonSerializer.Deserialize<FdMatchesResponse>(json, JsonOptions)
             ?? throw new InvalidOperationException("Respuesta vacía de football-data.org");
 
-        // Calcula matchday de fase de grupos por posición dentro de cada grupo
-        // (la API puede devolver matchday=1 para todos los partidos de grupos)
-        var groupMatchdays = result.Matches
-            .Where(m => MapPhase(m.Stage, m.Group) == MatchPhase.Group && m.Group != null)
-            .GroupBy(m => m.Group)
-            .SelectMany(g =>
-            {
-                var sorted = g.OrderBy(m => m.UtcDate).ToList();
-                return sorted.Select((m, i) => (m.Id, Matchday: i / 2 + 1));
-            })
-            .ToDictionary(x => x.Id, x => x.Matchday);
+        // Log stage names para debugging
+        var stages = result.Matches.Select(m => $"{m.Stage}(group={m.Group})").Distinct();
+        logger.LogInformation("Stages en respuesta de football-data.org: {Stages}", string.Join(", ", stages));
+
+        var allMatches = result.Matches.OrderBy(m => m.UtcDate).ToList();
+
+        // Identifica partidos de fase de grupos: stage GROUP_STAGE o tiene campo group
+        var groupApiMatches = allMatches
+            .Where(m => m.Stage == "GROUP_STAGE" || m.Group != null)
+            .ToList();
+        var knockoutApiMatches = allMatches.Except(groupApiMatches).ToList();
+
+        // Calcula matchday por posición dentro de cada grupo (si hay campo group)
+        // Fallback: divide los 72 partidos de grupos en tercios por fecha (24 cada uno)
+        Dictionary<int, int> groupMatchdays;
+        if (groupApiMatches.Any(m => m.Group != null))
+        {
+            groupMatchdays = groupApiMatches
+                .Where(m => m.Group != null)
+                .GroupBy(m => m.Group!)
+                .SelectMany(g =>
+                {
+                    var sorted = g.OrderBy(m => m.UtcDate).ToList();
+                    return sorted.Select((m, i) => (m.Id, Matchday: i / 2 + 1));
+                })
+                .ToDictionary(x => x.Id, x => x.Matchday);
+        }
+        else
+        {
+            // Fallback: divide todos los partidos de grupos en 3 rondas iguales por fecha
+            var sorted = groupApiMatches.OrderBy(m => m.UtcDate).ToList();
+            int perRound = Math.Max(1, sorted.Count / 3);
+            groupMatchdays = sorted
+                .Select((m, i) => (m.Id, Matchday: Math.Min(3, i / perRound + 1)))
+                .ToDictionary(x => x.Id, x => x.Matchday);
+        }
 
         var matches = new List<Match>();
         int localId = 1;
 
-        foreach (var m in result.Matches)
+        foreach (var m in allMatches)
         {
-            var phase = MapPhase(m.Stage, m.Group);
-            int? matchday = phase == MatchPhase.Group
-                ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : m.Matchday)
-                : MapKnockoutMatchday(phase);
+            bool isGroup = groupApiMatches.Contains(m);
+            var phase = isGroup ? MatchPhase.Group : MapKnockoutPhase(m.Stage);
+            int? matchday = isGroup
+                ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : null)
+                : null; // knockout matchday no se usa en frontend; se agrupa por phase
 
             matches.Add(new Match
             {
@@ -91,6 +117,8 @@ public class FixtureService(
                 ExternalId = m.Id,
                 HomeTeam = TranslateTeam(m.HomeTeam?.Name),
                 AwayTeam = TranslateTeam(m.AwayTeam?.Name),
+                HomeTeamLabel = TranslateLabel(m.HomeTeam?.Name),
+                AwayTeamLabel = TranslateLabel(m.AwayTeam?.Name),
                 MatchDate = m.UtcDate,
                 Status = MapStatus(m.Status),
                 Phase = phase,
@@ -103,30 +131,40 @@ public class FixtureService(
         return matches;
     }
 
-    private static MatchPhase MapPhase(string? stage, string? group = null) => stage switch
+    private static MatchPhase MapKnockoutPhase(string? stage) => stage switch
     {
-        "GROUP_STAGE"    => MatchPhase.Group,
         "ROUND_OF_32"    => MatchPhase.R32,
         "ROUND_OF_16"    => MatchPhase.R16,
         "QUARTER_FINALS" => MatchPhase.QF,
         "SEMI_FINALS"    => MatchPhase.SF,
         "THIRD_PLACE"    => MatchPhase.ThirdPlace,
         "FINAL"          => MatchPhase.Final,
-        // Si tiene grupo asignado es fase de grupos aunque el stage sea desconocido;
-        // si no tiene grupo es fase eliminatoria
-        _ => group != null ? MatchPhase.Group : MatchPhase.R32,
+        _                => MatchPhase.R32,
     };
 
-    private static int MapKnockoutMatchday(MatchPhase phase) => phase switch
+    private static string? TranslateLabel(string? name)
     {
-        MatchPhase.R32        => 4,
-        MatchPhase.R16        => 5,
-        MatchPhase.QF         => 6,
-        MatchPhase.SF         => 7,
-        MatchPhase.ThirdPlace => 8,
-        MatchPhase.Final      => 9,
-        _                     => 4,
-    };
+        if (name == null) return null;
+        if (TeamNames.ContainsKey(name)) return null;
+
+        const string winner = "Winner Group ";
+        if (name.StartsWith(winner, StringComparison.OrdinalIgnoreCase))
+            return $"1° Grupo {name[winner.Length..].Trim()}";
+
+        const string runnerUp = "Runner-up Group ";
+        if (name.StartsWith(runnerUp, StringComparison.OrdinalIgnoreCase))
+            return $"2° Grupo {name[runnerUp.Length..].Trim()}";
+
+        const string winnerMatch = "Winner Match ";
+        if (name.StartsWith(winnerMatch, StringComparison.OrdinalIgnoreCase))
+            return $"G. Partido {name[winnerMatch.Length..].Trim()}";
+
+        const string loserMatch = "Loser Match ";
+        if (name.StartsWith(loserMatch, StringComparison.OrdinalIgnoreCase))
+            return $"P. Partido {name[loserMatch.Length..].Trim()}";
+
+        return null;
+    }
 
     private static MatchStatus MapStatus(string? status) => status switch
     {

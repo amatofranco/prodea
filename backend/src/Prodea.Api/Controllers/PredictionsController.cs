@@ -27,7 +27,8 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
         {
             predMap.TryGetValue(m.Id, out var pred);
             return new MatchWithPredictionDto(
-                m.Id, m.HomeTeam, m.AwayTeam, m.HomeTeamFlag, m.AwayTeamFlag,
+                m.Id, m.HomeTeam, m.AwayTeam, m.HomeTeamLabel, m.AwayTeamLabel,
+                m.HomeTeamFlag, m.AwayTeamFlag,
                 m.MatchDate, m.Phase.ToString(), m.Matchday, m.HomeScore, m.AwayScore,
                 m.Status.ToString(),
                 pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned)
