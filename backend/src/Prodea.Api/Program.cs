@@ -119,11 +119,17 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
     await db.Database.MigrateAsync();
 
-    if (!await db.Matches.AnyAsync())
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var apiKey = app.Configuration["FootballData:ApiKey"];
+
+    bool noMatches = !await db.Matches.AnyAsync();
+    bool hasLocalSeedOnly = !noMatches && !await db.Matches.AnyAsync(m => m.ExternalId != null);
+    bool shouldImport = noMatches || (hasLocalSeedOnly && !string.IsNullOrEmpty(apiKey));
+
+    if (shouldImport)
     {
         var fixtureService = scope.ServiceProvider.GetRequiredService<FixtureService>();
-        var (count, source) = await fixtureService.ImportAsync();
-        var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        var (count, source) = await fixtureService.ImportAsync(force: hasLocalSeedOnly);
         startupLogger.LogInformation("Fixture importado al arrancar: {Count} partidos desde {Source}", count, source);
     }
 }
