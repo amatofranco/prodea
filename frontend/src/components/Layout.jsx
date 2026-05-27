@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Home, Trophy, User, LogOut } from 'lucide-react'
+import { Home, Trophy, Target, User, LogOut } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
 export default function Layout() {
@@ -23,7 +23,7 @@ export default function Layout() {
             to="/"
             end
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-4 py-1 text-xs transition-colors ${
+              `flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${
                 isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'
               }`
             }
@@ -33,9 +33,21 @@ export default function Layout() {
           </NavLink>
 
           <NavLink
+            to="/predicciones"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${
+                isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'
+              }`
+            }
+          >
+            <Target size={20} />
+            <span>Predicciones</span>
+          </NavLink>
+
+          <NavLink
             to="/torneos"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-4 py-1 text-xs transition-colors ${
+              `flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${
                 isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'
               }`
             }
@@ -47,7 +59,7 @@ export default function Layout() {
           <NavLink
             to="/perfil"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-4 py-1 text-xs transition-colors ${
+              `flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${
                 isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'
               }`
             }
@@ -58,7 +70,7 @@ export default function Layout() {
 
           <button
             onClick={handleLogout}
-            className="flex flex-col items-center gap-0.5 px-4 py-1 text-xs text-[#8A8A9A] active:text-red-400 transition-colors"
+            className="flex flex-col items-center gap-0.5 px-3 py-1 text-xs text-[#8A8A9A] active:text-red-400 transition-colors"
           >
             <LogOut size={20} />
             <span>Salir</span>

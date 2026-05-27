@@ -58,7 +58,7 @@ public class BadgeService(ProdeaDbContext db)
         if (matchIds.Count == 0) return;
 
         var predictions = await db.Predictions
-            .Where(p => p.TournamentId == tournamentId && matchIds.Contains(p.MatchId))
+            .Where(p => participants.Contains(p.UserId) && matchIds.Contains(p.MatchId))
             .Include(p => p.Match)
             .ToListAsync();
 

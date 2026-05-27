@@ -43,10 +43,12 @@ export const api = {
   getLeaderboard: (id) => request(`/tournaments/${id}/leaderboard`),
 
   getMatches: (tournamentId) => request(`/tournaments/${tournamentId}/matches`),
-  submitPrediction: (tournamentId, matchId, body) =>
-    request(`/tournaments/${tournamentId}/matches/${matchId}/predictions`, { method: 'POST', body: JSON.stringify(body) }),
   updateResult: (tournamentId, matchId, body) =>
     request(`/tournaments/${tournamentId}/matches/${matchId}/result`, { method: 'POST', body: JSON.stringify(body) }),
+
+  getMyPredictions: () => request('/predictions'),
+  submitPrediction: (matchId, body) =>
+    request(`/predictions/${matchId}`, { method: 'POST', body: JSON.stringify(body) }),
 
   getProfile: (tournamentId, userId) => request(`/tournaments/${tournamentId}/profile/${userId}`),
 

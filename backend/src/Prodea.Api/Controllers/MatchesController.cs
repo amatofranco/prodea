@@ -27,7 +27,7 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         var matches = await db.Matches.OrderBy(m => m.MatchDate).ToListAsync();
         var predictions = await db.Predictions
-            .Where(p => p.TournamentId == tournamentId && p.UserId == userId)
+            .Where(p => p.UserId == userId)
             .ToListAsync();
 
         var predMap = predictions.ToDictionary(p => p.MatchId);
@@ -42,46 +42,6 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
                 pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned)
             );
         }));
-    }
-
-    [HttpPost("{matchId}/predictions")]
-    public async Task<ActionResult<PredictionDto>> SubmitPrediction(int tournamentId, int matchId, SubmitPredictionRequest request)
-    {
-        var userId = CurrentUserId;
-        var isMember = await db.TournamentParticipants.AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == userId);
-        if (!isMember) return Forbid();
-
-        var match = await db.Matches.FindAsync(matchId);
-        if (match == null) return NotFound(new { message = "Partido no encontrado" });
-        if (match.Status != MatchStatus.Scheduled)
-            return BadRequest(new { message = "Las predicciones están cerradas para este partido" });
-
-        var existing = await db.Predictions.FirstOrDefaultAsync(p =>
-            p.UserId == userId && p.TournamentId == tournamentId && p.MatchId == matchId);
-
-        if (existing != null)
-        {
-            existing.PredictedHomeScore = request.PredictedHomeScore;
-            existing.PredictedAwayScore = request.PredictedAwayScore;
-            existing.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-            return Ok(new PredictionDto(existing.Id, existing.PredictedHomeScore, existing.PredictedAwayScore, existing.PointsEarned));
-        }
-
-        var prediction = new Prediction
-        {
-            UserId = userId,
-            TournamentId = tournamentId,
-            MatchId = matchId,
-            PredictedHomeScore = request.PredictedHomeScore,
-            PredictedAwayScore = request.PredictedAwayScore,
-        };
-
-        db.Predictions.Add(prediction);
-        await db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetMatches), new { tournamentId },
-            new PredictionDto(prediction.Id, prediction.PredictedHomeScore, prediction.PredictedAwayScore, 0));
     }
 
     [HttpPost("{matchId}/result")]
@@ -102,7 +62,7 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         await db.SaveChangesAsync();
 
         var predictions = await db.Predictions
-            .Where(p => p.MatchId == matchId && p.TournamentId == tournamentId)
+            .Where(p => p.MatchId == matchId)
             .ToListAsync();
 
         foreach (var pred in predictions)
@@ -116,7 +76,12 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         if (match.Matchday.HasValue)
         {
             var badgeService = new BadgeService(db);
-            await badgeService.AssignMatchdayBadgesAsync(tournamentId, match.Matchday.Value);
+            var allTournamentIds = await db.TournamentParticipants
+                .Select(tp => tp.TournamentId)
+                .Distinct()
+                .ToListAsync();
+            foreach (var tid in allTournamentIds)
+                await badgeService.AssignMatchdayBadgesAsync(tid, match.Matchday.Value);
         }
 
         var payload = new
@@ -127,7 +92,13 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
             status = match.Status.ToString(),
         };
 
-        await hub.Clients.Group($"tournament-{tournamentId}").SendAsync("MatchUpdated", payload);
+        var affectedTournamentIds = await db.TournamentParticipants
+            .Select(tp => tp.TournamentId)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var tid in affectedTournamentIds)
+            await hub.Clients.Group($"tournament-{tid}").SendAsync("MatchUpdated", payload);
 
         return Ok(new { message = "Resultado cargado y puntos calculados" });
     }

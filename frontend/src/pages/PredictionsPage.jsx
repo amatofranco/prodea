@@ -1,0 +1,232 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Target } from 'lucide-react'
+import { api } from '../services/api'
+import { getTeam, getFlagUrl } from '../data/teamsData'
+
+const MATCHDAY_TAB_LABEL = {
+  1: 'Fecha 1', 2: 'Fecha 2', 3: 'Fecha 3',
+  4: 'Dieciseisavos', 5: 'Octavos', 6: 'Cuartos',
+  7: 'Semis', 8: '3er Puesto', 9: 'Final',
+}
+
+const PHASE_LABELS = {
+  Group: 'Fase de Grupos',
+  R32: 'Dieciseisavos de Final',
+  R16: 'Octavos de Final',
+  QF: 'Cuartos de Final',
+  SF: 'Semifinales',
+  ThirdPlace: 'Tercer Puesto',
+  Final: 'Final',
+}
+
+function TeamFlag({ name }) {
+  const { flag } = getTeam(name)
+  const flagUrl = getFlagUrl(flag)
+  return (
+    <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
+      <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-[#2A2A3E]">
+        {flagUrl && (
+          <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
+        )}
+      </div>
+      <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 64, wordBreak: 'break-word' }}>{name}</p>
+    </div>
+  )
+}
+
+function MatchCard({ match, navigate }) {
+  const isLive = match.status === 'InProgress'
+  const isFinished = match.status === 'Finished'
+  const canPredict = match.status === 'Scheduled'
+  const pred = match.userPrediction
+
+  return (
+    <div
+      onClick={() => canPredict && navigate(`/predicciones/${match.id}`)}
+      className={`relative p-3 rounded-2xl border transition-colors ${
+        isLive
+          ? 'bg-[#FF6B35]/5 border-[#FF6B35]/40'
+          : canPredict
+          ? 'bg-[#1A1A2E] border-[#2A2A3E] active:border-[#00FF87] cursor-pointer'
+          : 'bg-[#1A1A2E] border-[#2A2A3E]'
+      }`}
+    >
+      {isLive && (
+        <span className="absolute top-2 right-2 flex items-center gap-1 text-[10px] text-[#FF6B35] font-bold uppercase">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
+          LIVE
+        </span>
+      )}
+
+      <div className="flex items-center justify-between gap-2">
+        <TeamFlag name={match.homeTeam} />
+
+        <div className="flex flex-col items-center shrink-0 px-1">
+          {isFinished || isLive ? (
+            <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+              {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
+            </span>
+          ) : (
+            <div className="flex flex-col items-center">
+              <span className="text-xs text-[#8A8A9A]">
+                {new Date(match.matchDate).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+              </span>
+              <span className="text-xs text-[#8A8A9A]">
+                {new Date(match.matchDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          )}
+          <span className="text-[10px] text-[#3A3A4E] font-semibold mt-1">VS</span>
+        </div>
+
+        <TeamFlag name={match.awayTeam} />
+      </div>
+
+      {pred ? (
+        <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-center gap-2">
+          <span className="text-xs text-[#8A8A9A]">Tu pred:</span>
+          <span className="text-xs font-bold text-[#00FF87]">
+            {pred.predictedHomeScore} – {pred.predictedAwayScore}
+          </span>
+          {isFinished && (
+            <span className={`text-xs font-bold ml-2 ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+              +{pred.pointsEarned} pts
+            </span>
+          )}
+        </div>
+      ) : canPredict ? (
+        <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex justify-center">
+          <span className="text-xs text-[#FF6B35] font-semibold">Tocar para predecir →</span>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export default function PredictionsPage() {
+  const navigate = useNavigate()
+  const [matches, setMatches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedMatchday, setSelectedMatchday] = useState(1)
+  const tabBarRef = useRef(null)
+
+  useEffect(() => {
+    api.getMyPredictions().then(setMatches).finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (matches.length === 0) return
+
+    const liveMatchday = matches.find((m) => m.status === 'InProgress')?.matchday
+    if (liveMatchday) { setSelectedMatchday(liveMatchday); return }
+
+    const nextMatchday = matches
+      .filter((m) => m.status === 'Scheduled')
+      .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))[0]?.matchday
+    if (nextMatchday) { setSelectedMatchday(nextMatchday); return }
+
+    const last = Math.max(...matches.map((m) => m.matchday ?? 1))
+    setSelectedMatchday(last)
+  }, [matches])
+
+  useEffect(() => {
+    const bar = tabBarRef.current
+    if (!bar) return
+    const active = bar.querySelector('[data-active="true"]')
+    active?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [selectedMatchday])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3 p-4 pt-16 bg-[#0D0D0D] min-h-full">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-24 rounded-2xl bg-[#1A1A2E] animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
+  const matchdays = [...new Set(matches.map((m) => m.matchday ?? 1))].sort((a, b) => a - b)
+  const visible = matches.filter((m) => (m.matchday ?? 1) === selectedMatchday)
+  const currentPhase = visible[0]?.phase
+
+  const predCount = visible.filter((m) => m.userPrediction !== null).length
+  const scheduledCount = visible.filter((m) => m.status === 'Scheduled').length
+
+  return (
+    <div className="flex flex-col min-h-full bg-[#0D0D0D]">
+      {/* Header */}
+      <div className="px-4 pt-12 pb-4 bg-[#1A1A2E]">
+        <div className="flex items-center gap-2 mb-1">
+          <Target size={22} className="text-[#00FF87]" />
+          <h1 className="text-xl font-bold text-white">Predicciones</h1>
+        </div>
+        <p className="text-[#8A8A9A] text-xs">Cargá tus resultados antes de cada partido</p>
+      </div>
+
+      {/* Matchday tabs */}
+      <div
+        ref={tabBarRef}
+        className="flex gap-2 px-4 py-3 overflow-x-auto bg-[#0D0D0D] border-b border-[#1A1A2E] scrollbar-none"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        {matchdays.map((md) => {
+          const isActive = md === selectedMatchday
+          const hasLive = matches.some((m) => (m.matchday ?? 1) === md && m.status === 'InProgress')
+          return (
+            <button
+              key={md}
+              data-active={isActive}
+              onClick={() => setSelectedMatchday(md)}
+              className={`relative shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                isActive
+                  ? 'bg-[#00FF87] text-black'
+                  : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
+              }`}
+            >
+              {MATCHDAY_TAB_LABEL[md] ?? `Fecha ${md}`}
+              {hasLive && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#FF6B35]" />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Stats bar */}
+      {scheduledCount > 0 && (
+        <div className="px-4 py-2 bg-[#0D0D0D]">
+          <p className="text-xs text-[#8A8A9A]">
+            <span className="text-[#00FF87] font-semibold">{predCount}</span> de{' '}
+            <span className="font-semibold text-white">{scheduledCount}</span> partidos pendientes con predicción
+          </p>
+        </div>
+      )}
+
+      {/* Match list */}
+      <div className="flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedMatchday}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+            className="px-4 py-4 flex flex-col gap-2"
+          >
+            {currentPhase && (
+              <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-1">
+                {PHASE_LABELS[currentPhase]}
+              </p>
+            )}
+            {visible.map((m) => (
+              <MatchCard key={m.id} match={m} navigate={navigate} />
+            ))}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}

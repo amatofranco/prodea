@@ -11,7 +11,6 @@ public class Tournament
 
     public User Admin { get; set; } = null!;
     public ICollection<TournamentParticipant> Participants { get; set; } = [];
-    public ICollection<Prediction> Predictions { get; set; } = [];
     public ICollection<MatchdayBadge> MatchdayBadges { get; set; } = [];
     public ICollection<AccumulativeBadge> AccumulativeBadges { get; set; } = [];
 }

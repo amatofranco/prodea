@@ -26,7 +26,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
         if (user == null) return NotFound();
 
         var totalPoints = await db.Predictions
-            .Where(p => p.TournamentId == tournamentId && p.UserId == userId)
+            .Where(p => p.UserId == userId)
             .SumAsync(p => p.PointsEarned);
 
         var participants = await db.TournamentParticipants
@@ -35,7 +35,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
             .ToListAsync();
 
         var allPoints = await db.Predictions
-            .Where(p => p.TournamentId == tournamentId && participants.Contains(p.UserId))
+            .Where(p => participants.Contains(p.UserId))
             .GroupBy(p => p.UserId)
             .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
             .OrderByDescending(x => x.Total)

@@ -241,7 +241,7 @@ function MatchRow({ match, tournamentId, navigate }) {
 
   return (
     <div
-      onClick={() => canPredict && navigate(`/torneos/${tournamentId}/match/${match.id}`)}
+      onClick={() => canPredict && navigate(`/predicciones/${match.id}`)}
       className={`relative p-3 rounded-2xl border transition-colors ${
         isLive
           ? 'bg-[#FF6B35]/5 border-[#FF6B35]/40'

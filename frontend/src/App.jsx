@@ -7,6 +7,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import HomePage from './pages/HomePage'
 import TournamentPage from './pages/TournamentPage'
+import PredictionsPage from './pages/PredictionsPage'
 import PredictionPage from './pages/PredictionPage'
 import ProfilePage from './pages/ProfilePage'
 
@@ -24,8 +25,9 @@ export default function App() {
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/predicciones" element={<PredictionsPage />} />
+            <Route path="/predicciones/:matchId" element={<PredictionPage />} />
             <Route path="/torneos/:id" element={<TournamentPage />} />
-            <Route path="/torneos/:tournamentId/match/:matchId" element={<PredictionPage />} />
             <Route path="/torneos/:tournamentId/perfil/:userId" element={<ProfilePage />} />
           </Route>
         </Route>

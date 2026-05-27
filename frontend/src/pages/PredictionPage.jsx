@@ -47,7 +47,7 @@ function Countdown({ matchDate }) {
 }
 
 export default function PredictionPage() {
-  const { tournamentId, matchId } = useParams()
+  const { matchId } = useParams()
   const navigate = useNavigate()
   const [match, setMatch] = useState(null)
   const [home, setHome] = useState(0)
@@ -58,7 +58,7 @@ export default function PredictionPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.getMatches(tournamentId).then((matches) => {
+    api.getMyPredictions().then((matches) => {
       const m = matches.find((m) => m.id === Number(matchId))
       if (!m) { navigate(-1); return }
       setMatch(m)
@@ -69,7 +69,7 @@ export default function PredictionPage() {
       }
       setLoading(false)
     })
-  }, [tournamentId, matchId])
+  }, [matchId])
 
   const isLocked = match?.status !== 'Scheduled'
 
@@ -78,7 +78,7 @@ export default function PredictionPage() {
     setSaving(true)
     setError('')
     try {
-      await api.submitPrediction(tournamentId, matchId, {
+      await api.submitPrediction(matchId, {
         predictedHomeScore: home,
         predictedAwayScore: away,
       })

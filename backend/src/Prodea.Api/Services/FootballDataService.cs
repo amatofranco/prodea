@@ -142,9 +142,8 @@ public class FootballDataService(
         if (match.Matchday.HasValue)
         {
             var badgeService = new BadgeService(db);
-            var tournamentIds = await db.Predictions
-                .Where(p => p.MatchId == match.Id)
-                .Select(p => p.TournamentId)
+            var tournamentIds = await db.TournamentParticipants
+                .Select(tp => tp.TournamentId)
                 .Distinct()
                 .ToListAsync(ct);
 
@@ -155,9 +154,8 @@ public class FootballDataService(
 
     private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, CancellationToken ct)
     {
-        var tournamentIds = await db.Predictions
-            .Where(p => p.MatchId == match.Id)
-            .Select(p => p.TournamentId)
+        var tournamentIds = await db.TournamentParticipants
+            .Select(tp => tp.TournamentId)
             .Distinct()
             .ToListAsync(ct);
 

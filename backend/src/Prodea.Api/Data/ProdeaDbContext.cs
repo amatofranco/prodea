@@ -72,14 +72,10 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
 
         modelBuilder.Entity<Prediction>(e =>
         {
-            e.HasIndex(p => new { p.UserId, p.TournamentId, p.MatchId }).IsUnique();
+            e.HasIndex(p => new { p.UserId, p.MatchId }).IsUnique();
             e.HasOne(p => p.User)
                 .WithMany(u => u.Predictions)
                 .HasForeignKey(p => p.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(p => p.Tournament)
-                .WithMany(t => t.Predictions)
-                .HasForeignKey(p => p.TournamentId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasOne(p => p.Match)
                 .WithMany(m => m.Predictions)
