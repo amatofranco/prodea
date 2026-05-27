@@ -443,7 +443,7 @@ export default function PredictionPage() {
                   } disabled:opacity-50`}
                 >
                   {saved && <Check size={18} />}
-                  {saving ? 'Guardando...' : saved ? 'Predicción guardada' : 'Confirmar predicción'}
+                  {saving ? 'Guardando...' : justSaved ? 'Predicción guardada' : saved ? 'Actualizar predicción' : 'Confirmar predicción'}
                 </button>
               )}
             </>
