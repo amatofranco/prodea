@@ -10,9 +10,10 @@ namespace Prodea.Api.Controllers;
 public class AdminController(ProdeaDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost("seed-fixture")]
-    public async Task<IActionResult> SeedFixture()
+    public async Task<IActionResult> SeedFixture([FromHeader(Name = "X-Admin-Key")] string? adminKey)
     {
-        if (!env.IsDevelopment())
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
             return Forbid();
 
         if (await db.Matches.AnyAsync())
