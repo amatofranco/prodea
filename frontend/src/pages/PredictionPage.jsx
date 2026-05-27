@@ -80,10 +80,7 @@ function TurboCountdown({ onComplete, onSkip, resetKey }) {
       setProgress(remaining / totalMs)
       setDisplay(Math.ceil(remaining / 1000))
       if (remaining <= 0) {
-        if (!doneRef.current) {
-          doneRef.current = true
-          onCompleteRef.current()
-        }
+        if (!doneRef.current) { doneRef.current = true; onCompleteRef.current() }
       } else {
         rafId = requestAnimationFrame(tick)
       }
@@ -112,9 +109,7 @@ function TurboCountdown({ onComplete, onSkip, resetKey }) {
           <circle cx="56" cy="56" r={r} fill="none" stroke="#2A2A3E" strokeWidth="5" />
           <circle
             cx="56" cy="56" r={r}
-            fill="none"
-            stroke="#FF6B35"
-            strokeWidth="5"
+            fill="none" stroke="#FF6B35" strokeWidth="5"
             strokeDasharray={circumference}
             strokeDashoffset={circumference * (1 - progress)}
             strokeLinecap="round"
@@ -125,11 +120,7 @@ function TurboCountdown({ onComplete, onSkip, resetKey }) {
           <span className="text-[10px] text-[#8A8A9A] mt-0.5">seg</span>
         </div>
       </button>
-
-      <button
-        onClick={onSkip}
-        className="text-xs font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60"
-      >
+      <button onClick={onSkip} className="text-xs font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60">
         Confirmar ya →
       </button>
     </motion.div>
@@ -145,7 +136,7 @@ export default function PredictionPage() {
   const [home, setHome] = useState(0)
   const [away, setAway] = useState(0)
   const [saved, setSaved] = useState(false)
-  const [justSaved, setJustSaved] = useState(false) // true solo cuando el usuario acaba de confirmar
+  const [justSaved, setJustSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -158,12 +149,16 @@ export default function PredictionPage() {
 
   // Carga inicial
   useEffect(() => {
-    api.getMyPredictions()
-      .then(setAllMatches)
-      .catch(() => navigate(-1))
+    api.getMyPredictions().then(setAllMatches).catch(() => navigate(-1))
   }, [])
 
-  // Sincroniza al cambiar de partido
+  // Reset por-partido cuando cambia matchId
+  useEffect(() => {
+    submitGuard.current = false
+    setJustSaved(false)
+  }, [matchId])
+
+  // Sincroniza datos del partido actual
   useEffect(() => {
     if (allMatches.length === 0) return
     const m = allMatches.find((m) => m.id === Number(matchId))
@@ -171,8 +166,6 @@ export default function PredictionPage() {
     setMatch(m)
     setError('')
     setTurboComplete(false)
-    setJustSaved(false)
-    submitGuard.current = false
     if (m.userPrediction) {
       setHome(m.userPrediction.predictedHomeScore)
       setAway(m.userPrediction.predictedAwayScore)
@@ -185,22 +178,18 @@ export default function PredictionPage() {
     setLoading(false)
   }, [matchId, allMatches])
 
-  // Auto-avance en turbo: solo cuando el usuario acaba de confirmar (no al navegar a partido ya predicho)
+  // Turbo activado mientras el partido ya estaba predicho → auto-avance
   useEffect(() => {
-    if (!justSaved || !turboMode) return
+    if (!turboMode || !saved) return
     const currentIdx = allMatches.findIndex((m) => m.id === Number(matchId))
     const next = allMatches.slice(currentIdx + 1).find(canPredictMatch)
     const t = setTimeout(() => {
       slideDir.current = 1
-      if (next) {
-        navigate(`/predicciones/${next.id}`)
-      } else {
-        setTurboComplete(true)
-        setTimeout(() => navigate('/predicciones'), 1800)
-      }
+      if (next) navigate(`/predicciones/${next.id}`)
+      else { setTurboComplete(true); setTimeout(() => navigate('/predicciones'), 1800) }
     }, 700)
     return () => clearTimeout(t)
-  }, [justSaved, turboMode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [turboMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Flash al activar turbo
   useEffect(() => {
@@ -213,19 +202,13 @@ export default function PredictionPage() {
   const nextMatch = currentIndex < allMatches.length - 1 ? allMatches[currentIndex + 1] : null
   const pendingCount = allMatches.filter(canPredictMatch).length
 
-  function navTo(id, dir) {
-    slideDir.current = dir
-    navigate(`/predicciones/${id}`)
-  }
+  function navTo(id, dir) { slideDir.current = dir; navigate(`/predicciones/${id}`) }
 
   const teamsConfirmed = match?.homeTeam !== 'TBD' && match?.awayTeam !== 'TBD'
   const [isPastDeadline, setIsPastDeadline] = useState(false)
-
   useEffect(() => {
     if (!match?.matchDate) return
-    function check() {
-      setIsPastDeadline(new Date(match.matchDate) - Date.now() < PREDICTION_CLOSE_BEFORE_MS)
-    }
+    function check() { setIsPastDeadline(new Date(match.matchDate) - Date.now() < PREDICTION_CLOSE_BEFORE_MS) }
     check()
     const iv = setInterval(check, 10000)
     return () => clearInterval(iv)
@@ -237,6 +220,12 @@ export default function PredictionPage() {
   async function handleSubmit() {
     if (submitGuard.current || isLocked || saving) return
     submitGuard.current = true
+
+    // Pre-calcula el siguiente antes del await para evitar closures stale
+    const nextInTurbo = turboMode
+      ? allMatches.slice(currentIndex + 1).find(canPredictMatch)
+      : null
+
     setSaving(true)
     setError('')
     try {
@@ -250,6 +239,14 @@ export default function PredictionPage() {
       )
       setSaved(true)
       setJustSaved(true)
+
+      if (turboMode) {
+        setTimeout(() => {
+          slideDir.current = 1
+          if (nextInTurbo) navigate(`/predicciones/${nextInTurbo.id}`)
+          else { setTurboComplete(true); setTimeout(() => navigate('/predicciones'), 1800) }
+        }, 700)
+      }
     } catch (err) {
       setError(err.message)
       submitGuard.current = false
@@ -262,8 +259,7 @@ export default function PredictionPage() {
 
   const resultLabel =
     home > away ? `Gana ${match.homeTeam}` :
-    away > home ? `Gana ${match.awayTeam}` :
-    'Empate'
+    away > home ? `Gana ${match.awayTeam}` : 'Empate'
 
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
@@ -274,9 +270,7 @@ export default function PredictionPage() {
             <ChevronLeft size={24} />
           </button>
           <p className="text-[#8A8A9A] text-sm">
-            {new Date(match.matchDate).toLocaleDateString(undefined, {
-              weekday: 'long', day: 'numeric', month: 'long',
-            })}
+            {new Date(match.matchDate).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <div className="flex items-center justify-center gap-4">
@@ -303,8 +297,7 @@ export default function PredictionPage() {
               disabled={!prevMatch}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
             >
-              <ChevronLeft size={15} />
-              Anterior
+              <ChevronLeft size={15} /> Anterior
             </button>
 
             <button
@@ -331,8 +324,7 @@ export default function PredictionPage() {
               disabled={!nextMatch}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
             >
-              Siguiente
-              <ChevronRight size={15} />
+              Siguiente <ChevronRight size={15} />
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -340,9 +332,7 @@ export default function PredictionPage() {
               {currentIndex + 1} / {allMatches.length}
             </span>
             {turboMode && pendingCount > 0 && (
-              <span className="text-[10px] text-[#FF6B35] font-semibold">
-                · {pendingCount} por predecir
-              </span>
+              <span className="text-[10px] text-[#FF6B35] font-semibold">· {pendingCount} por predecir</span>
             )}
           </div>
         </div>
@@ -356,20 +346,14 @@ export default function PredictionPage() {
           variants={{
             enter: (dir) => ({ opacity: 0, x: dir === 0 ? 0 : dir * 60 }),
             center: { opacity: 1, x: 0 },
-            exit: (dir) => ({ opacity: 0, x: dir === 0 ? 0 : dir * -60 }),
+            exit:  (dir) => ({ opacity: 0, x: dir === 0 ? 0 : dir * -60 }),
           }}
-          initial="enter"
-          animate="center"
-          exit="exit"
+          initial="enter" animate="center" exit="exit"
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-1 flex flex-col items-center justify-center gap-8 px-6"
         >
           {turboComplete ? (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-center"
-            >
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
               <p className="text-5xl mb-4">🎉</p>
               <p className="text-white font-bold text-xl">¡Todo listo!</p>
               <p className="text-[#8A8A9A] text-sm mt-1">No quedan partidos por predecir</p>
@@ -426,37 +410,26 @@ export default function PredictionPage() {
                   <span className="text-[#00FF87]">{away}</span> {match.awayTeam}
                 </p>
                 <p className="text-[#8A8A9A] text-sm mt-1">{resultLabel}</p>
-                <p className="text-[#00FF87] text-xs font-semibold mt-1">
-                  Si acertás el marcador exacto → +3 pts
-                </p>
+                <p className="text-[#00FF87] text-xs font-semibold mt-1">Si acertás el marcador exacto → +3 pts</p>
               </div>
 
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               {showTurboCountdown ? (
-                <TurboCountdown
-                  key={matchId}
-                  onComplete={handleSubmit}
-                  onSkip={handleSubmit}
-                  resetKey={matchId}
-                />
+                <TurboCountdown key={matchId} onComplete={handleSubmit} onSkip={handleSubmit} resetKey={matchId} />
               ) : justSaved && turboMode ? (
                 <motion.div
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-2 text-[#00FF87] font-semibold text-sm"
                 >
-                  <Check size={16} />
-                  Guardado · cargando siguiente...
+                  <Check size={16} /> Guardado · cargando siguiente...
                 </motion.div>
               ) : (
                 <button
                   onClick={handleSubmit}
                   disabled={saving || isLocked}
                   className={`w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                    saved
-                      ? 'bg-[#1A1A2E] border border-[#00FF87] text-[#00FF87]'
-                      : 'bg-[#00FF87] text-black'
+                    saved ? 'bg-[#1A1A2E] border border-[#00FF87] text-[#00FF87]' : 'bg-[#00FF87] text-black'
                   } disabled:opacity-50`}
                 >
                   {saved && <Check size={18} />}
@@ -474,9 +447,7 @@ export default function PredictionPage() {
           <>
             <motion.div
               className="fixed inset-0 pointer-events-none z-50 bg-[#FF6B35]"
-              initial={{ opacity: 0.3 }}
-              animate={{ opacity: 0 }}
-              exit={{}}
+              initial={{ opacity: 0.3 }} animate={{ opacity: 0 }} exit={{}}
               transition={{ duration: 0.5 }}
               onAnimationComplete={() => setTurboFlash(false)}
             />
