@@ -3,6 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ChevronLeft, Check } from 'lucide-react'
 import { api } from '../services/api'
 import GoalPicker from '../components/GoalPicker'
+import { getTeam, getFlagUrl } from '../data/teamsData'
+
+function FlagCard({ name, size = 'md' }) {
+  const team = getTeam(name)
+  const flagUrl = getFlagUrl(team.flag)
+  const dims = size === 'lg' ? 'w-20 h-24' : 'w-14 h-16'
+
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <div className={`relative ${dims} rounded-xl overflow-hidden bg-[#2A2A3E]`}>
+        {flagUrl && (
+          <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
+        )}
+      </div>
+      <p className="text-xs font-semibold text-white text-center leading-tight" style={{ maxWidth: 80, wordBreak: 'break-word' }}>{name}</p>
+      {team.player && <p className="text-[10px] text-[#8A8A9A] leading-none">{team.player}</p>}
+    </div>
+  )
+}
 
 function Countdown({ matchDate }) {
   const [diff, setDiff] = useState(0)
@@ -97,9 +116,9 @@ export default function PredictionPage() {
 
         {/* Teams header */}
         <div className="flex items-center justify-center gap-4">
-          <p className="flex-1 text-right text-xl font-bold text-white leading-tight">{match.homeTeam}</p>
-          <span className="text-[#8A8A9A] text-2xl font-light">vs</span>
-          <p className="flex-1 text-left text-xl font-bold text-white leading-tight">{match.awayTeam}</p>
+          <FlagCard name={match.homeTeam} size="lg" />
+          <span className="text-[#8A8A9A] text-2xl font-light mb-6">vs</span>
+          <FlagCard name={match.awayTeam} size="lg" />
         </div>
       </div>
 
@@ -134,18 +153,12 @@ export default function PredictionPage() {
             {/* Goal pickers */}
             <div className="flex items-center gap-6 w-full">
               <div className="flex-1 flex flex-col items-center gap-2">
-                <p className="text-[#8A8A9A] text-xs font-semibold uppercase tracking-wide text-center leading-tight">
-                  {match.homeTeam}
-                </p>
                 <GoalPicker value={home} onChange={setHome} disabled={isLocked} />
               </div>
 
               <span className="text-3xl text-[#2A2A3E] font-light">–</span>
 
               <div className="flex-1 flex flex-col items-center gap-2">
-                <p className="text-[#8A8A9A] text-xs font-semibold uppercase tracking-wide text-center leading-tight">
-                  {match.awayTeam}
-                </p>
                 <GoalPicker value={away} onChange={setAway} disabled={isLocked} />
               </div>
             </div>
