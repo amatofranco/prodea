@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;
@@ -30,6 +32,72 @@ public class AdminController(
         return Ok(new { message = $"{count} partidos cargados", source });
     }
 
+    [HttpGet("backups")]
+    public async Task<IActionResult> ListBackups(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var backups = await db.PredictionBackups
+            .OrderByDescending(b => b.CreatedAt)
+            .Select(b => new { b.Id, b.CreatedAt, b.Count })
+            .ToListAsync();
+
+        return Ok(backups);
+    }
+
+    [HttpPost("backups/{id}/restore")]
+    public async Task<IActionResult> RestoreBackup(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var backup = await db.PredictionBackups.FindAsync(id);
+        if (backup == null) return NotFound(new { message = "Backup no encontrado" });
+
+        var payload = JsonSerializer.Deserialize<BackupPayload>(backup.JsonData, JsonOptions);
+        if (payload?.Predictions == null)
+            return UnprocessableEntity(new { message = "JSON del backup no válido" });
+
+        var existingKeys = await db.Predictions
+            .Select(p => new { p.UserId, p.MatchId })
+            .ToListAsync();
+        var existing = existingKeys.ToHashSet();
+
+        var toRestore = payload.Predictions
+            .Where(p => !existing.Contains(new { p.UserId, p.MatchId }))
+            .Select(p => new Prediction
+            {
+                UserId             = p.UserId,
+                MatchId            = p.MatchId,
+                PredictedHomeScore = p.PredictedHomeScore,
+                PredictedAwayScore = p.PredictedAwayScore,
+                PointsEarned       = p.PointsEarned,
+                CreatedAt          = p.CreatedAt,
+                UpdatedAt          = p.UpdatedAt,
+            })
+            .ToList();
+
+        if (toRestore.Count > 0)
+        {
+            db.Predictions.AddRange(toRestore);
+            await db.SaveChangesAsync();
+        }
+
+        return Ok(new
+        {
+            message  = $"{toRestore.Count} predicciones restauradas",
+            restored = toRestore.Count,
+            skipped  = payload.Predictions.Count - toRestore.Count,
+            backupDate = backup.CreatedAt,
+        });
+    }
+
     [HttpGet("polling-status")]
     public async Task<IActionResult> GetPollingStatus()
     {
@@ -55,4 +123,18 @@ public class AdminController(
             isStale,
         });
     }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private record BackupPrediction(
+        int UserId, int MatchId,
+        int PredictedHomeScore, int PredictedAwayScore,
+        int PointsEarned, DateTime CreatedAt, DateTime UpdatedAt);
+
+    private record BackupPayload(
+        DateTime GeneratedAt, int Count,
+        List<BackupPrediction> Predictions);
 }

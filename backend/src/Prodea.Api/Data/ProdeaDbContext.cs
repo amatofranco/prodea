@@ -13,6 +13,7 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
     public DbSet<MatchdayBadge> MatchdayBadges => Set<MatchdayBadge>();
     public DbSet<AccumulativeBadge> AccumulativeBadges => Set<AccumulativeBadge>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<PredictionBackup> PredictionBackups => Set<PredictionBackup>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -95,6 +96,11 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
                 .WithMany(t => t.MatchdayBadges)
                 .HasForeignKey(mb => mb.TournamentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PredictionBackup>(e =>
+        {
+            e.Property(b => b.JsonData).HasColumnType("text");
         });
 
         modelBuilder.Entity<AccumulativeBadge>(e =>

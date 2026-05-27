@@ -71,7 +71,8 @@ export default function PredictionPage() {
     })
   }, [matchId])
 
-  const isLocked = match?.status !== 'Scheduled'
+  const teamsConfirmed = match?.homeTeam !== 'TBD' && match?.awayTeam !== 'TBD'
+  const isLocked = match?.status !== 'Scheduled' || !teamsConfirmed
 
   async function handleSubmit() {
     if (isLocked || saving) return
@@ -128,8 +129,14 @@ export default function PredictionPage() {
       <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6">
         {isLocked ? (
           <div className="text-center">
-            <p className="text-[#FF6B35] font-semibold text-lg">Predicciones cerradas</p>
-            <p className="text-[#8A8A9A] text-sm mt-1">El partido ya empezó o terminó</p>
+            <p className="text-[#FF6B35] font-semibold text-lg">
+              {!teamsConfirmed ? 'Equipos por confirmar' : 'Predicciones cerradas'}
+            </p>
+            <p className="text-[#8A8A9A] text-sm mt-1">
+              {!teamsConfirmed
+                ? 'Podrás predecir cuando se definan los cruces'
+                : 'El partido ya empezó o terminó'}
+            </p>
             {match.userPrediction && (
               <div className="mt-4 p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E]">
                 <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-1">Tu predicción</p>

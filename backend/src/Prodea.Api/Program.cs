@@ -128,6 +128,12 @@ using (var scope = app.Services.CreateScope())
         await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "HomeTeamLabel" varchar(200);
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "AwayTeamLabel" varchar(200);
+            CREATE TABLE IF NOT EXISTS "PredictionBackups" (
+                "Id"        serial PRIMARY KEY,
+                "CreatedAt" timestamptz NOT NULL,
+                "Count"     int         NOT NULL,
+                "JsonData"  text        NOT NULL
+            );
             """);
     }
     catch { /* columnas ya existen o la tabla aún no existe — EnsureCreated se encarga */ }

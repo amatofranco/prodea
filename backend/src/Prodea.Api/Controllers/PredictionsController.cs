@@ -43,6 +43,8 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
 
         var match = await db.Matches.FindAsync(matchId);
         if (match == null) return NotFound(new { message = "Partido no encontrado" });
+        if (match.HomeTeam == "TBD" || match.AwayTeam == "TBD")
+            return BadRequest(new { message = "Los equipos de este partido aún no están confirmados" });
         if (match.Status != MatchStatus.Scheduled)
             return BadRequest(new { message = "Las predicciones están cerradas para este partido" });
 

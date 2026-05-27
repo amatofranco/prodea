@@ -60,7 +60,8 @@ function TeamFlag({ name, label }) {
 function MatchCard({ match, navigate }) {
   const isLive = match.status === 'InProgress'
   const isFinished = match.status === 'Finished'
-  const canPredict = match.status === 'Scheduled'
+  const teamsConfirmed = match.homeTeam !== 'TBD' && match.awayTeam !== 'TBD'
+  const canPredict = match.status === 'Scheduled' && teamsConfirmed
   const pred = match.userPrediction
 
   return (
@@ -120,6 +121,10 @@ function MatchCard({ match, navigate }) {
       ) : canPredict ? (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex justify-center">
           <span className="text-xs text-[#FF6B35] font-semibold">Tocar para predecir →</span>
+        </div>
+      ) : !teamsConfirmed ? (
+        <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex justify-center">
+          <span className="text-xs text-[#8A8A9A]">Equipos por confirmar</span>
         </div>
       ) : null}
     </div>
