@@ -1,24 +1,122 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Users, Zap } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { useTournamentStore } from '../store/tournamentStore'
-import { BadgePill } from '../components/BadgePill'
+import { getTeam, getFlagUrl } from '../data/teamsData'
+
+const LIVE_POLL_MS = 60_000
+
+function TeamMini({ name, label }) {
+  const { flag } = getTeam(name)
+  const flagUrl = getFlagUrl(flag)
+  const display = label ?? name
+  return (
+    <div className="flex flex-col items-center gap-1 min-w-0">
+      <div className="w-9 h-10 rounded-md overflow-hidden bg-[#2A2A3E] flex-shrink-0">
+        {flagUrl && <img src={flagUrl} alt={display} className="w-full h-full object-cover opacity-85" />}
+      </div>
+      <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 56, wordBreak: 'break-word' }}>
+        {display}
+      </p>
+    </div>
+  )
+}
+
+function LiveCard({ match }) {
+  return (
+    <div className="p-4 rounded-2xl bg-[#FF6B35]/10 border border-[#FF6B35]/40 flex items-center gap-4">
+      <TeamMini name={match.homeTeam} label={match.homeTeamLabel} />
+
+      <div className="flex-1 flex flex-col items-center gap-1">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
+          <span className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
+        </div>
+        <span className="text-3xl font-black text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+          {match.homeScore ?? 0} – {match.awayScore ?? 0}
+        </span>
+        {match.userPrediction && (
+          <span className="text-[10px] text-[#8A8A9A]">
+            Tu pred: {match.userPrediction.predictedHomeScore}–{match.userPrediction.predictedAwayScore}
+          </span>
+        )}
+      </div>
+
+      <TeamMini name={match.awayTeam} label={match.awayTeamLabel} />
+    </div>
+  )
+}
+
+function UpcomingCard({ match, navigate }) {
+  const hasPred = !!match.userPrediction
+  const matchDate = new Date(match.matchDate)
+  const now = new Date()
+  const isToday = matchDate.toDateString() === now.toDateString()
+  const isTomorrow = matchDate.toDateString() === new Date(now.getTime() + 86400000).toDateString()
+  const dayLabel = isToday ? 'Hoy' : isTomorrow ? 'Mañana' : matchDate.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+  const timeLabel = matchDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
+  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+
+  return (
+    <button
+      onClick={() => navigate(`/predicciones/${match.id}`)}
+      className="w-full text-left p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] active:border-[#00FF87] transition-colors flex items-center gap-3"
+    >
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <TeamMini name={match.homeTeam} label={match.homeTeamLabel} />
+        <div className="flex flex-col items-center flex-1 min-w-0 gap-0.5">
+          <span className="text-[10px] text-[#8A8A9A]">{dayLabel} · {timeLabel}</span>
+          <span className="text-xs font-semibold text-white text-center leading-tight">
+            {homeDisplay} <span className="text-[#3A3A4E]">vs</span> {awayDisplay}
+          </span>
+        </div>
+        <TeamMini name={match.awayTeam} label={match.awayTeamLabel} />
+      </div>
+      <div className="flex-shrink-0 ml-1">
+        {hasPred ? (
+          <span className="text-[10px] font-bold text-[#00FF87] bg-[#00FF87]/10 px-2 py-1 rounded-full">
+            {match.userPrediction.predictedHomeScore}–{match.userPrediction.predictedAwayScore}
+          </span>
+        ) : (
+          <span className="text-[10px] font-bold text-[#FF6B35]">Predecir →</span>
+        )}
+      </div>
+    </button>
+  )
+}
 
 export default function HomePage() {
   const user = useAuthStore((s) => s.user)
   const { tournaments, setTournaments } = useTournamentStore()
   const [loading, setLoading] = useState(true)
+  const [matches, setMatches] = useState([])
   const [showJoin, setShowJoin] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [createName, setCreateName] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const pollRef = useRef(null)
 
   useEffect(() => {
     api.getTournaments().then(setTournaments).finally(() => setLoading(false))
+    api.getMyPredictions().then(setMatches)
+  }, [])
+
+  // Polling cada 60s mientras haya partidos en curso
+  useEffect(() => {
+    function scheduleNext() {
+      pollRef.current = setTimeout(async () => {
+        const updated = await api.getMyPredictions().catch(() => null)
+        if (updated) setMatches(updated)
+        scheduleNext()
+      }, LIVE_POLL_MS)
+    }
+    scheduleNext()
+    return () => clearTimeout(pollRef.current)
   }, [])
 
   async function handleCreate(e) {
@@ -45,6 +143,12 @@ export default function HomePage() {
     } catch (err) { setError(err.message) }
   }
 
+  const liveMatches = matches.filter((m) => m.status === 'InProgress')
+  const upcomingMatches = matches
+    .filter((m) => m.status === 'Scheduled' && m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD')
+    .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))
+    .slice(0, 3)
+
   const avatar = user?.username?.[0]?.toUpperCase() || '?'
 
   return (
@@ -61,6 +165,29 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Partidos en curso */}
+      {liveMatches.length > 0 && (
+        <div className="px-5 mb-5">
+          <h3 className="text-[#FF6B35] text-xs uppercase tracking-widest mb-2 font-semibold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
+            En curso
+          </h3>
+          <div className="flex flex-col gap-2">
+            {liveMatches.map((m) => <LiveCard key={m.id} match={m} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Próximos partidos (solo si no hay en curso) */}
+      {liveMatches.length === 0 && upcomingMatches.length > 0 && (
+        <div className="px-5 mb-5">
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Próximos partidos</h3>
+          <div className="flex flex-col gap-2">
+            {upcomingMatches.map((m) => <UpcomingCard key={m.id} match={m} navigate={navigate} />)}
+          </div>
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="px-5 flex gap-3 mb-6">
