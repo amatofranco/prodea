@@ -54,7 +54,7 @@ export default function GoalPicker({ value, onChange, disabled }) {
       </button>
 
       <div
-        className="w-20 h-20 relative flex items-center justify-center overflow-hidden cursor-ns-resize"
+        className="w-24 h-24 relative flex items-center justify-center overflow-hidden cursor-ns-resize"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={() => { touchStartY.current = null }}

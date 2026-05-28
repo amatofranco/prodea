@@ -34,7 +34,7 @@ function FlagCard({ name }) {
   const flagUrl = getFlagUrl(flag)
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-[#2A2A3E]">
+      <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-[#2A2A3E]">
         {flagUrl && (
           <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
         )}
@@ -44,7 +44,7 @@ function FlagCard({ name }) {
   )
 }
 
-function MatchCountdown({ matchDate }) {
+function MatchCountdown({ matchDate, small = false }) {
   const [diff, setDiff] = useState(0)
   useEffect(() => {
     function tick() { setDiff(Math.max(0, new Date(matchDate) - Date.now())) }
@@ -54,7 +54,7 @@ function MatchCountdown({ matchDate }) {
   }, [matchDate])
 
   if (diff <= PREDICTION_CLOSE_BEFORE_MS)
-    return <span className="text-red-400 font-semibold text-sm">Predicciones cerradas</span>
+    return <span className={`text-red-400 font-semibold ${small ? 'text-[10px]' : 'text-sm'}`}>Cerradas</span>
 
   const remaining = diff - PREDICTION_CLOSE_BEFORE_MS
   const h = Math.floor(remaining / 3600000)
@@ -63,7 +63,7 @@ function MatchCountdown({ matchDate }) {
   const isUrgent = remaining < 30 * 60 * 1000
 
   return (
-    <span className={`font-mono font-bold text-sm ${isUrgent ? 'text-[#FF6B35]' : 'text-[#00FF87]'}`}>
+    <span className={`font-mono font-bold ${small ? 'text-[10px]' : 'text-sm'} ${isUrgent ? 'text-[#FF6B35]' : 'text-[#00FF87]'}`}>
       {h > 0 ? `${h}h ` : ''}{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
     </span>
   )
@@ -344,6 +344,13 @@ export default function PredictionPage() {
               {' '}
               {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
             </span>
+            {!isLocked && match.status === 'Scheduled' && (
+              <>
+                <span className="text-[10px] text-[#3A3A4E]">·</span>
+                <span className="text-[10px] text-[#8A8A9A]">Cierra en</span>
+                <MatchCountdown matchDate={match.matchDate} small />
+              </>
+            )}
             {turboMode && pendingCount > 0 && (
               <span className="text-[10px] text-[#FF6B35] font-semibold">· {pendingCount} por predecir</span>
             )}
@@ -399,11 +406,6 @@ export default function PredictionPage() {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-1.5">
-                <p className="text-[#8A8A9A] text-xs uppercase tracking-wider">Cierra en</p>
-                <MatchCountdown matchDate={match.matchDate} />
-              </div>
-
               <div className="flex items-center gap-4 w-full">
                 <div className="flex-1 flex flex-col items-center gap-2">
                   <FlagCard name={match.homeTeam} />
