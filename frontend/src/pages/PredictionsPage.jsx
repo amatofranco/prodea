@@ -189,7 +189,13 @@ export default function PredictionsPage() {
   const allTabs = [...new Set(matches.map(getTabKey))].sort(
     (a, b) => PHASE_ORDER.indexOf(a) - PHASE_ORDER.indexOf(b)
   )
-  const visible = matches.filter((m) => getTabKey(m) === selectedTab)
+  const visible = matches
+    .filter((m) => getTabKey(m) === selectedTab)
+    .sort((a, b) => {
+      if (a.status === 'InProgress' && b.status !== 'InProgress') return -1
+      if (b.status === 'InProgress' && a.status !== 'InProgress') return 1
+      return 0
+    })
   const currentPhase = visible[0]?.phase
 
   const predCount = visible.filter((m) => m.userPrediction !== null).length
