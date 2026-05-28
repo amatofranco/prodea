@@ -131,7 +131,8 @@ public class FootballDataService(
             var activeExternalIds = result.Matches.Select(m => m.Id).ToHashSet();
             foreach (var match in inProgressMatches)
             {
-                if (match.ExternalId.HasValue && !activeExternalIds.Contains(match.ExternalId.Value))
+                if (match.ExternalId.HasValue && !activeExternalIds.Contains(match.ExternalId.Value)
+                    && match.MatchDate <= DateTime.UtcNow.AddHours(2))
                 {
                     await FinalizeMatchAsync(db, match, ct);
                 }
