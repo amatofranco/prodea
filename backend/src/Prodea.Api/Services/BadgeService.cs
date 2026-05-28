@@ -84,20 +84,16 @@ public class BadgeService(ProdeaDbContext db)
             var stats = playerStats.TryGetValue(userId, out var s) ? s : (TotalPoints: 0, ExactCount: 0, HasAnyPrediction: false, AnyWinnerCorrect: false);
             MatchdayBadgeType badge;
 
-            if (!stats.HasAnyPrediction)
-                badge = MatchdayBadgeType.Dormido;
-            else if (stats.TotalPoints == maxPoints && participants.Count > 1)
-                badge = MatchdayBadgeType.Crack;
-            else if (stats.TotalPoints == minPoints && participants.Count > 1)
-                badge = MatchdayBadgeType.Mufa;
-            else if (stats.ExactCount >= 2)
-                badge = MatchdayBadgeType.Adivino;
-            else if (stats.ExactCount >= 1)
-                badge = MatchdayBadgeType.Francotirador;
-            else if (!stats.AnyWinnerCorrect)
-                badge = MatchdayBadgeType.Payaso;
-            else
-                badge = MatchdayBadgeType.Payaso;
+            badge = stats switch
+            {
+                { HasAnyPrediction: false }                                                        => MatchdayBadgeType.Dormido,
+                { TotalPoints: var p } when p == maxPoints && maxPoints > 0 && participants.Count > 1 => MatchdayBadgeType.Crack,
+                { TotalPoints: 0 }                                                                 => MatchdayBadgeType.Payaso,
+                { TotalPoints: var p } when p == minPoints && participants.Count > 1               => MatchdayBadgeType.Mufa,
+                { ExactCount: >= 2 }                                                               => MatchdayBadgeType.Adivino,
+                { ExactCount: >= 1 }                                                               => MatchdayBadgeType.Francotirador,
+                _                                                                                  => MatchdayBadgeType.Payaso,
+            };
 
             var existing = await db.MatchdayBadges
                 .FirstOrDefaultAsync(mb => mb.UserId == userId && mb.TournamentId == tournamentId && mb.Date == date);

@@ -42,7 +42,7 @@ export default function FigurineCard({ badge, username, tournamentName }) {
       } else {
         const a = document.createElement('a')
         a.href = url
-        a.download = `prodea-${username}-jornada${badge.matchday}.png`
+        a.download = `prodea-${username}-${badge.date ?? 'jornada'}.png`
         a.click()
       }
     } catch {
@@ -61,7 +61,7 @@ export default function FigurineCard({ badge, username, tournamentName }) {
           {/* Header */}
           <div className="w-full flex justify-between items-start text-[10px] text-white/50 uppercase tracking-wider">
             <span>{tournamentName}</span>
-            <span>Jornada {badge.matchday}</span>
+            <span>{badge.date ? new Date(badge.date + 'T12:00:00Z').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : ''}</span>
           </div>
 
           {/* Emoji giant */}
