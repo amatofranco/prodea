@@ -33,7 +33,8 @@ public record MatchWithPredictionDto(
     int? HomeScore,
     int? AwayScore,
     string Status,
-    PredictionDto? UserPrediction
+    PredictionDto? UserPrediction,
+    int? Minute
 );
 
 public record PredictionDto(

@@ -33,7 +33,8 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
                 m.HomeTeamFlag, m.AwayTeamFlag,
                 m.MatchDate, m.Phase.ToString(), m.Matchday, m.HomeScore, m.AwayScore,
                 m.Status.ToString(),
-                pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned)
+                pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned),
+                m.Minute
             );
         }));
     }

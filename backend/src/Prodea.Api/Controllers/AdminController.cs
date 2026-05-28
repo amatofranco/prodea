@@ -114,6 +114,7 @@ public class AdminController(
         match.Status     = request.Status;
         match.HomeScore  = request.HomeScore;
         match.AwayScore  = request.AwayScore;
+        match.Minute     = request.Minute;
 
         await db.SaveChangesAsync();
 
@@ -160,7 +161,7 @@ public class AdminController(
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore);
+    public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore, int? Minute = null);
 
     private record BackupPrediction(
         int UserId, int MatchId,

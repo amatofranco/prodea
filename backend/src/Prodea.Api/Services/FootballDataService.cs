@@ -115,6 +115,12 @@ public class FootballDataService(
                     changed = true;
                 }
 
+                if (apiMatch.Minute != null && match.Minute != apiMatch.Minute)
+                {
+                    match.Minute = apiMatch.Minute;
+                    changed = true;
+                }
+
                 if (changed)
                 {
                     await db.SaveChangesAsync(ct);
@@ -189,7 +195,7 @@ public class FootballDataService(
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private record FootballDataMatchesResponse([property: JsonPropertyName("matches")] List<FootballDataMatch> Matches);
-    private record FootballDataMatch(int Id, FootballDataScore? Score);
+    private record FootballDataMatch(int Id, int? Minute, FootballDataScore? Score);
     private record FootballDataScore([property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime);
     private record FootballDataFullTime(int? Home, int? Away);
 }

@@ -41,6 +41,9 @@ function LiveCard({ match }) {
       <div className="flex items-center justify-center gap-1.5 mb-3">
         <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
         <span className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
+        {match.minute != null && (
+          <span className="text-[10px] font-bold text-[#FF6B35]">· {match.minute}'</span>
+        )}
       </div>
 
       {/* Scoreboard */}

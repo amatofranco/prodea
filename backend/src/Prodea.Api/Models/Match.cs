@@ -34,6 +34,7 @@ public class Match
     public int? AwayScore { get; set; }
     public MatchStatus Status { get; set; } = MatchStatus.Scheduled;
     public int? ExternalId { get; set; }
+    public int? Minute { get; set; }
 
     public ICollection<Prediction> Predictions { get; set; } = [];
 }
