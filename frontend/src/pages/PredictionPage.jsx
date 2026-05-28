@@ -275,11 +275,11 @@ export default function PredictionPage() {
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
       <div className="px-4 pt-12 pb-3 bg-[#1A1A2E]">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-[#8A8A9A] flex-shrink-0">
+        <div className="relative flex items-center justify-center">
+          <button onClick={() => navigate(-1)} className="absolute left-0 text-[#8A8A9A]">
             <ChevronLeft size={24} />
           </button>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2 px-10 w-full min-w-0">
             <p className="flex-1 text-right text-base font-bold text-white leading-tight">
               {match.homeTeam === 'TBD' && !match.homeTeamLabel
                 ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
