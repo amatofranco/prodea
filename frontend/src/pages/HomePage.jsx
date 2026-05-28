@@ -78,8 +78,8 @@ function LiveCard({ match, compact = false }) {
           const hasPts = pts != null
           return (
             <div className="pt-2 border-t border-[#FF6B35]/20 flex items-center justify-between">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
                 <span className="text-xs font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
               </div>
               {hasPts && (
@@ -124,8 +124,8 @@ function LiveCard({ match, compact = false }) {
         const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
         return (
           <div className="mt-3 pt-3 border-t border-[#FF6B35]/20 flex items-center justify-between">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
               <span className="text-sm font-bold text-white">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
             </div>
             {pts != null && (
