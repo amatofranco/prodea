@@ -140,12 +140,47 @@ function LiveCard({ match, compact = false }) {
   )
 }
 
-function FinishedCard({ match }) {
+function FinishedCard({ match, compact = false }) {
   const pred = match.userPrediction
   const home = match.homeScore ?? 0
   const away = match.awayScore ?? 0
   const homeDisplay = match.homeTeamLabel ?? match.homeTeam
   const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+
+  if (compact) {
+    return (
+      <div className="p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+            <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{homeDisplay}</p>
+          </div>
+          <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+            <span className="text-2xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+              {home}–{away}
+            </span>
+            <span className="text-[8px] uppercase tracking-wider text-[#3A3A4E] font-semibold">Final</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
+            <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{awayDisplay}</p>
+          </div>
+        </div>
+
+        {pred && (
+          <div className="pt-2 border-t border-[#2A2A3E] flex items-baseline justify-between">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
+              <span className="text-xs font-bold text-[#8A8A9A]">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
+            </div>
+            <span className={`text-xs font-black ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
+              +{pred.pointsEarned} pts
+            </span>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E]">
@@ -280,9 +315,10 @@ export default function HomePage() {
 
   const today = new Date().toDateString()
   const liveMatches = matches.filter((m) => m.status === 'InProgress')
-  const todayFinished = matches.filter(
-    (m) => m.status === 'Finished' && new Date(m.matchDate).toDateString() === today
-  )
+  const recentFinished = matches
+    .filter((m) => m.status === 'Finished')
+    .sort((a, b) => new Date(b.matchDate) - new Date(a.matchDate))
+    .slice(0, 3)
   const tomorrow = new Date(new Date().getTime() + 86400000).toDateString()
   const allUpcoming = matches
     .filter((m) => m.status === 'Scheduled' && m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD')
@@ -344,13 +380,18 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Partidos terminados hoy */}
-      {todayFinished.length > 0 && (
+      {/* Últimos 3 finalizados */}
+      {recentFinished.length > 0 && (
         <div className="px-5 mt-5 mb-5">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Resultados de hoy</h3>
-          <div className="flex flex-col gap-2">
-            {todayFinished.map((m) => <FinishedCard key={m.id} match={m} />)}
-          </div>
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
+          {recentFinished.length === 1
+            ? <FinishedCard match={recentFinished[0]} />
+            : (
+              <div className={`grid gap-2 ${recentFinished.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                {recentFinished.map((m) => <FinishedCard key={m.id} match={m} compact />)}
+              </div>
+            )
+          }
         </div>
       )}
 
