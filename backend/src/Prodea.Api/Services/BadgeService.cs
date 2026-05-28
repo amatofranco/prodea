@@ -37,10 +37,11 @@ public class BadgeService(ProdeaDbContext db)
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
     public static string GetAccumulativeEmoji(AccumulativeBadgeType type) => AccumulativeEmojis[type];
 
-    public static string GetRandomPhrase(MatchdayBadgeType type)
+    public static string GetPhrase(MatchdayBadgeType type, int userId, DateOnly date)
     {
         var options = Phrases[type];
-        return options[Random.Shared.Next(options.Length)];
+        var seed = HashCode.Combine(userId, date.DayNumber);
+        return options[new Random(seed).Next(options.Length)];
     }
 
     public async Task AssignDailyBadgesAsync(int tournamentId, DateOnly date)

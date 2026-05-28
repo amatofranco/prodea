@@ -60,7 +60,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
                 BadgeService.GetEmoji(mb.BadgeType),
                 mb.BadgeType.ToString(),
                 mb.PointsInMatchday,
-                BadgeService.GetRandomPhrase(mb.BadgeType),
+                BadgeService.GetPhrase(mb.BadgeType, mb.UserId, mb.Date),
                 mb.AwardedAt
             )).ToList(),
             accumulativeBadges.Select(ab => new AccumulativeBadgeDto(
