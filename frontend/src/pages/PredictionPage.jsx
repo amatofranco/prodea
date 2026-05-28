@@ -295,48 +295,49 @@ export default function PredictionPage() {
         </div>
       </div>
 
-      {/* Barra de navegación */}
+      {/* Barra de navegación — botones sobre la línea divisoria */}
       {allMatches.length > 0 && (
-        <div className="flex flex-col items-center gap-2 px-4 py-3 bg-[#0D0D0D] border-b border-[#1A1A2E]">
-          {/* Botones centrados */}
-          <div className="flex items-center justify-center gap-3 w-full">
-            <button
-              onClick={() => prevMatch && navTo(prevMatch.id, -1)}
-              disabled={!prevMatch}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
-            >
-              <ChevronLeft size={15} /> Anterior
-            </button>
+        <div className="flex items-center justify-center gap-3 px-4 py-4 bg-[#0D0D0D] border-b border-[#1A1A2E]">
+          <button
+            onClick={() => prevMatch && navTo(prevMatch.id, -1)}
+            disabled={!prevMatch}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
+          >
+            <ChevronLeft size={15} /> Anterior
+          </button>
 
-            <button
-              onClick={() => setTurboMode((v) => !v)}
-              className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                turboMode
-                  ? 'bg-[#FF6B35] text-white shadow-[0_0_12px_rgba(255,107,53,0.6)]'
-                  : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
-              }`}
-            >
-              {turboMode && (
-                <motion.span
-                  className="absolute inset-0 rounded-full border border-[#FF6B35]"
-                  animate={{ scale: [1, 1.4], opacity: [0.6, 0] }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'easeOut' }}
-                />
-              )}
-              <Zap size={13} className={turboMode ? 'fill-white' : ''} />
-              {turboMode ? 'Turbo ON' : 'Modo Turbo'}
-            </button>
+          <button
+            onClick={() => setTurboMode((v) => !v)}
+            className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all active:scale-95 ${
+              turboMode
+                ? 'bg-[#FF6B35] text-white shadow-[0_0_12px_rgba(255,107,53,0.6)]'
+                : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
+            }`}
+          >
+            {turboMode && (
+              <motion.span
+                className="absolute inset-0 rounded-full border border-[#FF6B35]"
+                animate={{ scale: [1, 1.4], opacity: [0.6, 0] }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'easeOut' }}
+              />
+            )}
+            <Zap size={13} className={turboMode ? 'fill-white' : ''} />
+            {turboMode ? 'Turbo ON' : 'Modo Turbo'}
+          </button>
 
-            <button
-              onClick={() => nextMatch && navTo(nextMatch.id, 1)}
-              disabled={!nextMatch}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
-            >
-              Siguiente <ChevronRight size={15} />
-            </button>
-          </div>
+          <button
+            onClick={() => nextMatch && navTo(nextMatch.id, 1)}
+            disabled={!nextMatch}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
+          >
+            Siguiente <ChevronRight size={15} />
+          </button>
+        </div>
+      )}
 
-          {/* Info del partido — centrada debajo de los botones */}
+      {/* Info del partido — debajo de la línea, con espacio propio */}
+      {allMatches.length > 0 && (
+        <div className="py-4 px-4 bg-[#0D0D0D]">
           <p className="text-xs text-center text-white font-semibold">
             {new Date(match.matchDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
             {' '}
