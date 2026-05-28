@@ -44,7 +44,7 @@ function FlagCard({ name }) {
   )
 }
 
-function MatchCountdown({ matchDate, small = false }) {
+function MatchCountdown({ matchDate, className = 'text-sm' }) {
   const [diff, setDiff] = useState(0)
   useEffect(() => {
     function tick() { setDiff(Math.max(0, new Date(matchDate) - Date.now())) }
@@ -54,7 +54,7 @@ function MatchCountdown({ matchDate, small = false }) {
   }, [matchDate])
 
   if (diff <= PREDICTION_CLOSE_BEFORE_MS)
-    return <span className={`text-red-400 font-semibold ${small ? 'text-[10px]' : 'text-sm'}`}>Cerradas</span>
+    return <span className={`text-red-400 font-semibold ${className}`}>Cerradas</span>
 
   const remaining = diff - PREDICTION_CLOSE_BEFORE_MS
   const h = Math.floor(remaining / 3600000)
@@ -63,7 +63,7 @@ function MatchCountdown({ matchDate, small = false }) {
   const isUrgent = remaining < 30 * 60 * 1000
 
   return (
-    <span className={`font-mono font-bold ${small ? 'text-[10px]' : 'text-sm'} ${isUrgent ? 'text-[#FF6B35]' : 'text-[#00FF87]'}`}>
+    <span className={`font-mono font-bold ${className} ${isUrgent ? 'text-[#FF6B35]' : 'text-[#00FF87]'}`}>
       {h > 0 ? `${h}h ` : ''}{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
     </span>
   )
@@ -297,7 +297,8 @@ export default function PredictionPage() {
 
       {/* Barra de navegación */}
       {allMatches.length > 0 && (
-        <div className="flex flex-col items-center gap-1.5 px-4 py-3 bg-[#0D0D0D] border-b border-[#1A1A2E]">
+        <div className="flex flex-col items-center gap-2 px-4 py-3 bg-[#0D0D0D] border-b border-[#1A1A2E]">
+          {/* Botones centrados */}
           <div className="flex items-center justify-center gap-3 w-full">
             <button
               onClick={() => prevMatch && navTo(prevMatch.id, -1)}
@@ -334,25 +335,27 @@ export default function PredictionPage() {
               Siguiente <ChevronRight size={15} />
             </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-[#3A3A4E] font-semibold tabular-nums">
+
+          {/* Info del partido debajo de la línea */}
+          <div className="flex items-center gap-2 pt-1 border-t border-[#1A1A2E] w-full justify-center">
+            <span className="text-xs text-[#8A8A9A] font-semibold tabular-nums">
               {currentIndex + 1} / {allMatches.length}
             </span>
-            <span className="text-[10px] text-[#3A3A4E]">·</span>
-            <span className="text-[10px] text-[#3A3A4E]">
+            <span className="text-xs text-[#3A3A4E]">·</span>
+            <span className="text-xs text-white font-semibold">
               {new Date(match.matchDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
               {' '}
               {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
             </span>
             {!isLocked && match.status === 'Scheduled' && (
               <>
-                <span className="text-[10px] text-[#3A3A4E]">·</span>
-                <span className="text-[10px] text-[#8A8A9A]">Cierra en</span>
-                <MatchCountdown matchDate={match.matchDate} small />
+                <span className="text-xs text-[#3A3A4E]">·</span>
+                <span className="text-xs text-[#8A8A9A]">Cierra en</span>
+                <MatchCountdown matchDate={match.matchDate} className="text-xs" />
               </>
             )}
             {turboMode && pendingCount > 0 && (
-              <span className="text-[10px] text-[#FF6B35] font-semibold">· {pendingCount} por predecir</span>
+              <span className="text-xs text-[#FF6B35] font-semibold">· {pendingCount} por predecir</span>
             )}
           </div>
         </div>
