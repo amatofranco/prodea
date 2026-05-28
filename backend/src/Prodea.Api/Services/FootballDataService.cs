@@ -131,10 +131,26 @@ public class FootballDataService(
             var activeExternalIds = result.Matches.Select(m => m.Id).ToHashSet();
             foreach (var match in inProgressMatches)
             {
-                if (match.ExternalId.HasValue && !activeExternalIds.Contains(match.ExternalId.Value)
-                    && match.MatchDate <= DateTime.UtcNow.AddHours(2))
+                if (!match.ExternalId.HasValue || activeExternalIds.Contains(match.ExternalId.Value))
+                    continue;
+
+                // No está en IN_PLAY — consultamos su estado real antes de finalizar.
+                // Puede estar en PAUSED (entretiempo) o aún en alargue; solo finalizamos si la API confirma FINISHED.
+                try
                 {
-                    await FinalizeMatchAsync(db, match, ct);
+                    var matchResp = await client.GetAsync($"/v4/matches/{match.ExternalId.Value}", ct);
+                    if (!matchResp.IsSuccessStatusCode) continue;
+
+                    var matchJson = await matchResp.Content.ReadAsStringAsync(ct);
+                    var matchData = JsonSerializer.Deserialize<FootballDataSingleMatch>(matchJson, JsonOptions);
+
+                    if (matchData?.Status is "FINISHED" or "AWARDED")
+                        await FinalizeMatchAsync(db, match, ct);
+                    // PAUSED, SCHEDULED, etc. → dejamos en InProgress
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error verificando estado del partido {ExternalId}", match.ExternalId);
                 }
             }
         }
@@ -199,4 +215,5 @@ public class FootballDataService(
     private record FootballDataMatch(int Id, int? Minute, FootballDataScore? Score);
     private record FootballDataScore([property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime);
     private record FootballDataFullTime(int? Home, int? Away);
+    private record FootballDataSingleMatch(string Status);
 }
