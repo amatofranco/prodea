@@ -6,6 +6,11 @@ import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
 import FigurineCard from '../components/FigurineCard'
 
+function jornadaLabel(phase, matchday) {
+  if (phase === 'Group') return `Fecha ${matchday}`
+  return { R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', ThirdPlace: '3er Puesto', Final: 'Final' }[phase] ?? phase
+}
+
 const ACCUMULATIVE_LABELS = {
   EnCaidaLibre: 'En caída libre',
   RachaInfernal: 'Racha infernal',
@@ -91,20 +96,16 @@ export default function ProfilePage() {
             <p className="text-[#8A8A9A] text-sm">Todavía no hay jornadas terminadas</p>
           </div>
         ) : (
-          profile.matchdayBadges.map((b) => {
-            const dateLabel = b.date
-              ? new Date(b.date + 'T12:00:00Z').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
-              : '—'
-            return (
+          profile.matchdayBadges.map((b) => (
             <div
-              key={b.date}
+              key={`${b.phase}-${b.matchday}`}
               className="p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-3"
             >
               <span className="text-3xl leading-none">{EMOJIS[b.badgeType] || '❓'}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <BadgePill type={b.badgeType} />
-                  <span className="text-[#8A8A9A] text-xs">{dateLabel}</span>
+                  <span className="text-[#8A8A9A] text-xs">{jornadaLabel(b.phase, b.matchday)}</span>
                 </div>
                 <p className="text-white/60 text-xs italic mt-1 line-clamp-2">"{b.randomPhrase}"</p>
               </div>
@@ -115,14 +116,13 @@ export default function ProfilePage() {
                 <p className="text-[10px] text-[#8A8A9A]">pts</p>
               </div>
               <button
-                onClick={() => setSelectedBadge(selectedBadge?.date === b.date ? null : b)}
+                onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
                 className="shrink-0 px-2 py-1 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
               >
                 Card
               </button>
             </div>
-            )
-          })
+          ))
         )}
       </div>
 

@@ -185,9 +185,8 @@ public class FootballDataService(
             .Distinct()
             .ToListAsync(ct);
 
-        var matchDate = DateOnly.FromDateTime(match.MatchDate);
         foreach (var tid in tournamentIds)
-            await badgeService.AssignDailyBadgesAsync(tid, matchDate);
+            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
     }
 
     private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, CancellationToken ct)

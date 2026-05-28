@@ -1,7 +1,8 @@
 namespace Prodea.Api.DTOs;
 
 public record MatchdayBadgeDto(
-    DateOnly Date,
+    string Phase,
+    int Matchday,
     string BadgeType,
     string BadgeEmoji,
     string BadgeName,

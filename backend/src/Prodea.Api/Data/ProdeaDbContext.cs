@@ -86,7 +86,7 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
 
         modelBuilder.Entity<MatchdayBadge>(e =>
         {
-            e.HasIndex(mb => new { mb.UserId, mb.TournamentId, mb.Date }).IsUnique();
+            e.HasIndex(mb => new { mb.UserId, mb.TournamentId, mb.Phase, mb.Matchday }).IsUnique();
             e.Property(mb => mb.BadgeType).HasConversion<string>();
             e.HasOne(mb => mb.User)
                 .WithMany(u => u.MatchdayBadges)
