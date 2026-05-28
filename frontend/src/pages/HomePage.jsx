@@ -382,15 +382,15 @@ export default function HomePage() {
 
       {/* Últimos resultados — scroll horizontal, 2 visibles */}
       {recentFinished.length > 0 && (
-        <div className="mt-5 mb-5">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold px-5">Últimos resultados</h3>
+        <div className="px-5 mt-5 mb-5">
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
           <div
-            className="flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
+            className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
           >
             {recentFinished.map((m) => (
-              <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
+              <div key={m.id} className="flex-shrink-0 w-[calc(50vw-24px)] snap-start">
                 <FinishedCard match={m} compact />
               </div>
             ))}
