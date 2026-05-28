@@ -387,6 +387,7 @@ export default function HomePage() {
           <div
             className="flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
           >
             {recentFinished.map((m) => (
               <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
