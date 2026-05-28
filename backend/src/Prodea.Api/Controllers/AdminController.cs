@@ -98,6 +98,37 @@ public class AdminController(
         });
     }
 
+    [HttpPost("matches/{id}/simulate")]
+    public async Task<IActionResult> SimulateMatch(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromBody] SimulateMatchRequest request)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var match = await db.Matches.FindAsync(id);
+        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+
+        match.Status     = request.Status;
+        match.HomeScore  = request.HomeScore;
+        match.AwayScore  = request.AwayScore;
+
+        await db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message   = $"Partido {id} actualizado",
+            matchId   = match.Id,
+            homeTeam  = match.HomeTeam,
+            awayTeam  = match.AwayTeam,
+            status    = match.Status.ToString(),
+            homeScore = match.HomeScore,
+            awayScore = match.AwayScore,
+        });
+    }
+
     [HttpGet("polling-status")]
     public async Task<IActionResult> GetPollingStatus()
     {
@@ -128,6 +159,8 @@ public class AdminController(
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
+
+    public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore);
 
     private record BackupPrediction(
         int UserId, int MatchId,
