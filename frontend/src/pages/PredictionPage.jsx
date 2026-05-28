@@ -336,28 +336,21 @@ export default function PredictionPage() {
             </button>
           </div>
 
-          {/* Info del partido debajo de la línea */}
-          <div className="flex items-center gap-2 pt-1 border-t border-[#1A1A2E] w-full justify-center">
-            <span className="text-xs text-[#8A8A9A] font-semibold tabular-nums">
-              {currentIndex + 1} / {allMatches.length}
-            </span>
-            <span className="text-xs text-[#3A3A4E]">·</span>
-            <span className="text-xs text-white font-semibold">
-              {new Date(match.matchDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-              {' '}
-              {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-            </span>
+          {/* Info del partido — centrada debajo de los botones */}
+          <p className="text-xs text-center text-white font-semibold">
+            {new Date(match.matchDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+            {' '}
+            {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
             {!isLocked && match.status === 'Scheduled' && (
-              <>
-                <span className="text-xs text-[#3A3A4E]">·</span>
-                <span className="text-xs text-[#8A8A9A]">Cierra en</span>
+              <span className="text-[#8A8A9A] font-normal">
+                {' · Cierra en '}
                 <MatchCountdown matchDate={match.matchDate} className="text-xs" />
-              </>
+              </span>
             )}
             {turboMode && pendingCount > 0 && (
-              <span className="text-xs text-[#FF6B35] font-semibold">· {pendingCount} por predecir</span>
+              <span className="text-[#FF6B35]"> · {pendingCount} por predecir</span>
             )}
-          </div>
+          </p>
         </div>
       )}
 
