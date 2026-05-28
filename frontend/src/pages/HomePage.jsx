@@ -38,11 +38,11 @@ function LiveCard({ match }) {
   return (
     <div className="p-4 rounded-2xl bg-[#FF6B35]/10 border border-[#FF6B35]/40">
       {/* Badge en vivo */}
-      <div className="flex items-center justify-center gap-1.5 mb-3">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-        <span className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <span className="w-2 h-2 rounded-full bg-[#FF6B35] animate-pulse" />
+        <span className="text-sm font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
         {match.minute != null && (
-          <span className="text-[10px] font-bold text-[#FF6B35]">· {match.minute}'</span>
+          <span className="text-sm font-bold text-[#FF6B35]">· {match.minute}'</span>
         )}
       </div>
 
@@ -80,6 +80,49 @@ function LiveCard({ match }) {
           <span className="text-sm font-bold text-[#8A8A9A]">
             {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
           </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FinishedCard({ match }) {
+  const pred = match.userPrediction
+  const home = match.homeScore ?? 0
+  const away = match.awayScore ?? 0
+  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
+  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+
+  return (
+    <div className="p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E]">
+      <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+          <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{homeDisplay}</p>
+        </div>
+
+        <div className="flex flex-col items-center gap-0.5 px-2">
+          <span className="text-4xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+            {home} – {away}
+          </span>
+          <span className="text-[9px] uppercase tracking-wider text-[#3A3A4E] font-semibold">Final</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+          <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
+          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{awayDisplay}</p>
+        </div>
+      </div>
+
+      {pred && (
+        <div className="mt-3 pt-3 border-t border-[#2A2A3E] flex items-center justify-between">
+          <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-[#8A8A9A]">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
+            <span className={`text-sm font-bold ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
+              +{pred.pointsEarned} pts
+            </span>
+          </div>
         </div>
       )}
     </div>
@@ -181,7 +224,11 @@ export default function HomePage() {
     } catch (err) { setError(err.message) }
   }
 
+  const today = new Date().toDateString()
   const liveMatches = matches.filter((m) => m.status === 'InProgress')
+  const todayFinished = matches.filter(
+    (m) => m.status === 'Finished' && new Date(m.matchDate).toDateString() === today
+  )
   const upcomingMatches = matches
     .filter((m) => m.status === 'Scheduled' && m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD')
     .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))
@@ -229,6 +276,16 @@ export default function HomePage() {
           </h3>
           <div className="flex flex-col gap-2">
             {liveMatches.map((m) => <LiveCard key={m.id} match={m} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Partidos terminados hoy */}
+      {todayFinished.length > 0 && (
+        <div className="px-5 mt-5 mb-5">
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Resultados de hoy</h3>
+          <div className="flex flex-col gap-2">
+            {todayFinished.map((m) => <FinishedCard key={m.id} match={m} />)}
           </div>
         </div>
       )}
