@@ -318,7 +318,7 @@ export default function HomePage() {
   const recentFinished = matches
     .filter((m) => m.status === 'Finished')
     .sort((a, b) => new Date(b.matchDate) - new Date(a.matchDate))
-    .slice(0, 3)
+    .slice(0, 4)
   const tomorrow = new Date(new Date().getTime() + 86400000).toDateString()
   const allUpcoming = matches
     .filter((m) => m.status === 'Scheduled' && m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD')
@@ -380,18 +380,20 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Últimos 3 finalizados */}
+      {/* Últimos resultados — scroll horizontal, 2 visibles */}
       {recentFinished.length > 0 && (
-        <div className="px-5 mt-5 mb-5">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
-          {recentFinished.length === 1
-            ? <FinishedCard match={recentFinished[0]} />
-            : (
-              <div className={`grid gap-2 ${recentFinished.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                {recentFinished.map((m) => <FinishedCard key={m.id} match={m} compact />)}
+        <div className="mt-5 mb-5">
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold px-5">Últimos resultados</h3>
+          <div
+            className="flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {recentFinished.map((m) => (
+              <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
+                <FinishedCard match={m} compact />
               </div>
-            )
-          }
+            ))}
+          </div>
         </div>
       )}
 
