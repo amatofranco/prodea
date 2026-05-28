@@ -230,13 +230,14 @@ export default function HomePage() {
     (m) => m.status === 'Finished' && new Date(m.matchDate).toDateString() === today
   )
   const tomorrow = new Date(new Date().getTime() + 86400000).toDateString()
-  const upcomingMatches = matches
-    .filter((m) => {
-      if (m.status !== 'Scheduled' || m.homeTeam === 'TBD' || m.awayTeam === 'TBD') return false
-      const d = new Date(m.matchDate).toDateString()
-      return d === today || d === tomorrow
-    })
+  const allUpcoming = matches
+    .filter((m) => m.status === 'Scheduled' && m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD')
     .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))
+  const todayTomorrowMatches = allUpcoming.filter((m) => {
+    const d = new Date(m.matchDate).toDateString()
+    return d === today || d === tomorrow
+  })
+  const upcomingMatches = todayTomorrowMatches.length > 0 ? todayTomorrowMatches : allUpcoming.slice(0, 3)
 
   const avatar = user?.username?.[0]?.toUpperCase() || '?'
 
