@@ -79,7 +79,7 @@ function LiveCard({ match, compact = false }) {
           return (
             <div className="pt-2 border-t border-[#FF6B35]/20 flex items-center justify-between">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
+                <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
                 <span className="text-xs font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
               </div>
               {hasPts && (
@@ -125,7 +125,7 @@ function LiveCard({ match, compact = false }) {
         return (
           <div className="mt-3 pt-3 border-t border-[#FF6B35]/20 flex items-center justify-between">
             <div className="flex items-baseline gap-2">
-              <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
+              <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
               <span className="text-sm font-bold text-white">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
             </div>
             {pts != null && (
@@ -170,7 +170,7 @@ function FinishedCard({ match, compact = false }) {
         {pred && (
           <div className="pt-2 border-t border-[#2A2A3E] flex items-baseline justify-between">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
+              <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
               <span className="text-xs font-bold text-[#8A8A9A]">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
             </div>
             <span className={`text-xs font-black ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
@@ -205,7 +205,7 @@ function FinishedCard({ match, compact = false }) {
 
       {pred && (
         <div className="mt-3 pt-3 border-t border-[#2A2A3E] flex items-center justify-between">
-          <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+          <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
           <div className="flex items-center gap-2">
             <span className="text-sm text-[#8A8A9A]">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
             <span className={`text-sm font-bold ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
@@ -246,7 +246,7 @@ function UpcomingCard({ match, navigate }) {
       </div>
 
       <div className="mt-2.5 pt-2.5 border-t border-[#2A2A3E] flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+        <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
         {hasPred ? (
           <span className="text-sm font-bold text-[#00FF87]">
             {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}

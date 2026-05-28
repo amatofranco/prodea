@@ -385,7 +385,7 @@ export default function PredictionPage() {
               </p>
               {match.userPrediction && (
                 <div className="mt-4 p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E]">
-                  <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-1">Tu predicción</p>
+                  <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-1">Predicción</p>
                   <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                     {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
                   </p>
