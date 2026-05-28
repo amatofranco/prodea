@@ -111,7 +111,7 @@ function MatchCard({ match, navigate }) {
 
       {pred ? (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-center gap-2">
-          <span className="text-xs text-[#8A8A9A]">Tu pred:</span>
+          <span className="text-xs text-[#8A8A9A]">Tu predicción:</span>
           <span className="text-xs font-bold text-[#00FF87]">
             {pred.predictedHomeScore} – {pred.predictedAwayScore}
           </span>
