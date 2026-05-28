@@ -34,6 +34,16 @@ function TeamMini({ name, label }) {
   )
 }
 
+function calcLivePoints(pred, homeScore, awayScore) {
+  if (!pred || homeScore == null || awayScore == null) return null
+  const ph = pred.predictedHomeScore
+  const pa = pred.predictedAwayScore
+  if (ph === homeScore && pa === awayScore) return 3
+  const predWinner = ph > pa ? 'H' : ph < pa ? 'A' : 'D'
+  const realWinner = homeScore > awayScore ? 'H' : homeScore < awayScore ? 'A' : 'D'
+  return predWinner === realWinner ? 1 : 0
+}
+
 function LiveCard({ match, compact = false }) {
   const pred = match.userPrediction
   const homeDisplay = match.homeTeamLabel ?? match.homeTeam
@@ -63,12 +73,22 @@ function LiveCard({ match, compact = false }) {
           </div>
         </div>
 
-        {pred && (
-          <div className="pt-2 border-t border-[#FF6B35]/20 flex items-center justify-between">
-            <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
-            <span className="text-xs font-bold text-[#8A8A9A]">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
-          </div>
-        )}
+        {pred && (() => {
+          const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
+          return (
+            <div className="pt-2 border-t border-[#FF6B35]/20 flex items-center justify-between">
+              <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-[#8A8A9A]">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
+                {pts != null && (
+                  <span className={`text-xs font-black ${pts > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
+                    +{pts}
+                  </span>
+                )}
+              </div>
+            </div>
+          )
+        })()}
       </div>
     )
   }
@@ -99,12 +119,22 @@ function LiveCard({ match, compact = false }) {
         </div>
       </div>
 
-      {pred && (
-        <div className="mt-3 pt-3 border-t border-[#FF6B35]/20 flex items-center justify-between">
-          <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
-          <span className="text-sm font-bold text-[#8A8A9A]">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
-        </div>
-      )}
+      {pred && (() => {
+        const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
+        return (
+          <div className="mt-3 pt-3 border-t border-[#FF6B35]/20 flex items-center justify-between">
+            <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-[#8A8A9A]">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
+              {pts != null && (
+                <span className={`text-sm font-black ${pts > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
+                  +{pts}
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
