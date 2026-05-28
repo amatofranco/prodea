@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Target } from 'lucide-react'
+import { Target, Lock } from 'lucide-react'
 import { api } from '../services/api'
 
 const PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
@@ -83,6 +83,9 @@ function MatchCard({ match, navigate }) {
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
           LIVE
         </span>
+      )}
+      {pastDeadline && !isLive && !isFinished && (
+        <Lock size={13} className="absolute top-2.5 right-2.5 text-[#8A8A9A]" />
       )}
 
       <div className="flex items-center justify-between gap-2">

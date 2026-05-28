@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Users, Zap } from 'lucide-react'
+import { Plus, Users, Zap, Lock } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { useTournamentStore } from '../store/tournamentStore'
@@ -222,6 +222,7 @@ function UpcomingCard({ match, navigate }) {
   const hasPred = !!match.userPrediction
   const matchDate = new Date(match.matchDate)
   const now = new Date()
+  const isLocked = matchDate - now < 15 * 60 * 1000
   const isToday = matchDate.toDateString() === now.toDateString()
   const isTomorrow = matchDate.toDateString() === new Date(now.getTime() + 86400000).toDateString()
   const dayLabel = isToday ? 'Hoy' : isTomorrow ? 'Mañana' : matchDate.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
@@ -251,6 +252,8 @@ function UpcomingCard({ match, navigate }) {
           <span className="text-sm font-bold text-[#00FF87]">
             {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
           </span>
+        ) : isLocked ? (
+          <Lock size={13} className="text-[#8A8A9A]" />
         ) : (
           <span className="text-xs font-bold text-[#FF6B35]">Predecir →</span>
         )}
@@ -382,15 +385,15 @@ export default function HomePage() {
 
       {/* Últimos resultados — scroll horizontal, 2 visibles */}
       {recentFinished.length > 0 && (
-        <div className="px-5 mt-5 mb-5">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
+        <div className="mt-5 mb-5">
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold px-5">Últimos resultados</h3>
           <div
-            className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
+            className="flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
           >
             {recentFinished.map((m) => (
-              <div key={m.id} className="flex-shrink-0 w-[calc(50vw-24px)] snap-start">
+              <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
                 <FinishedCard match={m} compact />
               </div>
             ))}
