@@ -229,10 +229,14 @@ export default function HomePage() {
   const todayFinished = matches.filter(
     (m) => m.status === 'Finished' && new Date(m.matchDate).toDateString() === today
   )
+  const tomorrow = new Date(new Date().getTime() + 86400000).toDateString()
   const upcomingMatches = matches
-    .filter((m) => m.status === 'Scheduled' && m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD')
+    .filter((m) => {
+      if (m.status !== 'Scheduled' || m.homeTeam === 'TBD' || m.awayTeam === 'TBD') return false
+      const d = new Date(m.matchDate).toDateString()
+      return d === today || d === tomorrow
+    })
     .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))
-    .slice(0, 3)
 
   const avatar = user?.username?.[0]?.toUpperCase() || '?'
 
@@ -290,8 +294,8 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Próximos partidos (solo si no hay en curso) */}
-      {liveMatches.length === 0 && upcomingMatches.length > 0 && (
+      {/* Próximos partidos — siempre visible */}
+      {upcomingMatches.length > 0 && (
         <div className="px-5 mt-5 mb-5">
           <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Próximos partidos</h3>
           <div className="flex flex-col gap-2">
