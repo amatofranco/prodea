@@ -80,9 +80,8 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
             .Select(tp => tp.TournamentId)
             .Distinct()
             .ToListAsync();
-        var matchDate = DateOnly.FromDateTime(match.MatchDate);
         foreach (var tid in allTournamentIds)
-            await badgeService.AssignDailyBadgesAsync(tid, matchDate);
+            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
 
         var payload = new
         {
