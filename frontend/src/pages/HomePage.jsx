@@ -34,10 +34,47 @@ function TeamMini({ name, label }) {
   )
 }
 
-function LiveCard({ match }) {
+function LiveCard({ match, compact = false }) {
+  const pred = match.userPrediction
+  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
+  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+
+  if (compact) {
+    return (
+      <div className="p-3 rounded-2xl bg-[#FF6B35]/10 border border-[#FF6B35]/40 flex flex-col gap-2">
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse flex-shrink-0" />
+          <span className="text-xs font-bold text-[#FF6B35]">
+            {match.minute != null ? `${match.minute}'` : 'En vivo'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+            <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{homeDisplay}</p>
+          </div>
+          <span className="text-2xl font-black text-white tabular-nums flex-shrink-0" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+            {match.homeScore ?? 0}–{match.awayScore ?? 0}
+          </span>
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
+            <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{awayDisplay}</p>
+          </div>
+        </div>
+
+        {pred && (
+          <div className="pt-2 border-t border-[#FF6B35]/20 flex items-center justify-between">
+            <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu pred</span>
+            <span className="text-xs font-bold text-[#8A8A9A]">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 rounded-2xl bg-[#FF6B35]/10 border border-[#FF6B35]/40">
-      {/* Badge en vivo */}
       <div className="flex items-center justify-center gap-2 mb-3">
         <span className="w-2 h-2 rounded-full bg-[#FF6B35] animate-pulse" />
         <span className="text-sm font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
@@ -46,40 +83,26 @@ function LiveCard({ match }) {
         )}
       </div>
 
-      {/* Scoreboard */}
       <div className="flex items-center gap-2">
         <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
           <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
-          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>
-            {match.homeTeamLabel ?? match.homeTeam}
-          </p>
+          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{homeDisplay}</p>
         </div>
-
         <div className="flex items-center gap-2 px-2">
-          <span className="text-4xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
-            {match.homeScore ?? 0}
-          </span>
+          <span className="text-4xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>{match.homeScore ?? 0}</span>
           <span className="text-2xl text-[#3A3A4E] font-light">–</span>
-          <span className="text-4xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
-            {match.awayScore ?? 0}
-          </span>
+          <span className="text-4xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>{match.awayScore ?? 0}</span>
         </div>
-
         <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
           <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
-          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>
-            {match.awayTeamLabel ?? match.awayTeam}
-          </p>
+          <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{awayDisplay}</p>
         </div>
       </div>
 
-      {/* Predicción */}
-      {match.userPrediction && (
+      {pred && (
         <div className="mt-3 pt-3 border-t border-[#FF6B35]/20 flex items-center justify-between">
           <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Tu predicción</span>
-          <span className="text-sm font-bold text-[#8A8A9A]">
-            {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
-          </span>
+          <span className="text-sm font-bold text-[#8A8A9A]">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
         </div>
       )}
     </div>
@@ -279,9 +302,14 @@ export default function HomePage() {
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
             En curso
           </h3>
-          <div className="flex flex-col gap-2">
-            {liveMatches.map((m) => <LiveCard key={m.id} match={m} />)}
-          </div>
+          {liveMatches.length === 1
+            ? liveMatches.map((m) => <LiveCard key={m.id} match={m} />)
+            : (
+              <div className="grid grid-cols-2 gap-2">
+                {liveMatches.map((m) => <LiveCard key={m.id} match={m} compact />)}
+              </div>
+            )
+          }
         </div>
       )}
 
