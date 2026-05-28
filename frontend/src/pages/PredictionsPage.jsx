@@ -194,7 +194,7 @@ export default function PredictionsPage() {
     .sort((a, b) => {
       if (a.status === 'InProgress' && b.status !== 'InProgress') return -1
       if (b.status === 'InProgress' && a.status !== 'InProgress') return 1
-      return 0
+      return new Date(a.matchDate) - new Date(b.matchDate)
     })
   const currentPhase = visible[0]?.phase
 
