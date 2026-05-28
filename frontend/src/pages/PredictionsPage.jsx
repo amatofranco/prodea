@@ -73,6 +73,8 @@ function MatchCard({ match, navigate }) {
       className={`relative p-3 rounded-2xl border transition-colors ${
         isLive
           ? 'bg-[#FF6B35]/5 border-[#FF6B35]/40'
+          : isFinished
+          ? 'bg-[#1A1A2E] border-[#00FF87]/20 border-l-2 border-l-[#00FF87]/50'
           : canPredict
           ? 'bg-[#1A1A2E] border-[#2A2A3E] active:border-[#00FF87] cursor-pointer'
           : 'bg-[#1A1A2E] border-[#2A2A3E]'
@@ -106,7 +108,10 @@ function MatchCard({ match, navigate }) {
               </span>
             </div>
           )}
-          <span className="text-[10px] text-[#3A3A4E] font-semibold mt-1">VS</span>
+          {isFinished
+            ? <span className="text-[9px] text-[#00FF87]/60 font-semibold uppercase tracking-wider mt-1">Final</span>
+            : <span className="text-[10px] text-[#3A3A4E] font-semibold mt-1">VS</span>
+          }
         </div>
 
         <TeamFlag name={match.awayTeam} label={match.awayTeamLabel} />
