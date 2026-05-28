@@ -33,13 +33,13 @@ function FlagCard({ name }) {
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-[#2A2A3E]">
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-[#2A2A3E]">
         {flagUrl && (
           <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
         )}
       </div>
-      <p className="text-xs font-semibold text-white text-center leading-tight" style={{ maxWidth: 88, wordBreak: 'break-word' }}>{name}</p>
+      <p className="text-xs font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{name}</p>
     </div>
   )
 }
@@ -274,27 +274,24 @@ export default function PredictionPage() {
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 bg-[#1A1A2E]">
-        <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate(-1)} className="text-[#8A8A9A]">
+      <div className="px-4 pt-12 pb-3 bg-[#1A1A2E]">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="text-[#8A8A9A] flex-shrink-0">
             <ChevronLeft size={24} />
           </button>
-          <p className="text-[#8A8A9A] text-sm">
-            {new Date(match.matchDate).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-        </div>
-        <div className="flex items-center justify-center gap-4">
-          <p className="flex-1 text-right text-lg font-bold text-white leading-tight">
-            {match.homeTeam === 'TBD' && !match.homeTeamLabel
-              ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
-              : (match.homeTeamLabel ?? match.homeTeam)}
-          </p>
-          <span className="text-[#8A8A9A] text-xl font-light">vs</span>
-          <p className="flex-1 text-left text-lg font-bold text-white leading-tight">
-            {match.awayTeam === 'TBD' && !match.awayTeamLabel
-              ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
-              : (match.awayTeamLabel ?? match.awayTeam)}
-          </p>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <p className="flex-1 text-right text-base font-bold text-white leading-tight">
+              {match.homeTeam === 'TBD' && !match.homeTeamLabel
+                ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
+                : (match.homeTeamLabel ?? match.homeTeam)}
+            </p>
+            <span className="text-[#8A8A9A] text-sm font-light flex-shrink-0">vs</span>
+            <p className="flex-1 text-left text-base font-bold text-white leading-tight">
+              {match.awayTeam === 'TBD' && !match.awayTeamLabel
+                ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
+                : (match.awayTeamLabel ?? match.awayTeam)}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -337,9 +334,15 @@ export default function PredictionPage() {
               Siguiente <ChevronRight size={15} />
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-[#3A3A4E] font-semibold tabular-nums">
               {currentIndex + 1} / {allMatches.length}
+            </span>
+            <span className="text-[10px] text-[#3A3A4E]">·</span>
+            <span className="text-[10px] text-[#3A3A4E]">
+              {new Date(match.matchDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+              {' '}
+              {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
             </span>
             {turboMode && pendingCount > 0 && (
               <span className="text-[10px] text-[#FF6B35] font-semibold">· {pendingCount} por predecir</span>
@@ -360,7 +363,7 @@ export default function PredictionPage() {
           }}
           initial="enter" animate="center" exit="exit"
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="flex-1 flex flex-col items-center justify-center gap-8 px-6"
+          className="flex-1 flex flex-col items-center justify-center gap-4 px-6"
         >
           {turboComplete ? (
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
@@ -396,31 +399,30 @@ export default function PredictionPage() {
             </div>
           ) : (
             <>
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <p className="text-[#8A8A9A] text-xs uppercase tracking-wider">Cierra en</p>
                 <MatchCountdown matchDate={match.matchDate} />
               </div>
 
-              <div className="flex items-center gap-6 w-full">
-                <div className="flex-1 flex flex-col items-center gap-3">
+              <div className="flex items-center gap-4 w-full">
+                <div className="flex-1 flex flex-col items-center gap-2">
                   <FlagCard name={match.homeTeam} />
                   <GoalPicker value={home} onChange={setHome} disabled={isLocked} />
                 </div>
-                <span className="text-3xl text-[#2A2A3E] font-light mb-10">–</span>
-                <div className="flex-1 flex flex-col items-center gap-3">
+                <span className="text-2xl text-[#2A2A3E] font-light mb-8">–</span>
+                <div className="flex-1 flex flex-col items-center gap-2">
                   <FlagCard name={match.awayTeam} />
                   <GoalPicker value={away} onChange={setAway} disabled={isLocked} />
                 </div>
               </div>
 
-              <div className="w-full p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] text-center">
-                <p className="text-white font-bold text-lg">
+              <div className="w-full p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] text-center">
+                <p className="text-white font-bold text-base">
                   {match.homeTeam} <span className="text-[#00FF87]">{home}</span>
                   {' – '}
                   <span className="text-[#00FF87]">{away}</span> {match.awayTeam}
                 </p>
-                <p className="text-[#8A8A9A] text-sm mt-1">{resultLabel}</p>
-                <p className="text-[#00FF87] text-xs font-semibold mt-1">Si acertás el marcador exacto → +3 pts</p>
+                <p className="text-[#8A8A9A] text-xs mt-0.5">{resultLabel} · Si acertás exacto → <span className="text-[#00FF87] font-semibold">+3 pts</span></p>
               </div>
 
               {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -438,7 +440,7 @@ export default function PredictionPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={saving || isLocked}
-                  className={`w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                  className={`w-full py-3 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${
                     saved ? 'bg-[#1A1A2E] border border-[#00FF87] text-[#00FF87]' : 'bg-[#00FF87] text-black'
                   } disabled:opacity-50`}
                 >
