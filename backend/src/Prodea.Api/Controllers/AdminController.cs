@@ -129,6 +129,7 @@ public class AdminController(
             status    = match.Status.ToString(),
             homeScore = match.HomeScore,
             awayScore = match.AwayScore,
+            matchDate = match.MatchDate,
         });
     }
 
