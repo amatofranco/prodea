@@ -32,7 +32,7 @@ public class BadgeService(ProdeaDbContext db)
         [AccumulativeBadgeType.RachaInfernal] = "🔥",
         [AccumulativeBadgeType.ElMuro] = "🧱",
         [AccumulativeBadgeType.ElFantasma] = "👻",
-        [AccumulativeBadgeType.TripleMufa] = "💀",
+        [AccumulativeBadgeType.TripleMufa] = "💀🔥",
     };
 
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
