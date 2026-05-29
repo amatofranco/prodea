@@ -1,4 +1,4 @@
-import { useRef, useState, forwardRef } from 'react'
+import { useState } from 'react'
 import { toBlob } from 'html-to-image'
 import { Share2 } from 'lucide-react'
 import { EMOJIS } from './BadgePill'
@@ -12,8 +12,7 @@ const BADGE_GRADIENTS = {
   Dormido:       'from-slate-400 via-slate-600 to-slate-900',
 }
 
-// Hex explícitos para la tarjeta de exportación (html-to-image no depende de oklch)
-const BADGE_EXPORT_GRADIENT = {
+const BADGE_GRADIENT_STOPS = {
   Crack:         ['#FACC15', '#F59E0B', '#B45309'],
   Mufa:          ['#EF4444', '#B91C1C', '#450A0A'],
   Adivino:       ['#A78BFA', '#7C3AED', '#3B0764'],
@@ -45,98 +44,82 @@ function jornadaLabel(phase, matchday) {
   return { R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', ThirdPlace: '3er Puesto', Final: 'Final' }[phase] ?? phase
 }
 
-// Tarjeta solo para exportación: todo en inline styles con px fijos.
-// Evita que html-to-image interprete oklch de Tailwind.
-// forwardRef para que el ref apunte al div raíz con el gradiente,
-// no al wrapper oculto — así html-to-image captura desde (0,0).
-const ExportCard = forwardRef(function ExportCard({ badge, username, tournamentName, rank }, ref) {
-  const stops  = BADGE_EXPORT_GRADIENT[badge.badgeType] || BADGE_EXPORT_GRADIENT.Dormido
+function buildCardHTML({ badge, username, tournamentName, rank }) {
+  const stops  = BADGE_GRADIENT_STOPS[badge.badgeType] || BADGE_GRADIENT_STOPS.Dormido
   const accent = BADGE_ACCENT[badge.badgeType] || '#00FF87'
   const emoji  = EMOJIS[badge.badgeType] || '❓'
   const label  = BADGE_LABELS[badge.badgeType] || badge.badgeType
+  const avatar = username[0].toUpperCase()
   const jornada = jornadaLabel(badge.phase, badge.matchday)
-  const avatar  = username[0].toUpperCase()
 
-  const s = {
-    wrap: {
-      display: 'inline-block',
-      background: `linear-gradient(to bottom, ${stops[0]}, ${stops[1]}, ${stops[2]})`,
-      borderRadius: '24px',
-      padding: '3px',
-      width: '320px',
-    },
-    inner: {
-      background: '#0A0A0A',
-      borderRadius: '21px',
-      padding: '24px 20px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '14px',
-      width: '100%',
-      boxSizing: 'border-box',
-    },
-    row: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-    label: { fontSize: '10px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '3px', fontWeight: '700', fontFamily: 'DM Sans, system-ui, sans-serif', margin: 0 },
-    labelRight: { fontSize: '10px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'DM Sans, system-ui, sans-serif', margin: 0 },
-    avatar: {
-      width: '72px', height: '72px', borderRadius: '50%',
-      background: accent,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '28px', fontWeight: '900', color: '#0A0A0A',
-      fontFamily: 'Bebas Neue, DM Sans, system-ui, sans-serif',
-    },
-    username: { fontSize: '24px', fontWeight: '700', color: '#FFFFFF', fontFamily: 'Bebas Neue, DM Sans, system-ui, sans-serif', letterSpacing: '3px', margin: 0 },
-    divider: { width: '100%', height: '1px', background: `linear-gradient(to right, transparent, ${accent}80, transparent)` },
-    emojiWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' },
-    emoji: { fontSize: '72px', lineHeight: '1', display: 'block' },
-    badgeLabel: { fontSize: '28px', fontWeight: '700', color: accent, fontFamily: 'Bebas Neue, DM Sans, system-ui, sans-serif', letterSpacing: '2px', margin: 0 },
-    statsRow: { display: 'flex', gap: '32px', justifyContent: 'center' },
-    statNum: { fontSize: '40px', fontWeight: '900', color: accent, fontFamily: 'Bebas Neue, DM Sans, system-ui, sans-serif', lineHeight: '1', margin: 0 },
-    statNumWhite: { fontSize: '40px', fontWeight: '900', color: '#FFFFFF', fontFamily: 'Bebas Neue, DM Sans, system-ui, sans-serif', lineHeight: '1', margin: 0 },
-    statLabel: { fontSize: '10px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'DM Sans, system-ui, sans-serif', margin: '4px 0 0', textAlign: 'center' },
-    phrase: { fontSize: '12px', fontStyle: 'italic', color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: '1.5', margin: 0, padding: '0 8px', fontFamily: 'DM Sans, system-ui, sans-serif' },
-    footer: { width: '100%', display: 'flex', justifyContent: 'center', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '2px' },
-    footerText: { fontSize: '9px', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '3px', fontWeight: '700', fontFamily: 'DM Sans, system-ui, sans-serif', margin: 0 },
-  }
+  const statHTML = `
+    <div style="display:flex;gap:32px;justify-content:center;">
+      <div style="text-align:center;">
+        <p style="font-size:40px;font-weight:900;color:${accent};font-family:'Bebas Neue',sans-serif;line-height:1;margin:0;">${badge.pointsInMatchday}</p>
+        <p style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin:4px 0 0;">pts jornada</p>
+      </div>
+      ${rank != null ? `
+      <div style="text-align:center;">
+        <p style="font-size:40px;font-weight:900;color:#FFFFFF;font-family:'Bebas Neue',sans-serif;line-height:1;margin:0;">#${rank}</p>
+        <p style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin:4px 0 0;">en tabla</p>
+      </div>` : ''}
+    </div>
+  `
 
-  return (
-    <div ref={ref} style={s.wrap}>
-      <div style={s.inner}>
-        <div style={s.row}>
-          <p style={s.label}>Prodeá</p>
-          <p style={s.labelRight}>{jornada}</p>
+  return `
+    <div style="
+      display:inline-block;
+      background:linear-gradient(to bottom,${stops[0]},${stops[1]},${stops[2]});
+      border-radius:24px;
+      padding:3px;
+      width:320px;
+    ">
+      <div style="
+        background:#0A0A0A;
+        border-radius:21px;
+        padding:24px 20px 20px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:14px;
+        width:100%;
+        box-sizing:border-box;
+      ">
+        <div style="width:100%;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:3px;font-weight:700;font-family:'DM Sans',sans-serif;">Prodeá</span>
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;font-family:'DM Sans',sans-serif;">${jornada}</span>
         </div>
-        <div style={s.avatar}>{avatar}</div>
-        <p style={s.username}>{username}</p>
-        <div style={s.divider} />
-        <div style={s.emojiWrap}>
-          <span style={s.emoji}>{emoji}</span>
-          <p style={s.badgeLabel}>{label}</p>
+
+        <div style="
+          width:72px;height:72px;border-radius:50%;
+          background:${accent};
+          display:flex;align-items:center;justify-content:center;
+          font-size:28px;font-weight:900;color:#0A0A0A;
+          font-family:'Bebas Neue',sans-serif;
+        ">${avatar}</div>
+
+        <p style="font-size:24px;font-weight:700;color:#FFFFFF;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;margin:0;">${username}</p>
+
+        <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${accent}80,transparent);"></div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:72px;line-height:1;">${emoji}</span>
+          <p style="font-size:28px;font-weight:700;color:${accent};font-family:'Bebas Neue',sans-serif;letter-spacing:2px;margin:0;">${label}</p>
         </div>
-        <div style={s.statsRow}>
-          <div style={{ textAlign: 'center' }}>
-            <p style={s.statNum}>{badge.pointsInMatchday}</p>
-            <p style={s.statLabel}>pts jornada</p>
-          </div>
-          {rank != null && (
-            <div style={{ textAlign: 'center' }}>
-              <p style={s.statNumWhite}>#{rank}</p>
-              <p style={s.statLabel}>en tabla</p>
-            </div>
-          )}
-        </div>
-        <p style={s.phrase}>&ldquo;{badge.randomPhrase}&rdquo;</p>
-        <div style={s.footer}>
-          <p style={s.footerText}>{tournamentName} · Mundial 2026</p>
+
+        ${statHTML}
+
+        <p style="font-size:12px;font-style:italic;color:rgba(255,255,255,0.5);text-align:center;line-height:1.5;margin:0;padding:0 8px;font-family:'DM Sans',sans-serif;">&#8220;${badge.randomPhrase}&#8221;</p>
+
+        <div style="width:100%;display:flex;justify-content:center;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+          <p style="font-size:9px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:3px;font-weight:700;font-family:'DM Sans',sans-serif;margin:0;">${tournamentName} · Mundial 2026</p>
         </div>
       </div>
     </div>
-  )
+  `
 }
 
 export default function FigurineCard({ badge, username, tournamentName, rank }) {
-  const exportRef = useRef(null)
   const [sharing, setSharing] = useState(false)
   const [error,   setError]   = useState(null)
 
@@ -148,17 +131,31 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
   const jornada  = jornadaLabel(badge.phase, badge.matchday)
 
   async function exportCard() {
-    if (!exportRef.current || sharing) return
+    if (sharing) return
     setSharing(true)
     setError(null)
+
+    const container = document.createElement('div')
+    container.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:1;'
+
     try {
       await document.fonts.ready
+
+      container.innerHTML = buildCardHTML({ badge, username, tournamentName, rank })
+      document.body.appendChild(container)
+
+      // Dos frames: layout + paint
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+
+      const cardEl = container.firstElementChild
       const blob = await Promise.race([
-        toBlob(exportRef.current, { pixelRatio: 3, skipFonts: true }),
+        toBlob(cardEl, { pixelRatio: 3, skipFonts: true }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12_000)),
       ])
-      const file = new File([blob], `prodea-${username}.png`, { type: 'image/png' })
 
+      document.body.removeChild(container)
+
+      const file = new File([blob], `prodea-${username}.png`, { type: 'image/png' })
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           text: `${username} fue "${label}" en ${jornada} · Prodeá Mundial 2026`,
@@ -175,6 +172,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
         setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
     } catch (err) {
+      if (document.body.contains(container)) document.body.removeChild(container)
       if (err?.name !== 'AbortError') {
         setError('No se pudo generar la imagen. Intentá de nuevo.')
         console.error('[FigurineCard]', err)
@@ -186,7 +184,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
 
   return (
     <div className="flex flex-col items-center gap-5">
-      {/* Tarjeta visible — Tailwind para la UI */}
+      {/* Tarjeta visible en UI */}
       <div className={`w-56 rounded-3xl bg-gradient-to-b ${gradient} p-[3px]`}>
         <div className="rounded-[22px] bg-[#0A0A0A] px-5 pt-4 pb-5 flex flex-col items-center gap-3">
           <div className="w-full flex justify-between items-center">
@@ -225,12 +223,6 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
             <p className="text-[9px] text-white/25 uppercase tracking-widest font-bold">{tournamentName} · Mundial 2026</p>
           </div>
         </div>
-      </div>
-
-      {/* Wrapper clipeado: el card está en el viewport (browser lo renderiza)
-          pero invisible. overflow:hidden no se clona por html-to-image. */}
-      <div style={{ position: 'fixed', top: 0, left: 0, width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <ExportCard ref={exportRef} badge={badge} username={username} tournamentName={tournamentName} rank={rank} />
       </div>
 
       <button
