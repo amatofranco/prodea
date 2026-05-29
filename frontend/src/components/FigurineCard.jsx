@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import html2canvas from 'html2canvas'
+import { toBlob } from 'html-to-image'
 import { Share2 } from 'lucide-react'
 import { EMOJIS } from './BadgePill'
 
@@ -53,17 +53,10 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
     setError(null)
     try {
       await document.fonts.ready
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: null,
-        scale: 3,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
+      const blob = await toBlob(cardRef.current, {
+        pixelRatio: 3,
+        skipAutoScale: true,
       })
-
-      const blob = await new Promise((resolve, reject) =>
-        canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob falló'))), 'image/png')
-      )
       const file = new File([blob], `prodea-${username}.png`, { type: 'image/png' })
 
       if (navigator.canShare?.({ files: [file] })) {
