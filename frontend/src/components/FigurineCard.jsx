@@ -227,8 +227,9 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
         </div>
       </div>
 
-      {/* Tarjeta hidden para exportación — el ref apunta al root del card, no al wrapper */}
-      <div style={{ position: 'fixed', top: '-9999px', left: 0, pointerEvents: 'none' }}>
+      {/* Wrapper clipeado: el card está en el viewport (browser lo renderiza)
+          pero invisible. overflow:hidden no se clona por html-to-image. */}
+      <div style={{ position: 'fixed', top: 0, left: 0, width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}>
         <ExportCard ref={exportRef} badge={badge} username={username} tournamentName={tournamentName} rank={rank} />
       </div>
 
