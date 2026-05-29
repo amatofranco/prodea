@@ -53,10 +53,11 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
     setError(null)
     try {
       await document.fonts.ready
-      const blob = await toBlob(cardRef.current, {
-        pixelRatio: 3,
-        skipAutoScale: true,
-      })
+      const TIMEOUT_MS = 12_000
+      const blob = await Promise.race([
+        toBlob(cardRef.current, { pixelRatio: 3, skipFonts: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)),
+      ])
       const file = new File([blob], `prodea-${username}.png`, { type: 'image/png' })
 
       if (navigator.canShare?.({ files: [file] })) {
