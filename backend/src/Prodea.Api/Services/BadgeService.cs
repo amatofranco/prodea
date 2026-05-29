@@ -126,6 +126,9 @@ public class BadgeService(ProdeaDbContext db)
         await UpdateAccumulativeBadgesAsync(tournamentId);
     }
 
+    public async Task RecalculateAccumulativeBadgesAsync(int tournamentId) =>
+        await UpdateAccumulativeBadgesAsync(tournamentId);
+
     private async Task UpdateAccumulativeBadgesAsync(int tournamentId)
     {
         var participants = await db.TournamentParticipants

@@ -252,6 +252,20 @@ public class AdminController(
         });
     }
 
+    [HttpPost("recalculate-badges/{tournamentId}")]
+    public async Task<IActionResult> RecalculateBadges(
+        int tournamentId,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var badgeService = new BadgeService(db);
+        await badgeService.RecalculateAccumulativeBadgesAsync(tournamentId);
+        return Ok(new { message = $"Badges acumulativos recalculados para torneo {tournamentId}" });
+    }
+
     [HttpGet("polling-status")]
     public async Task<IActionResult> GetPollingStatus()
     {
