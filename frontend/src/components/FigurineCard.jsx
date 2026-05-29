@@ -36,8 +36,9 @@ function jornadaLabel(phase, matchday) {
 }
 
 export default function FigurineCard({ badge, username, tournamentName, rank }) {
-  const cardRef = useRef(null)
+  const cardRef  = useRef(null)
   const [sharing, setSharing] = useState(false)
+  const [error,   setError]   = useState(null)
 
   const gradient = BADGE_GRADIENTS[badge.badgeType] || BADGE_GRADIENTS.Dormido
   const accent   = BADGE_ACCENT[badge.badgeType]   || '#00FF87'
@@ -49,6 +50,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
   async function exportCard() {
     if (!cardRef.current || sharing) return
     setSharing(true)
+    setError(null)
     try {
       await document.fonts.ready
       const canvas = await html2canvas(cardRef.current, {
@@ -56,9 +58,12 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
         scale: 3,
         useCORS: true,
         logging: false,
+        allowTaint: true,
       })
-      const url  = canvas.toDataURL('image/png')
-      const blob = await (await fetch(url)).blob()
+
+      const blob = await new Promise((resolve, reject) =>
+        canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob falló'))), 'image/png')
+      )
       const file = new File([blob], `prodea-${username}.png`, { type: 'image/png' })
 
       if (navigator.canShare?.({ files: [file] })) {
@@ -67,13 +72,21 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
           files: [file],
         })
       } else {
-        const a = document.createElement('a')
-        a.href = url
+        // Fallback: descarga directa
+        const url = URL.createObjectURL(blob)
+        const a   = document.createElement('a')
+        a.href     = url
         a.download = `prodea-${username}-${jornada}.png`
+        document.body.appendChild(a)
         a.click()
+        document.body.removeChild(a)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
-    } catch {
-      // user cancelled or browser doesn't support
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        setError('No se pudo generar la imagen. Intentá de nuevo.')
+        console.error('[FigurineCard]', err)
+      }
     } finally {
       setSharing(false)
     }
@@ -177,6 +190,10 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
         }
         {sharing ? 'Generando...' : 'Compartir card'}
       </button>
+
+      {error && (
+        <p className="text-red-400 text-xs text-center px-4">{error}</p>
+      )}
     </div>
   )
 }
