@@ -133,6 +133,108 @@ public class AdminController(
         });
     }
 
+    [HttpPost("simulate-jornada")]
+    public async Task<IActionResult> SimulateJornada(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromBody] SimulateJornadaRequest request)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var phase = Enum.Parse<MatchPhase>(request.Phase);
+        var matches = await db.Matches
+            .Where(m => m.Phase == phase && (request.Matchday == 0 ? m.Matchday == null : m.Matchday == request.Matchday))
+            .ToListAsync();
+
+        if (matches.Count == 0)
+            return NotFound(new { message = $"No hay partidos para {request.Phase} matchday {request.Matchday}" });
+
+        var participants = await db.TournamentParticipants
+            .Where(tp => tp.TournamentId == request.TournamentId)
+            .Select(tp => tp.UserId)
+            .ToListAsync();
+
+        if (participants.Count == 0)
+            return BadRequest(new { message = "El torneo no tiene participantes" });
+
+        var rng = new Random(request.Seed ?? Environment.TickCount);
+
+        // Asignar resultados a los partidos
+        foreach (var match in matches)
+        {
+            match.HomeScore = rng.Next(0, 5);
+            match.AwayScore = rng.Next(0, 5);
+            match.Status = MatchStatus.Finished;
+            match.MatchDate = DateTime.UtcNow.AddHours(-2);
+        }
+        await db.SaveChangesAsync();
+
+        // Crear predicciones variadas para cada participante
+        var matchIds = matches.Select(m => m.Id).ToList();
+        var existingPreds = await db.Predictions
+            .Where(p => participants.Contains(p.UserId) && matchIds.Contains(p.MatchId))
+            .ToListAsync();
+        var existingKeys = existingPreds.Select(p => (p.UserId, p.MatchId)).ToHashSet();
+
+        int predCount = 0;
+        for (int i = 0; i < participants.Count; i++)
+        {
+            int userId = participants[i];
+            // Primer usuario: mayoría de aciertos (Crack candidate)
+            // Último usuario: todo 0-0 (Payaso candidate)
+            // Resto: mixto
+            foreach (var match in matches)
+            {
+                if (existingKeys.Contains((userId, match.Id))) continue;
+
+                int ph, pa;
+                if (i == 0)
+                {
+                    // Casi exacto — replica el resultado real con pequeña variación
+                    ph = match.HomeScore!.Value + rng.Next(-1, 2);
+                    pa = match.AwayScore!.Value + rng.Next(-1, 2);
+                    ph = Math.Max(0, ph); pa = Math.Max(0, pa);
+                }
+                else if (i == participants.Count - 1)
+                {
+                    // Pésimo — siempre falla
+                    ph = (match.HomeScore!.Value + 2 + rng.Next(1, 3)) % 6;
+                    pa = (match.AwayScore!.Value + 2 + rng.Next(1, 3)) % 6;
+                }
+                else
+                {
+                    ph = rng.Next(0, 4);
+                    pa = rng.Next(0, 4);
+                }
+
+                var pred = new Prediction
+                {
+                    UserId = userId,
+                    MatchId = match.Id,
+                    PredictedHomeScore = ph,
+                    PredictedAwayScore = pa,
+                };
+                pred.PointsEarned = ScoringService.CalculatePoints(pred, match.HomeScore!.Value, match.AwayScore!.Value);
+                db.Predictions.Add(pred);
+                predCount++;
+            }
+        }
+        await db.SaveChangesAsync();
+
+        // Asignar badges
+        var badgeService = new BadgeService(db);
+        await badgeService.AssignMatchdayBadgesAsync(request.TournamentId, phase, request.Matchday);
+
+        return Ok(new
+        {
+            message = $"Jornada simulada: {matches.Count} partidos, {participants.Count} participantes, {predCount} predicciones nuevas",
+            matches = matches.Count,
+            participants = participants.Count,
+            predictionsCreated = predCount,
+        });
+    }
+
     [HttpGet("polling-status")]
     public async Task<IActionResult> GetPollingStatus()
     {
@@ -165,6 +267,7 @@ public class AdminController(
     };
 
     public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore, int? Minute = null, DateTime? MatchDate = null);
+    public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null);
 
     private record BackupPrediction(
         int UserId, int MatchId,

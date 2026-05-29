@@ -140,6 +140,35 @@ using (var scope = app.Services.CreateScope())
     catch { /* columnas ya existen o la tabla aún no existe — EnsureCreated se encarga */ }
 
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    // Migración BadgesByMatchday: reemplaza Date por Phase+Matchday en MatchdayBadges
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            DROP INDEX IF EXISTS "IX_MatchdayBadges_UserId_TournamentId_Date";
+            ALTER TABLE "MatchdayBadges" DROP COLUMN IF EXISTS "Date";
+            ALTER TABLE "MatchdayBadges" ADD COLUMN IF NOT EXISTS "Phase" text NOT NULL DEFAULT '';
+            ALTER TABLE "MatchdayBadges" ADD COLUMN IF NOT EXISTS "Matchday" int NOT NULL DEFAULT 0;
+            """);
+
+        // Índice único: crear solo si no existe
+        await db.Database.ExecuteSqlRawAsync("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_indexes
+                    WHERE indexname = 'IX_MatchdayBadges_UserId_TournamentId_Phase_Matchday'
+                ) THEN
+                    CREATE UNIQUE INDEX "IX_MatchdayBadges_UserId_TournamentId_Phase_Matchday"
+                        ON "MatchdayBadges" ("UserId", "TournamentId", "Phase", "Matchday");
+                END IF;
+            END$$;
+            """);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogWarning(ex, "Migración BadgesByMatchday: algunos pasos ya aplicados");
+    }
     var apiKey = app.Configuration["FootballData:ApiKey"];
 
     bool noMatches = !await db.Matches.AnyAsync();
