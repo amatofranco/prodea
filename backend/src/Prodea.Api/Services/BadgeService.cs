@@ -152,6 +152,11 @@ public class BadgeService(ProdeaDbContext db)
 
             bool neverLast = totalJornadas >= 3 && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElMuro, neverLast);
+
+            bool enCaidaLibre = userBadges.Count >= 3 &&
+                userBadges[^3].PointsInMatchday > userBadges[^2].PointsInMatchday &&
+                userBadges[^2].PointsInMatchday > userBadges[^1].PointsInMatchday;
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.EnCaidaLibre, enCaidaLibre);
         }
 
         await db.SaveChangesAsync();
