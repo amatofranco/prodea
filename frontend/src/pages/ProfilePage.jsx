@@ -18,6 +18,13 @@ const ACCUMULATIVE_LABELS = {
   ElFantasma: 'El Fantasma',
 }
 
+const ACCUMULATIVE_DESCRIPTIONS = {
+  EnCaidaLibre: '3 jornadas consecutivas bajando puntos',
+  RachaInfernal: '3 jornadas consecutivas siendo El Crack',
+  ElMuro: 'Nunca fue último en toda la competencia',
+  ElFantasma: 'Olvidó cargar predicciones más de 3 veces',
+}
+
 export default function ProfilePage() {
   const { tournamentId, userId } = useParams()
   const navigate = useNavigate()
@@ -25,6 +32,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [tournament, setTournament] = useState(null)
   const [selectedBadge, setSelectedBadge] = useState(null)
+  const [selectedAccBadge, setSelectedAccBadge] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -73,15 +81,32 @@ export default function ProfilePage() {
 
         {/* Accumulative badges */}
         {profile.accumulativeBadges.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4">
-            {profile.accumulativeBadges.map((b) => (
-              <span
-                key={b.badgeType}
-                className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#2A2A3E] text-white text-xs font-semibold"
-              >
-                {EMOJIS[b.badgeType]} {ACCUMULATIVE_LABELS[b.badgeType] || b.badgeType}
-              </span>
-            ))}
+          <div className="mt-4">
+            <div className="flex flex-wrap gap-2">
+              {profile.accumulativeBadges.map((b) => (
+                <button
+                  key={b.badgeType}
+                  onClick={() => setSelectedAccBadge(selectedAccBadge === b.badgeType ? null : b.badgeType)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-colors ${
+                    selectedAccBadge === b.badgeType
+                      ? 'bg-[#00FF87]/20 text-[#00FF87] ring-1 ring-[#00FF87]/40'
+                      : 'bg-[#2A2A3E] text-white'
+                  }`}
+                >
+                  {EMOJIS[b.badgeType]} {ACCUMULATIVE_LABELS[b.badgeType] || b.badgeType}
+                </button>
+              ))}
+            </div>
+            {selectedAccBadge && (
+              <div className="mt-2 px-3 py-2 rounded-xl bg-[#2A2A3E] border border-[#3A3A5E]">
+                <p className="text-white text-xs font-semibold">
+                  {EMOJIS[selectedAccBadge]} {ACCUMULATIVE_LABELS[selectedAccBadge]}
+                </p>
+                <p className="text-[#8A8A9A] text-xs mt-0.5">
+                  {ACCUMULATIVE_DESCRIPTIONS[selectedAccBadge]}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
