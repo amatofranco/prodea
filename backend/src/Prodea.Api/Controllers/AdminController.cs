@@ -160,6 +160,23 @@ public class AdminController(
 
         var rng = new Random(request.Seed ?? Environment.TickCount);
 
+        // Si force, limpiar predicciones y badges existentes de esta jornada
+        if (request.Force)
+        {
+            var matchIds2 = matches.Select(m => m.Id).ToList();
+            var toDelete = await db.Predictions
+                .Where(p => matchIds2.Contains(p.MatchId) && participants.Contains(p.UserId))
+                .ToListAsync();
+            db.Predictions.RemoveRange(toDelete);
+
+            var badgesToDelete = await db.MatchdayBadges
+                .Where(mb => mb.TournamentId == request.TournamentId && mb.Phase == phase.ToString() && mb.Matchday == request.Matchday)
+                .ToListAsync();
+            db.MatchdayBadges.RemoveRange(badgesToDelete);
+
+            await db.SaveChangesAsync();
+        }
+
         // Asignar resultados a los partidos
         foreach (var match in matches)
         {
@@ -267,7 +284,7 @@ public class AdminController(
     };
 
     public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore, int? Minute = null, DateTime? MatchDate = null);
-    public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null);
+    public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null, bool Force = false);
 
     private record BackupPrediction(
         int UserId, int MatchId,
