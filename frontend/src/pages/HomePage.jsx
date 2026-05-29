@@ -163,32 +163,42 @@ function UpcomingCard({ match, navigate }) {
   const hasPred = !!match.userPrediction
   const matchDate = new Date(match.matchDate)
   const now = new Date()
+  const teamsConfirmed = match.homeTeam !== 'TBD' && match.awayTeam !== 'TBD'
   const isLocked = matchDate - now < 15 * 60 * 1000
+  const canPredict = teamsConfirmed && !isLocked
   const isToday = matchDate.toDateString() === now.toDateString()
   const isTomorrow = matchDate.toDateString() === new Date(now.getTime() + 86400000).toDateString()
   const dayLabel = isToday ? 'Hoy' : isTomorrow ? 'Mañana' : matchDate.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
   const timeLabel = matchDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
-  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+  const homeDisplay = match.homeTeamLabel ?? (teamsConfirmed ? match.homeTeam : 'Por confirmar')
+  const awayDisplay = match.awayTeamLabel ?? (teamsConfirmed ? match.awayTeam : 'Por confirmar')
 
   return (
-    <button
-      onClick={() => navigate(`/predicciones/${match.id}`)}
-      className="w-full text-left p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] active:border-[#00FF87] transition-colors"
+    <div
+      onClick={() => canPredict && navigate(`/predicciones/${match.id}`)}
+      className={`p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] transition-colors ${canPredict ? 'active:border-[#00FF87] cursor-pointer' : 'cursor-default'}`}
     >
       <div className="flex items-center gap-3">
-        <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+        {teamsConfirmed
+          ? <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+          : <div className="w-9 h-10 rounded-md bg-[#2A2A3E] flex-shrink-0" />
+        }
         <div className="flex flex-col flex-1 min-w-0 gap-0.5">
           <span className="text-[10px] text-[#8A8A9A]">{dayLabel} · {timeLabel}</span>
           <span className="text-xs font-semibold text-white leading-tight">
             {homeDisplay} <span className="text-[#3A3A4E]">vs</span> {awayDisplay}
           </span>
         </div>
-        <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
+        {teamsConfirmed
+          ? <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
+          : <div className="w-9 h-10 rounded-md bg-[#2A2A3E] flex-shrink-0" />
+        }
       </div>
       <div className="mt-2.5 pt-2.5 border-t border-[#2A2A3E] flex items-center justify-between">
         <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
-        {hasPred ? (
+        {!teamsConfirmed ? (
+          <span className="text-xs font-semibold text-[#8A8A9A]">Equipos por confirmar</span>
+        ) : hasPred ? (
           <span className="text-sm font-bold text-[#00FF87]">
             {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
           </span>
@@ -198,7 +208,7 @@ function UpcomingCard({ match, navigate }) {
           <span className="text-xs font-bold text-[#FF6B35]">Predecir →</span>
         )}
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -286,10 +296,10 @@ export default function HomePage() {
 
       {/* Últimos resultados */}
       {recentFinished.length > 0 && (
-        <div className="mb-5">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold px-5">Últimos resultados</h3>
+        <div className="mb-5 px-5">
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
           <div
-            className="flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
+            className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
           >
