@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, forwardRef } from 'react'
 import { toBlob } from 'html-to-image'
 import { Share2 } from 'lucide-react'
 import { EMOJIS } from './BadgePill'
@@ -47,7 +47,9 @@ function jornadaLabel(phase, matchday) {
 
 // Tarjeta solo para exportación: todo en inline styles con px fijos.
 // Evita que html-to-image interprete oklch de Tailwind.
-function ExportCard({ badge, username, tournamentName, rank }) {
+// forwardRef para que el ref apunte al div raíz con el gradiente,
+// no al wrapper oculto — así html-to-image captura desde (0,0).
+const ExportCard = forwardRef(function ExportCard({ badge, username, tournamentName, rank }, ref) {
   const stops  = BADGE_EXPORT_GRADIENT[badge.badgeType] || BADGE_EXPORT_GRADIENT.Dormido
   const accent = BADGE_ACCENT[badge.badgeType] || '#00FF87'
   const emoji  = EMOJIS[badge.badgeType] || '❓'
@@ -99,7 +101,7 @@ function ExportCard({ badge, username, tournamentName, rank }) {
   }
 
   return (
-    <div style={s.wrap}>
+    <div ref={ref} style={s.wrap}>
       <div style={s.inner}>
         <div style={s.row}>
           <p style={s.label}>Prodeá</p>
@@ -225,9 +227,9 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
         </div>
       </div>
 
-      {/* Tarjeta hidden para exportación — inline styles, px fijos, sin oklch */}
-      <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', zIndex: -1 }} ref={exportRef}>
-        <ExportCard badge={badge} username={username} tournamentName={tournamentName} rank={rank} />
+      {/* Tarjeta hidden para exportación — el ref apunta al root del card, no al wrapper */}
+      <div style={{ position: 'fixed', top: '-9999px', left: 0, pointerEvents: 'none' }}>
+        <ExportCard ref={exportRef} badge={badge} username={username} tournamentName={tournamentName} rank={rank} />
       </div>
 
       <button
