@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import HomePage from './pages/HomePage'
+import TorneosPage from './pages/TorneosPage'
 import TournamentPage from './pages/TournamentPage'
 import PredictionsPage from './pages/PredictionsPage'
 import PredictionPage from './pages/PredictionPage'
@@ -25,6 +26,7 @@ export default function App() {
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/torneos" element={<TorneosPage />} />
             <Route path="/predicciones" element={<PredictionsPage />} />
             <Route path="/predicciones/:matchId" element={<PredictionPage />} />
             <Route path="/torneos/:id" element={<TournamentPage />} />
