@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, Award } from 'lucide-react'
+import { ChevronLeft, Award, X } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
@@ -156,14 +156,26 @@ export default function ProfilePage() {
       {/* Figurine card modal */}
       {selectedBadge && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6"
+          className="fixed inset-0 z-50 flex flex-col bg-black/90 overflow-y-auto"
           onClick={() => setSelectedBadge(null)}
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-end px-4 pt-4 pb-2 shrink-0">
+            <button
+              onClick={() => setSelectedBadge(null)}
+              className="w-9 h-9 rounded-full bg-[#1A1A2E] flex items-center justify-center text-[#8A8A9A]"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div
+            className="flex-1 flex items-start justify-center px-6 pb-10 pt-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             <FigurineCard
               badge={selectedBadge}
               username={profile.username}
               tournamentName={tournament?.name}
+              rank={profile.rank}
             />
           </div>
         </div>
