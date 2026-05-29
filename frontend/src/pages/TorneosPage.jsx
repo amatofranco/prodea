@@ -2,11 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Users, Zap } from 'lucide-react'
 import { api } from '../services/api'
-import { useAuthStore } from '../store/authStore'
 import { useTournamentStore } from '../store/tournamentStore'
 
 export default function TorneosPage() {
-  const user = useAuthStore((s) => s.user)
   const { tournaments, setTournaments } = useTournamentStore()
   const [loading, setLoading] = useState(true)
   const [showJoin, setShowJoin] = useState(false)
@@ -44,21 +42,11 @@ export default function TorneosPage() {
     } catch (err) { setError(err.message) }
   }
 
-  const avatar = user?.username?.[0]?.toUpperCase() || '?'
-
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D] pb-4">
       {/* Header */}
       <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="text-[#8A8A9A] text-sm">Hola,</p>
-            <h2 className="text-2xl font-bold text-white">{user?.username}</h2>
-          </div>
-          <div className="w-11 h-11 rounded-full bg-[#00FF87] flex items-center justify-center text-black font-bold text-lg">
-            {avatar}
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold text-white mb-5">Mis torneos</h2>
 
         <div className="flex gap-3">
           <button
@@ -78,7 +66,6 @@ export default function TorneosPage() {
 
       {/* Lista de torneos */}
       <div className="px-5 flex-1 mt-5">
-        <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-3 font-semibold">Mis torneos</h3>
 
         {loading ? (
           <div className="flex flex-col gap-3">

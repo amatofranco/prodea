@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Zap } from 'lucide-react'
 import { api } from '../services/api'
+import { useAuthStore } from '../store/authStore'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
 const LIVE_POLL_MS = 60_000
@@ -202,6 +203,7 @@ function UpcomingCard({ match, navigate }) {
 }
 
 export default function HomePage() {
+  const user = useAuthStore((s) => s.user)
   const [matches, setMatches] = useState([])
   const navigate = useNavigate()
   const pollRef = useRef(null)
@@ -231,7 +233,7 @@ export default function HomePage() {
     .sort((a, b) => new Date(b.matchDate) - new Date(a.matchDate))
     .slice(0, 4)
   const allUpcoming = matches
-    .filter((m) => m.status === 'Scheduled' && m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD')
+    .filter((m) => m.status === 'Scheduled')
     .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))
   const todayTomorrowMatches = allUpcoming.filter((m) => {
     const d = new Date(m.matchDate).toDateString()
@@ -241,10 +243,20 @@ export default function HomePage() {
 
   const isEmpty = liveMatches.length === 0 && recentFinished.length === 0 && upcomingMatches.length === 0
 
+  const avatar = user?.username?.[0]?.toUpperCase() || '?'
+
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D] pb-4">
-      <div className="px-5 pt-12 pb-4">
-        <h2 className="text-2xl font-bold text-white">Partidos</h2>
+      <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[#8A8A9A] text-sm">Hola,</p>
+            <h2 className="text-2xl font-bold text-white">{user?.username}</h2>
+          </div>
+          <div className="w-11 h-11 rounded-full bg-[#00FF87] flex items-center justify-center text-black font-bold text-lg">
+            {avatar}
+          </div>
+        </div>
       </div>
 
       {isEmpty && (
