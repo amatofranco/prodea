@@ -149,6 +149,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "MatchdayBadges" DROP COLUMN IF EXISTS "Date";
             ALTER TABLE "MatchdayBadges" ADD COLUMN IF NOT EXISTS "Phase" text NOT NULL DEFAULT '';
             ALTER TABLE "MatchdayBadges" ADD COLUMN IF NOT EXISTS "Matchday" int NOT NULL DEFAULT 0;
+            DELETE FROM "MatchdayBadges" WHERE "Phase" = '';
             """);
 
         // Índice único: crear solo si no existe

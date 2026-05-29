@@ -44,7 +44,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
         int rank = allPoints.FindIndex(x => x.UserId == userId) + 1;
 
         var matchdayBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == tournamentId && mb.UserId == userId)
+            .Where(mb => mb.TournamentId == tournamentId && mb.UserId == userId && mb.Phase != "")
             .OrderByDescending(mb => mb.AwardedAt)
             .ToListAsync();
 
