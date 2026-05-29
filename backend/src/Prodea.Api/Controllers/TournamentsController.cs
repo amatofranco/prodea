@@ -58,7 +58,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .ToListAsync();
 
         var lastBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == id)
+            .Where(mb => mb.TournamentId == id && mb.Phase != "")
             .GroupBy(mb => mb.UserId)
             .Select(g => g.OrderByDescending(mb => mb.AwardedAt).First())
             .ToListAsync();
@@ -168,7 +168,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .ToListAsync();
 
         var lastBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == id)
+            .Where(mb => mb.TournamentId == id && mb.Phase != "")
             .GroupBy(mb => mb.UserId)
             .Select(g => g.OrderByDescending(mb => mb.AwardedAt).First())
             .ToListAsync();

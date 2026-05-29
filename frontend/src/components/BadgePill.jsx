@@ -10,7 +10,7 @@ const BADGE_STYLES = {
 const EMOJIS = {
   Crack: '🏆', Mufa: '💀', Adivino: '🔮',
   Francotirador: '🎯', Payaso: '🤡', Dormido: '😴',
-  EnCaidaLibre: '📉', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀',
+  EnCaidaLibre: '📉', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
 }
 
 export function BadgePill({ type, className = '' }) {
