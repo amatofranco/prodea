@@ -16,6 +16,7 @@ const ACCUMULATIVE_LABELS = {
   RachaInfernal: 'Racha infernal',
   ElMuro: 'El Muro',
   ElFantasma: 'El Fantasma',
+  TripleMufa: 'Triple Mufa',
 }
 
 const ACCUMULATIVE_DESCRIPTIONS = {
@@ -23,6 +24,7 @@ const ACCUMULATIVE_DESCRIPTIONS = {
   RachaInfernal: '3 jornadas consecutivas siendo El Crack',
   ElMuro: 'Nunca fue último en toda la competencia',
   ElFantasma: 'Olvidó cargar predicciones más de 3 veces',
+  TripleMufa: '3 jornadas consecutivas siendo El Mufa',
 }
 
 export default function ProfilePage() {
