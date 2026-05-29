@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { toBlob } from 'html-to-image'
 import { Share2 } from 'lucide-react'
 import { EMOJIS } from './BadgePill'
 
@@ -44,79 +43,182 @@ function jornadaLabel(phase, matchday) {
   return { R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', ThirdPlace: '3er Puesto', Final: 'Final' }[phase] ?? phase
 }
 
-function buildCardHTML({ badge, username, tournamentName, rank }) {
+function roundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.arcTo(x + w, y,     x + w, y + r,     r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
+  ctx.lineTo(x + r, y + h)
+  ctx.arcTo(x,      y + h, x, y + h - r,    r)
+  ctx.lineTo(x, y + r)
+  ctx.arcTo(x,      y,     x + r, y,         r)
+  ctx.closePath()
+}
+
+function wrapLines(ctx, text, maxW) {
+  const words = text.split(' ')
+  const lines = []
+  let line = ''
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word
+    if (line && ctx.measureText(test).width > maxW) { lines.push(line); line = word }
+    else line = test
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
+async function generateCardBlob({ badge, username, tournamentName, rank }) {
+  await document.fonts.ready
+
+  const W     = 320
+  const SCALE = 3
+  const PAD   = 20
+  const GAP   = 14
+  const CX    = W / 2
   const stops  = BADGE_GRADIENT_STOPS[badge.badgeType] || BADGE_GRADIENT_STOPS.Dormido
-  const accent = BADGE_ACCENT[badge.badgeType] || '#00FF87'
-  const emoji  = EMOJIS[badge.badgeType] || '❓'
-  const label  = BADGE_LABELS[badge.badgeType] || badge.badgeType
-  const avatar = username[0].toUpperCase()
+  const accent = BADGE_ACCENT[badge.badgeType]         || '#00FF87'
+  const emoji  = EMOJIS[badge.badgeType]               || '❓'
+  const label  = BADGE_LABELS[badge.badgeType]         || badge.badgeType
   const jornada = jornadaLabel(badge.phase, badge.matchday)
+  const avatar  = username[0].toUpperCase()
+  const phrase  = `“${badge.randomPhrase}”`
 
-  const statHTML = `
-    <div style="display:flex;gap:32px;justify-content:center;">
-      <div style="text-align:center;">
-        <p style="font-size:40px;font-weight:900;color:${accent};font-family:'Bebas Neue',sans-serif;line-height:1;margin:0;">${badge.pointsInMatchday}</p>
-        <p style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin:4px 0 0;">pts jornada</p>
-      </div>
-      ${rank != null ? `
-      <div style="text-align:center;">
-        <p style="font-size:40px;font-weight:900;color:#FFFFFF;font-family:'Bebas Neue',sans-serif;line-height:1;margin:0;">#${rank}</p>
-        <p style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin:4px 0 0;">en tabla</p>
-      </div>` : ''}
-    </div>
-  `
+  // Pre-measure phrase lines on a temp canvas
+  const tmp = document.createElement('canvas').getContext('2d')
+  tmp.font = 'italic 12px "DM Sans", system-ui, sans-serif'
+  const phraseLines = wrapLines(tmp, phrase, W - 80)
 
-  return `
-    <div style="
-      display:inline-block;
-      background:linear-gradient(to bottom,${stops[0]},${stops[1]},${stops[2]});
-      border-radius:24px;
-      padding:3px;
-      width:320px;
-    ">
-      <div style="
-        background:#0A0A0A;
-        border-radius:21px;
-        padding:24px 20px 20px;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        gap:14px;
-        width:100%;
-        box-sizing:border-box;
-      ">
-        <div style="width:100%;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:3px;font-weight:700;font-family:'DM Sans',sans-serif;">Prodeá</span>
-          <span style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;font-family:'DM Sans',sans-serif;">${jornada}</span>
-        </div>
+  // Dynamic height
+  const H = PAD + 12 + GAP + 72 + GAP + 26 + GAP + 1 + GAP
+          + 68 + 8 + 30 + GAP + 56 + GAP
+          + phraseLines.length * 17
+          + GAP + 1 + 12 + 12 + PAD
 
-        <div style="
-          width:72px;height:72px;border-radius:50%;
-          background:${accent};
-          display:flex;align-items:center;justify-content:center;
-          font-size:28px;font-weight:900;color:#0A0A0A;
-          font-family:'Bebas Neue',sans-serif;
-        ">${avatar}</div>
+  const canvas = document.createElement('canvas')
+  canvas.width  = W * SCALE
+  canvas.height = H * SCALE
+  const ctx = canvas.getContext('2d')
+  ctx.scale(SCALE, SCALE)
 
-        <p style="font-size:24px;font-weight:700;color:#FFFFFF;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;margin:0;">${username}</p>
+  // --- Gradient border ---
+  const grad = ctx.createLinearGradient(0, 0, 0, H)
+  grad.addColorStop(0,   stops[0])
+  grad.addColorStop(0.5, stops[1])
+  grad.addColorStop(1,   stops[2])
+  ctx.fillStyle = grad
+  roundedRect(ctx, 0, 0, W, H, 24)
+  ctx.fill()
 
-        <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${accent}80,transparent);"></div>
+  // --- Inner background ---
+  ctx.fillStyle = '#0A0A0A'
+  roundedRect(ctx, 3, 3, W - 6, H - 6, 21)
+  ctx.fill()
 
-        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-          <span style="font-size:72px;line-height:1;">${emoji}</span>
-          <p style="font-size:28px;font-weight:700;color:${accent};font-family:'Bebas Neue',sans-serif;letter-spacing:2px;margin:0;">${label}</p>
-        </div>
+  let y = PAD
 
-        ${statHTML}
+  // --- Header ---
+  ctx.font = '700 10px "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'
+  ctx.textBaseline = 'top'
+  ctx.textAlign = 'left';  ctx.fillText('PRODEÁ', 20, y)
+  ctx.textAlign = 'right'; ctx.fillText(jornada.toUpperCase(), W - 20, y)
+  y += 12 + GAP
 
-        <p style="font-size:12px;font-style:italic;color:rgba(255,255,255,0.5);text-align:center;line-height:1.5;margin:0;padding:0 8px;font-family:'DM Sans',sans-serif;">&#8220;${badge.randomPhrase}&#8221;</p>
+  // --- Avatar ---
+  ctx.beginPath()
+  ctx.arc(CX, y + 36, 36, 0, Math.PI * 2)
+  ctx.fillStyle = accent
+  ctx.fill()
+  ctx.font = '900 26px "Bebas Neue", "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = '#0A0A0A'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(avatar, CX, y + 36)
+  y += 72 + GAP
 
-        <div style="width:100%;display:flex;justify-content:center;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
-          <p style="font-size:9px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:3px;font-weight:700;font-family:'DM Sans',sans-serif;margin:0;">${tournamentName} · Mundial 2026</p>
-        </div>
-      </div>
-    </div>
-  `
+  // --- Username ---
+  ctx.font = '700 22px "Bebas Neue", "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = '#FFFFFF'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillText(username, CX, y)
+  y += 26 + GAP
+
+  // --- Divider ---
+  const divGrad = ctx.createLinearGradient(20, 0, W - 20, 0)
+  divGrad.addColorStop(0,   'transparent')
+  divGrad.addColorStop(0.5, accent + '80')
+  divGrad.addColorStop(1,   'transparent')
+  ctx.fillStyle = divGrad
+  ctx.fillRect(20, y, W - 40, 1)
+  y += 1 + GAP
+
+  // --- Emoji ---
+  ctx.font = '60px serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillText(emoji, CX, y)
+  y += 68 + 8
+
+  // --- Badge label ---
+  ctx.font = '700 26px "Bebas Neue", "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = accent
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillText(label, CX, y)
+  y += 30 + GAP
+
+  // --- Stats ---
+  const hasRank = rank != null
+  const ptsCX = hasRank ? W / 4 : CX
+  const rkCX  = hasRank ? (W * 3) / 4 : null
+
+  ctx.textBaseline = 'top'
+  ctx.textAlign = 'center'
+
+  ctx.font = '900 38px "Bebas Neue", "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = accent
+  ctx.fillText(String(badge.pointsInMatchday), ptsCX, y)
+  ctx.font = '400 10px "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'
+  ctx.fillText('PTS JORNADA', ptsCX, y + 42)
+
+  if (rkCX !== null) {
+    ctx.font = '900 38px "Bebas Neue", "DM Sans", system-ui, sans-serif'
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillText(`#${rank}`, rkCX, y)
+    ctx.font = '400 10px "DM Sans", system-ui, sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.4)'
+    ctx.fillText('EN TABLA', rkCX, y + 42)
+  }
+  y += 56 + GAP
+
+  // --- Phrase ---
+  ctx.font = 'italic 12px "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  phraseLines.forEach((line, i) => ctx.fillText(line, CX, y + i * 17))
+  y += phraseLines.length * 17 + GAP
+
+  // --- Footer divider ---
+  ctx.fillStyle = 'rgba(255,255,255,0.1)'
+  ctx.fillRect(20, y, W - 40, 1)
+  y += 1 + 12
+
+  // --- Footer text ---
+  ctx.font = '700 9px "DM Sans", system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillText(`${tournamentName} · MUNDIAL 2026`, CX, y)
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+  )
 }
 
 export default function FigurineCard({ badge, username, tournamentName, rank }) {
@@ -130,32 +232,14 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
   const avatar   = username[0].toUpperCase()
   const jornada  = jornadaLabel(badge.phase, badge.matchday)
 
-  async function exportCard() {
+  async function handleShare() {
     if (sharing) return
     setSharing(true)
     setError(null)
-
-    const container = document.createElement('div')
-    container.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:1;'
-
     try {
-      await document.fonts.ready
-
-      container.innerHTML = buildCardHTML({ badge, username, tournamentName, rank })
-      document.body.appendChild(container)
-
-      // Dos frames: layout + paint
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
-
-      const cardEl = container.firstElementChild
-      const blob = await Promise.race([
-        toBlob(cardEl, { pixelRatio: 3, skipFonts: true }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12_000)),
-      ])
-
-      document.body.removeChild(container)
-
+      const blob = await generateCardBlob({ badge, username, tournamentName, rank })
       const file = new File([blob], `prodea-${username}.png`, { type: 'image/png' })
+
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           text: `${username} fue "${label}" en ${jornada} · Prodeá Mundial 2026`,
@@ -172,7 +256,6 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
         setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
     } catch (err) {
-      if (document.body.contains(container)) document.body.removeChild(container)
       if (err?.name !== 'AbortError') {
         setError('No se pudo generar la imagen. Intentá de nuevo.')
         console.error('[FigurineCard]', err)
@@ -226,7 +309,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
       </div>
 
       <button
-        onClick={exportCard}
+        onClick={handleShare}
         disabled={sharing}
         className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#00FF87] text-black font-bold text-sm active:scale-95 transition-transform disabled:opacity-70"
       >
