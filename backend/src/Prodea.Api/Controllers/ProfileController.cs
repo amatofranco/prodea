@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Prodea.Api.Data;
 using Prodea.Api.DTOs;
+using Prodea.Api.Models;
 using Prodea.Api.Services;
 
 namespace Prodea.Api.Controllers;
@@ -48,6 +49,19 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
             .OrderByDescending(mb => mb.AwardedAt)
             .ToListAsync();
 
+        // Assign occurrence index per badge type (chronological, oldest = 0) for unique phrase selection
+        var occurrenceCounts = new Dictionary<MatchdayBadgeType, int>();
+        var phraseIndex = matchdayBadges
+            .OrderBy(mb => mb.AwardedAt)
+            .ToDictionary(
+                mb => (mb.Phase, mb.Matchday),
+                mb =>
+                {
+                    occurrenceCounts.TryGetValue(mb.BadgeType, out var count);
+                    occurrenceCounts[mb.BadgeType] = count + 1;
+                    return count;
+                });
+
         var accumulativeBadges = await db.AccumulativeBadges
             .Where(ab => ab.TournamentId == tournamentId && ab.UserId == userId)
             .ToListAsync();
@@ -61,7 +75,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
                 BadgeService.GetEmoji(mb.BadgeType),
                 mb.BadgeType.ToString(),
                 mb.PointsInMatchday,
-                BadgeService.GetPhrase(mb.BadgeType, mb.UserId, mb.Phase, mb.Matchday),
+                BadgeService.GetPhrase(mb.BadgeType, mb.UserId, phraseIndex[(mb.Phase, mb.Matchday)]),
                 mb.AwardedAt
             )).ToList(),
             accumulativeBadges.Select(ab => new AccumulativeBadgeDto(

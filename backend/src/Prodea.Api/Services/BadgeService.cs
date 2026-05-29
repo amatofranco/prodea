@@ -38,11 +38,18 @@ public class BadgeService(ProdeaDbContext db)
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
     public static string GetAccumulativeEmoji(AccumulativeBadgeType type) => AccumulativeEmojis[type];
 
-    public static string GetPhrase(MatchdayBadgeType type, int userId, string phase, int matchday)
+    public static string GetPhrase(MatchdayBadgeType type, int userId, int occurrenceIndex)
     {
         var options = Phrases[type];
-        var seed = HashCode.Combine(userId, phase.GetHashCode(), matchday);
-        return options[new Random(seed).Next(options.Length)];
+        // Stable shuffle per user+type so the first N occurrences each get a unique phrase
+        var indices = Enumerable.Range(0, options.Length).ToArray();
+        var rng = new Random(HashCode.Combine(userId, (int)type));
+        for (int i = indices.Length - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (indices[i], indices[j]) = (indices[j], indices[i]);
+        }
+        return options[indices[occurrenceIndex % options.Length]];
     }
 
     // matchday: 1/2/3 para grupos; 0 para fases eliminatorias
