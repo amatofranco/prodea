@@ -13,4 +13,5 @@ public class Tournament
     public ICollection<TournamentParticipant> Participants { get; set; } = [];
     public ICollection<MatchdayBadge> MatchdayBadges { get; set; } = [];
     public ICollection<AccumulativeBadge> AccumulativeBadges { get; set; } = [];
+    public ICollection<ChampionPick> ChampionPicks { get; set; } = [];
 }

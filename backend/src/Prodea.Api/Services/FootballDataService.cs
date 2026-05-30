@@ -187,6 +187,19 @@ public class FootballDataService(
 
         foreach (var tid in tournamentIds)
             await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
+
+        if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue && match.HomeScore != match.AwayScore)
+            await AwardChampionPickPointsAsync(db, match, ct);
+    }
+
+    private static async Task AwardChampionPickPointsAsync(ProdeaDbContext db, Match match, CancellationToken ct)
+    {
+        var champion = match.HomeScore > match.AwayScore ? match.HomeTeam : match.AwayTeam;
+        var winners = await db.ChampionPicks
+            .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0)
+            .ToListAsync(ct);
+        foreach (var pick in winners) pick.PointsEarned = 10;
+        await db.SaveChangesAsync(ct);
     }
 
     private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, CancellationToken ct)
