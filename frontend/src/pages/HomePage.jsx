@@ -295,9 +295,11 @@ export default function HomePage() {
       )}
 
       {/* Últimos resultados */}
-      {recentFinished.length > 0 && (
-        <div className="mb-5 px-5">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
+      <div className="mb-5 px-5">
+        <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
+        {recentFinished.length === 0 ? (
+          <p className="text-[#8A8A9A] text-sm italic">El torneo aún no comenzó</p>
+        ) : (
           <div
             className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -309,8 +311,8 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Próximos partidos */}
       {upcomingMatches.length > 0 && (
