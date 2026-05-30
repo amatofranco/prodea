@@ -161,9 +161,11 @@ export default function PredictionPage() {
   const allMatchesRef = useRef([])
   const matchIdRef = useRef(matchId)
   const turboModeRef = useRef(false)
+  const justSavedRef = useRef(false)
   allMatchesRef.current = allMatches
   matchIdRef.current = matchId
   turboModeRef.current = turboMode
+  justSavedRef.current = justSaved
 
   // Carga inicial
   useEffect(() => {
@@ -196,9 +198,14 @@ export default function PredictionPage() {
     setLoading(false)
   }, [matchId, allMatches])
 
-  // Flash al activar turbo
+  // Flash al activar turbo; si el partido ya fue guardado en esta sesión, avanzar directo
   useEffect(() => {
-    if (turboMode && !prevTurboRef.current) setTurboFlash(true)
+    if (turboMode && !prevTurboRef.current) {
+      setTurboFlash(true)
+      if (justSavedRef.current) {
+        setTimeout(() => turboAdvance(), 400)
+      }
+    }
     prevTurboRef.current = turboMode
   }, [turboMode])
 
