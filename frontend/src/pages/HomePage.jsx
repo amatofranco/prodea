@@ -159,6 +159,30 @@ function FinishedCard({ match }) {
   )
 }
 
+function PlaceholderCard({ match }) {
+  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
+  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+  const dateLabel = new Date(match.matchDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  return (
+    <div className="p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] border-dashed flex flex-col gap-2 opacity-50">
+      <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+          <FlagOnly name={match.homeTeam} label={match.homeTeamLabel} />
+          <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{homeDisplay}</p>
+        </div>
+        <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+          <span className="text-base font-black text-[#3A3A4E] tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>VS</span>
+          <span className="text-[8px] uppercase tracking-wider text-[#3A3A4E] font-semibold">{dateLabel}</span>
+        </div>
+        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+          <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
+          <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{awayDisplay}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function UpcomingCard({ match, navigate }) {
   const hasPred = !!match.userPrediction
   const matchDate = new Date(match.matchDate)
@@ -297,21 +321,24 @@ export default function HomePage() {
       {/* Últimos resultados */}
       <div className="mb-5 px-5">
         <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
-        {recentFinished.length === 0 ? (
-          <p className="text-[#8A8A9A] text-sm italic">El torneo aún no comenzó</p>
-        ) : (
-          <div
-            className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
-          >
-            {recentFinished.map((m) => (
-              <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
-                <FinishedCard match={m} />
-              </div>
-            ))}
-          </div>
-        )}
+        <div
+          className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
+        >
+          {recentFinished.length > 0
+            ? recentFinished.map((m) => (
+                <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
+                  <FinishedCard match={m} />
+                </div>
+              ))
+            : allUpcoming.slice(0, 4).map((m) => (
+                <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
+                  <PlaceholderCard match={m} />
+                </div>
+              ))
+          }
+        </div>
       </div>
 
       {/* Próximos partidos */}
