@@ -56,5 +56,8 @@ export const api = {
   submitChampionPick: (tournamentId, countryName) =>
     request(`/tournaments/${tournamentId}/champion-pick`, { method: 'POST', body: JSON.stringify({ countryName }) }),
 
+  getMatchPredictions: (tournamentId, matchId) =>
+    request(`/tournaments/${tournamentId}/matches/${matchId}/predictions`),
+
   getPollingStatus: () => request('/admin/polling-status'),
 }

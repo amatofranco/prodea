@@ -46,6 +46,44 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         }));
     }
 
+    [HttpGet("{matchId}/predictions")]
+    public async Task<ActionResult<List<MatchPredictionDto>>> GetMatchPredictions(int tournamentId, int matchId)
+    {
+        var userId = CurrentUserId;
+        var isMember = await db.TournamentParticipants.AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == userId);
+        if (!isMember) return Forbid();
+
+        var match = await db.Matches.FindAsync(matchId);
+        if (match == null) return NotFound();
+        if (match.Status != MatchStatus.Finished)
+            return BadRequest(new { message = "El partido no terminó aún." });
+
+        var participants = await db.TournamentParticipants
+            .Where(tp => tp.TournamentId == tournamentId)
+            .Include(tp => tp.User)
+            .ToListAsync();
+
+        var participantIds = participants.Select(tp => tp.UserId).ToList();
+
+        var predictions = await db.Predictions
+            .Where(p => p.MatchId == matchId && participantIds.Contains(p.UserId))
+            .ToDictionaryAsync(p => p.UserId);
+
+        return Ok(participants
+            .Select(tp =>
+            {
+                predictions.TryGetValue(tp.UserId, out var pred);
+                return new MatchPredictionDto(
+                    tp.UserId, tp.User.Username,
+                    pred?.PredictedHomeScore, pred?.PredictedAwayScore,
+                    pred?.PointsEarned ?? 0
+                );
+            })
+            .OrderByDescending(p => p.PointsEarned)
+            .ThenBy(p => p.Username)
+            .ToList());
+    }
+
     [HttpPost("{matchId}/result")]
     public async Task<IActionResult> UpdateMatchResult(int tournamentId, int matchId, UpdateMatchResultRequest request)
     {
@@ -82,6 +120,16 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
             .ToListAsync();
         foreach (var tid in allTournamentIds)
             await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
+
+        if (match.Phase == MatchPhase.Final && request.HomeScore != request.AwayScore)
+        {
+            var champion = request.HomeScore > request.AwayScore ? match.HomeTeam : match.AwayTeam;
+            var winningPicks = await db.ChampionPicks
+                .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0)
+                .ToListAsync();
+            foreach (var pick in winningPicks) pick.PointsEarned = 10;
+            await db.SaveChangesAsync();
+        }
 
         var payload = new
         {
