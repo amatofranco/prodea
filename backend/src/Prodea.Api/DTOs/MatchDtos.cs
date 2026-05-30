@@ -53,3 +53,11 @@ public record UpdateMatchResultRequest(
     [Required, Range(0, 99)] int HomeScore,
     [Required, Range(0, 99)] int AwayScore
 );
+
+public record MatchPredictionDto(
+    int UserId,
+    string Username,
+    int? PredictedHomeScore,
+    int? PredictedAwayScore,
+    int PointsEarned
+);
