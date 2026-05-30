@@ -98,7 +98,6 @@ public class BadgeService(ProdeaDbContext db)
             {
                 { HasAnyPrediction: false }                                                            => MatchdayBadgeType.Dormido,
                 { TotalPoints: var p } when p == maxPoints && maxPoints > 0 && participants.Count > 1  => MatchdayBadgeType.Crack,
-                { TotalPoints: 0 }                                                                     => MatchdayBadgeType.Payaso,
                 { TotalPoints: var p } when p == minPoints && participants.Count > 1                   => MatchdayBadgeType.Mufa,
                 { ExactCount: >= 2 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 1 }                                                                   => MatchdayBadgeType.Francotirador,
