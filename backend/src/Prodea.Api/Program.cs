@@ -170,6 +170,26 @@ using (var scope = app.Services.CreateScope())
     {
         startupLogger.LogWarning(ex, "Migración BadgesByMatchday: algunos pasos ya aplicados");
     }
+    // Migración AddChampionPick: crea la tabla si no existe
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "ChampionPicks" (
+                "Id"          serial PRIMARY KEY,
+                "UserId"      int NOT NULL REFERENCES "Users"("Id") ON DELETE CASCADE,
+                "TournamentId" int NOT NULL REFERENCES "Tournaments"("Id") ON DELETE CASCADE,
+                "CountryName" varchar(100) NOT NULL DEFAULT '',
+                "PickedAt"    timestamptz NOT NULL DEFAULT now(),
+                "PointsEarned" int NOT NULL DEFAULT 0,
+                CONSTRAINT "IX_ChampionPicks_TournamentId_UserId" UNIQUE ("TournamentId", "UserId")
+            );
+            """);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogWarning(ex, "Migración ChampionPicks: tabla ya existe o error");
+    }
+
     var apiKey = app.Configuration["FootballData:ApiKey"];
 
     bool noMatches = !await db.Matches.AnyAsync();
