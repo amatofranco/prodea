@@ -14,6 +14,7 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
     public DbSet<AccumulativeBadge> AccumulativeBadges => Set<AccumulativeBadge>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<PredictionBackup> PredictionBackups => Set<PredictionBackup>();
+    public DbSet<ChampionPick> ChampionPicks => Set<ChampionPick>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -114,6 +115,20 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
             e.HasOne(ab => ab.Tournament)
                 .WithMany(t => t.AccumulativeBadges)
                 .HasForeignKey(ab => ab.TournamentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChampionPick>(e =>
+        {
+            e.HasIndex(cp => new { cp.TournamentId, cp.UserId }).IsUnique();
+            e.Property(cp => cp.CountryName).HasMaxLength(100);
+            e.HasOne(cp => cp.User)
+                .WithMany(u => u.ChampionPicks)
+                .HasForeignKey(cp => cp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(cp => cp.Tournament)
+                .WithMany(t => t.ChampionPicks)
+                .HasForeignKey(cp => cp.TournamentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -52,5 +52,9 @@ export const api = {
 
   getProfile: (tournamentId, userId) => request(`/tournaments/${tournamentId}/profile/${userId}`),
 
+  getChampionPick: (tournamentId) => request(`/tournaments/${tournamentId}/champion-pick`),
+  submitChampionPick: (tournamentId, countryName) =>
+    request(`/tournaments/${tournamentId}/champion-pick`, { method: 'POST', body: JSON.stringify({ countryName }) }),
+
   getPollingStatus: () => request('/admin/polling-status'),
 }

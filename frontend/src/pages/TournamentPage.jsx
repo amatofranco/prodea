@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore'
 import { joinTournament, leaveTournament, onMatchUpdated } from '../services/signalr'
 import { BadgePill } from '../components/BadgePill'
 import ApiStatusBanner from '../components/ApiStatusBanner'
+import ChampionPickBanner from '../components/ChampionPickBanner'
 
 export default function TournamentPage() {
   const { id } = useParams()
@@ -87,18 +88,21 @@ export default function TournamentPage() {
       </div>
 
       {/* Leaderboard */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2">
-        <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-1">Tabla de posiciones</p>
-        {leaderboard.map((entry, i) => (
-          <LeaderboardRow
-            key={entry.userId}
-            entry={entry}
-            isMe={entry.userId === user?.id}
-            index={i}
-            tournamentId={id}
-            navigate={navigate}
-          />
-        ))}
+      <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-2">
+        <ChampionPickBanner tournamentId={id} currentUserId={user?.id} />
+        <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-1 px-4">Tabla de posiciones</p>
+        <div className="px-4 flex flex-col gap-2">
+          {leaderboard.map((entry, i) => (
+            <LeaderboardRow
+              key={entry.userId}
+              entry={entry}
+              isMe={entry.userId === user?.id}
+              index={i}
+              tournamentId={id}
+              navigate={navigate}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
