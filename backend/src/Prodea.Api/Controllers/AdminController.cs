@@ -292,6 +292,37 @@ public class AdminController(
         });
     }
 
+    [HttpPost("reset-simulation")]
+    public async Task<IActionResult> ResetSimulation(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        // Reset all matches to Scheduled with no score
+        await db.Matches
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.Status, MatchStatus.Scheduled)
+                .SetProperty(m => m.HomeScore, (int?)null)
+                .SetProperty(m => m.AwayScore, (int?)null)
+                .SetProperty(m => m.Minute, (int?)null));
+
+        // Reset all prediction points to 0
+        await db.Predictions
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.PointsEarned, 0));
+
+        // Delete all matchday and accumulative badges
+        await db.MatchdayBadges.ExecuteDeleteAsync();
+        await db.AccumulativeBadges.ExecuteDeleteAsync();
+
+        // Reset champion pick points to 0
+        await db.ChampionPicks
+            .ExecuteUpdateAsync(s => s.SetProperty(cp => cp.PointsEarned, 0));
+
+        return Ok(new { message = "Simulación reseteada: partidos a Scheduled, predicciones a 0 pts, badges eliminados." });
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
