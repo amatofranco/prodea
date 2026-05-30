@@ -177,13 +177,12 @@ public class AdminController(
             await db.SaveChangesAsync();
         }
 
-        // Asignar resultados a los partidos
+        // Asignar resultados a los partidos (sin tocar MatchDate — siempre usamos las fechas reales de la API)
         foreach (var match in matches)
         {
             match.HomeScore = rng.Next(0, 5);
             match.AwayScore = rng.Next(0, 5);
             match.Status = MatchStatus.Finished;
-            match.MatchDate = DateTime.UtcNow.AddHours(-2);
         }
         await db.SaveChangesAsync();
 
@@ -300,27 +299,22 @@ public class AdminController(
         if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
             return Forbid();
 
-        // Reset all matches to Scheduled with no score
-        await db.Matches
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(m => m.Status, MatchStatus.Scheduled)
-                .SetProperty(m => m.HomeScore, (int?)null)
-                .SetProperty(m => m.AwayScore, (int?)null)
-                .SetProperty(m => m.Minute, (int?)null));
+        // Re-importar fixture desde la API: restaura fechas reales, equipos y estados
+        var (matchCount, source) = await fixtureService.ImportAsync(force: true);
 
-        // Reset all prediction points to 0
+        // Reset prediction points
         await db.Predictions
             .ExecuteUpdateAsync(s => s.SetProperty(p => p.PointsEarned, 0));
 
-        // Delete all matchday and accumulative badges
+        // Delete all badges
         await db.MatchdayBadges.ExecuteDeleteAsync();
         await db.AccumulativeBadges.ExecuteDeleteAsync();
 
-        // Reset champion pick points to 0
+        // Reset champion pick points
         await db.ChampionPicks
             .ExecuteUpdateAsync(s => s.SetProperty(cp => cp.PointsEarned, 0));
 
-        return Ok(new { message = "Simulación reseteada: partidos a Scheduled, predicciones a 0 pts, badges eliminados." });
+        return Ok(new { message = $"Simulación reseteada: fixture re-importado desde {source} ({matchCount} partidos), predicciones a 0 pts, badges eliminados." });
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
