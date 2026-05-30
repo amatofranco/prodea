@@ -46,6 +46,10 @@ export default function RegisterPage() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    if (!/^[a-zA-Z0-9_]+$/.test(form.username)) {
+      setError('El nombre de usuario solo puede contener letras, números y guión bajo (_)')
+      return
+    }
     if (form.password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
     setLoading(true)
     try {
@@ -83,7 +87,10 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">
-        {field('username', 'text', 'Nombre de usuario')}
+        <div className="flex flex-col gap-1">
+          {field('username', 'text', 'Nombre de usuario')}
+          <p className="text-xs text-[#8A8A9A] px-1">Solo letras, números y _ (sin espacios ni símbolos)</p>
+        </div>
         {field('email', 'email', 'Email')}
         {field('password', 'password', 'Contraseña (mín. 6 caracteres)')}
 
