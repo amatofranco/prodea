@@ -91,7 +91,7 @@ export default function ChampionPickPage() {
             <ChevronLeft size={24} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-white">🏆 Campeón del Mundial</h1>
+            <h1 className="text-xl font-bold text-white">🏆 Campeón del Torneo</h1>
             <div className="mt-0.5">
               {isLocked
                 ? <span className="flex items-center gap-1 text-xs text-[#8A8A9A]"><Lock size={11} /> Elección cerrada</span>
@@ -151,7 +151,7 @@ export default function ChampionPickPage() {
           <div className="mt-4">
             {!myPick && (
               <p className="text-center text-[#8A8A9A] text-sm px-4 mb-3">
-                Elegí el campeón del Mundial 2026
+                Elegí el campeón del torneo
               </p>
             )}
             {/* Search */}

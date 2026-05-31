@@ -151,7 +151,7 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
         {/* Title row */}
         <div className="flex items-center gap-2 px-4 pt-3 pb-2">
           <Trophy size={16} className="text-[#F59E0B] shrink-0" />
-          <span className="text-white font-bold text-sm flex-1">Campeón del Mundial</span>
+          <span className="text-white font-bold text-sm flex-1">Campeón del Torneo</span>
           {isLocked && (
             <span className="flex items-center gap-1 text-[10px] text-[#8A8A9A] font-semibold uppercase">
               <Lock size={10} /> Cerrado
