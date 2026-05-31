@@ -33,7 +33,7 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
                 m.HomeTeamFlag, m.AwayTeamFlag,
                 m.MatchDate, m.Phase.ToString(), m.Matchday, m.HomeScore, m.AwayScore,
                 m.Status.ToString(),
-                pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned),
+                pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned, pred.PredictedPenaltyWinner),
                 m.Minute
             );
         }));
@@ -55,13 +55,19 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
 
         var existing = await db.Predictions.FirstOrDefaultAsync(p => p.UserId == userId && p.MatchId == matchId);
 
+        // PredictedPenaltyWinner solo aplica en eliminatoria y cuando el score es empate
+        var penaltyWinner = (match.Phase != MatchPhase.Group && request.PredictedHomeScore == request.PredictedAwayScore)
+            ? request.PredictedPenaltyWinner
+            : null;
+
         if (existing != null)
         {
             existing.PredictedHomeScore = request.PredictedHomeScore;
             existing.PredictedAwayScore = request.PredictedAwayScore;
+            existing.PredictedPenaltyWinner = penaltyWinner;
             existing.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
-            return Ok(new PredictionDto(existing.Id, existing.PredictedHomeScore, existing.PredictedAwayScore, existing.PointsEarned));
+            return Ok(new PredictionDto(existing.Id, existing.PredictedHomeScore, existing.PredictedAwayScore, existing.PointsEarned, existing.PredictedPenaltyWinner));
         }
 
         var prediction = new Prediction
@@ -70,11 +76,12 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
             MatchId = matchId,
             PredictedHomeScore = request.PredictedHomeScore,
             PredictedAwayScore = request.PredictedAwayScore,
+            PredictedPenaltyWinner = penaltyWinner,
         };
 
         db.Predictions.Add(prediction);
         await db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetMyPredictions), new PredictionDto(prediction.Id, prediction.PredictedHomeScore, prediction.PredictedAwayScore, 0));
+        return CreatedAtAction(nameof(GetMyPredictions), new PredictionDto(prediction.Id, prediction.PredictedHomeScore, prediction.PredictedAwayScore, 0, penaltyWinner));
     }
 }

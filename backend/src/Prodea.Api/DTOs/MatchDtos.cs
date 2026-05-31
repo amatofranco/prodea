@@ -41,12 +41,14 @@ public record PredictionDto(
     int Id,
     int PredictedHomeScore,
     int PredictedAwayScore,
-    int PointsEarned
+    int PointsEarned,
+    string? PredictedPenaltyWinner = null
 );
 
 public record SubmitPredictionRequest(
     [Required, Range(0, 9)] int PredictedHomeScore,
-    [Required, Range(0, 9)] int PredictedAwayScore
+    [Required, Range(0, 9)] int PredictedAwayScore,
+    string? PredictedPenaltyWinner = null
 );
 
 public record UpdateMatchResultRequest(

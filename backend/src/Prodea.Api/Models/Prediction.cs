@@ -8,6 +8,7 @@ public class Prediction
     public int PredictedHomeScore { get; set; }
     public int PredictedAwayScore { get; set; }
     public int PointsEarned { get; set; }
+    public string? PredictedPenaltyWinner { get; set; } // "home" | "away" — solo fase eliminatoria
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

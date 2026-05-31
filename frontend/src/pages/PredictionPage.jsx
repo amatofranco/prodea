@@ -145,6 +145,7 @@ export default function PredictionPage() {
   const [match, setMatch] = useState(null)
   const [home, setHome] = useState(0)
   const [away, setAway] = useState(0)
+  const [penaltyWinner, setPenaltyWinner] = useState(null) // "home" | "away" | null
   const [saved, setSaved] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -189,10 +190,12 @@ export default function PredictionPage() {
     if (m.userPrediction) {
       setHome(m.userPrediction.predictedHomeScore)
       setAway(m.userPrediction.predictedAwayScore)
+      setPenaltyWinner(m.userPrediction.predictedPenaltyWinner ?? null)
       setSaved(true)
     } else {
       setHome(0)
       setAway(0)
+      setPenaltyWinner(null)
       setSaved(false)
     }
     setLoading(false)
@@ -230,6 +233,14 @@ export default function PredictionPage() {
 
   function navTo(id, dir) { slideDir.current = dir; navigate(`/predicciones/${id}`) }
 
+  const isKnockout = match?.phase && match.phase !== 'Group'
+  const isDraw = home === away
+
+  // Si deja de ser empate, limpiar el pick de penales
+  useEffect(() => {
+    if (!isDraw) setPenaltyWinner(null)
+  }, [isDraw])
+
   const teamsConfirmed = match?.homeTeam !== 'TBD' && match?.awayTeam !== 'TBD'
   const [isPastDeadline, setIsPastDeadline] = useState(false)
   useEffect(() => {
@@ -249,11 +260,12 @@ export default function PredictionPage() {
     setSaving(true)
     setError('')
     try {
-      await api.submitPrediction(matchId, { predictedHomeScore: home, predictedAwayScore: away })
+      const pw = isKnockout && isDraw ? penaltyWinner : null
+      await api.submitPrediction(matchId, { predictedHomeScore: home, predictedAwayScore: away, predictedPenaltyWinner: pw })
       setAllMatches((prev) =>
         prev.map((m) =>
           m.id === Number(matchId)
-            ? { ...m, userPrediction: { predictedHomeScore: home, predictedAwayScore: away, pointsEarned: 0 } }
+            ? { ...m, userPrediction: { predictedHomeScore: home, predictedAwayScore: away, pointsEarned: 0, predictedPenaltyWinner: pw } }
             : m
         )
       )
@@ -400,6 +412,13 @@ export default function PredictionPage() {
                   <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                     {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
                   </p>
+                  {match.userPrediction.predictedPenaltyWinner && (
+                    <p className="text-[#F59E0B] text-xs mt-1">
+                      Penales: {match.userPrediction.predictedPenaltyWinner === 'home'
+                        ? (match.homeTeamLabel ?? match.homeTeam)
+                        : (match.awayTeamLabel ?? match.awayTeam)}
+                    </p>
+                  )}
                   {match.status === 'Finished' && (
                     <p className={`text-sm font-bold mt-1 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
                       +{match.userPrediction.pointsEarned} puntos
@@ -421,6 +440,38 @@ export default function PredictionPage() {
                   <GoalPicker value={away} onChange={setAway} disabled={isLocked} />
                 </div>
               </div>
+
+              {/* Selector de penales — solo eliminatoria con empate */}
+              {isKnockout && isDraw && (
+                <div className="w-full rounded-2xl bg-[#1A1A2E] border border-[#F59E0B]/40 overflow-hidden">
+                  <p className="text-center text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] pt-2 pb-1">
+                    ¿Quién gana por penales?
+                  </p>
+                  <div className="flex">
+                    <button
+                      onClick={() => setPenaltyWinner(penaltyWinner === 'home' ? null : 'home')}
+                      className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
+                        penaltyWinner === 'home'
+                          ? 'bg-[#F59E0B] text-black'
+                          : 'text-[#8A8A9A] active:bg-[#2A2A3E]'
+                      }`}
+                    >
+                      {match.homeTeamLabel ?? match.homeTeam}
+                    </button>
+                    <div className="w-px bg-[#2A2A3E]" />
+                    <button
+                      onClick={() => setPenaltyWinner(penaltyWinner === 'away' ? null : 'away')}
+                      className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
+                        penaltyWinner === 'away'
+                          ? 'bg-[#F59E0B] text-black'
+                          : 'text-[#8A8A9A] active:bg-[#2A2A3E]'
+                      }`}
+                    >
+                      {match.awayTeamLabel ?? match.awayTeam}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="w-full p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] text-center">
                 <p className="text-white font-bold text-base">

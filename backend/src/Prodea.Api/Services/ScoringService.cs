@@ -31,6 +31,10 @@ public static class ScoringService
         if ((predictedHomeWin && actualHomeWin) || (predictedDraw && actualDraw) || (predictedAwayWin && actualAwayWin))
             return 1;
 
+        // Empate predicho en partido eliminatorio que fue a penales: 1 pt si acertó el ganador por penales
+        if (predictedDraw && winnerSide != null && prediction.PredictedPenaltyWinner == winnerSide)
+            return 1;
+
         return 0;
     }
 }
