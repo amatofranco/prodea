@@ -107,6 +107,13 @@ builder.Services.AddResend(opts => opts.ApiToken = resendApiKey);
 
 var app = builder.Build();
 
+app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
+{
+    ctx.Response.StatusCode = 500;
+    ctx.Response.ContentType = "application/json";
+    await ctx.Response.WriteAsync("{\"message\":\"Error interno del servidor\"}");
+}));
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
