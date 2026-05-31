@@ -298,20 +298,17 @@ export default function HomePage() {
 
       {/* Banner fin del mundial */}
       {isFinalFinished && tournaments.length > 0 && (
-        <div className="px-5 mb-4 flex flex-col gap-2">
-          {tournaments.map(t => (
-            <div
-              key={t.id}
-              onClick={() => navigate(`/torneos/${t.id}`)}
-              className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/40 cursor-pointer active:opacity-80"
-            >
-              <span className="text-3xl shrink-0">🏆</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡El mundial terminó!</p>
-                <p className="text-white font-semibold text-sm truncate">{t.name} — Ver quién ganó →</p>
-              </div>
+        <div className="px-5 mb-4">
+          <div
+            onClick={() => navigate(tournaments.length === 1 ? `/torneos/${tournaments[0].id}` : '/')}
+            className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/40 cursor-pointer active:opacity-80"
+          >
+            <span className="text-3xl shrink-0">🏆</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡El mundial terminó!</p>
+              <p className="text-white font-semibold text-sm">Ver quién ganó el prode →</p>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
