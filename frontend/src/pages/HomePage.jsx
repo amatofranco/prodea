@@ -239,11 +239,13 @@ function UpcomingCard({ match, navigate }) {
 export default function HomePage() {
   const user = useAuthStore((s) => s.user)
   const [matches, setMatches] = useState([])
+  const [tournaments, setTournaments] = useState([])
   const navigate = useNavigate()
   const pollRef = useRef(null)
 
   useEffect(() => {
     api.getMyPredictions().then(setMatches)
+    api.getTournaments().then(setTournaments).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -276,6 +278,7 @@ export default function HomePage() {
   const upcomingMatches = todayTomorrowMatches.length > 0 ? todayTomorrowMatches : allUpcoming.slice(0, 3)
 
   const isEmpty = matches.length === 0 && recentFinished.length === 0 && upcomingMatches.length === 0
+  const isFinalFinished = matches.some(m => m.phase === 'Final' && m.status === 'Finished')
 
   const avatar = user?.username?.[0]?.toUpperCase() || '?'
 
@@ -292,6 +295,25 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Banner fin del mundial */}
+      {isFinalFinished && tournaments.length > 0 && (
+        <div className="px-5 mb-4 flex flex-col gap-2">
+          {tournaments.map(t => (
+            <div
+              key={t.id}
+              onClick={() => navigate(`/torneos/${t.id}`)}
+              className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/40 cursor-pointer active:opacity-80"
+            >
+              <span className="text-3xl shrink-0">🏆</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡El mundial terminó!</p>
+                <p className="text-white font-semibold text-sm truncate">{t.name} — Ver quién ganó →</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {isEmpty && (
         <div className="flex flex-col items-center justify-center gap-3 py-24 px-5 text-center">

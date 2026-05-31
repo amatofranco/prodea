@@ -175,6 +175,37 @@ function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
   )
 }
 
+function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
+  const isTournamentFinished = matches.some(m => m.phase === 'Final' && m.status === 'Finished')
+  if (!isTournamentFinished || leaderboard.length === 0) return null
+
+  const winner = leaderboard[0]
+  const isMe = winner.userId === currentUserId
+
+  return (
+    <div className="mx-4 mb-1 p-4 rounded-2xl bg-gradient-to-br from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/50">
+      <p className="text-[#F59E0B] text-[10px] font-bold uppercase tracking-widest mb-3">
+        🏆 Campeón del Prode
+      </p>
+      <div className="flex items-center gap-3">
+        <div className="w-14 h-14 rounded-full bg-[#F59E0B] flex items-center justify-center text-black font-bold text-2xl shrink-0">
+          {winner.username[0].toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-bold text-xl leading-tight truncate">{winner.username}</p>
+          <p className="text-[#F59E0B] text-sm font-semibold">{winner.totalPoints} puntos</p>
+        </div>
+        <span className="text-4xl">🏆</span>
+      </div>
+      {isMe && (
+        <p className="mt-3 text-center text-[#00FF87] text-sm font-bold">
+          🎉 ¡Ganaste el prode!
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function TournamentPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -316,6 +347,7 @@ export default function TournamentPage() {
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'tabla' ? (
           <div className="py-4 flex flex-col gap-2">
+            <ChampionProdeaBanner leaderboard={leaderboard} matches={matches} currentUserId={user?.id} />
             <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold px-4 mb-1">
               Tabla de posiciones
             </p>
