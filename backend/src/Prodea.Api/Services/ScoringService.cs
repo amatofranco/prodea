@@ -4,7 +4,8 @@ namespace Prodea.Api.Services;
 
 public static class ScoringService
 {
-    public static int CalculatePoints(Prediction prediction, int actualHome, int actualAway)
+    // winnerSide = "home" | "away" when match went to penalties (scores tied but there's a winner)
+    public static int CalculatePoints(Prediction prediction, int actualHome, int actualAway, string? winnerSide = null)
     {
         if (prediction.PredictedHomeScore == actualHome && prediction.PredictedAwayScore == actualAway)
             return 3;
@@ -13,9 +14,19 @@ public static class ScoringService
         bool predictedDraw = prediction.PredictedHomeScore == prediction.PredictedAwayScore;
         bool predictedAwayWin = prediction.PredictedHomeScore < prediction.PredictedAwayScore;
 
-        bool actualHomeWin = actualHome > actualAway;
-        bool actualDraw = actualHome == actualAway;
-        bool actualAwayWin = actualHome < actualAway;
+        bool actualHomeWin, actualDraw, actualAwayWin;
+        if (actualHome == actualAway && winnerSide != null)
+        {
+            actualHomeWin = winnerSide == "home";
+            actualDraw = false;
+            actualAwayWin = winnerSide == "away";
+        }
+        else
+        {
+            actualHomeWin = actualHome > actualAway;
+            actualDraw = actualHome == actualAway;
+            actualAwayWin = actualHome < actualAway;
+        }
 
         if ((predictedHomeWin && actualHomeWin) || (predictedDraw && actualDraw) || (predictedAwayWin && actualAwayWin))
             return 1;

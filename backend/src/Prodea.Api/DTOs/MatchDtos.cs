@@ -51,7 +51,8 @@ public record SubmitPredictionRequest(
 
 public record UpdateMatchResultRequest(
     [Required, Range(0, 99)] int HomeScore,
-    [Required, Range(0, 99)] int AwayScore
+    [Required, Range(0, 99)] int AwayScore,
+    string? Winner = null  // "home" | "away" for penalty matches where scores are tied
 );
 
 public record MatchPredictionDto(

@@ -145,7 +145,15 @@ public class FootballDataService(
                     var matchData = JsonSerializer.Deserialize<FootballDataSingleMatch>(matchJson, JsonOptions);
 
                     if (matchData?.Status is "FINISHED" or "AWARDED")
-                        await FinalizeMatchAsync(db, match, ct);
+                    {
+                        // Update final scores from individual match fetch (in case they changed)
+                        if (matchData.Score?.FullTime?.Home != null)
+                        {
+                            match.HomeScore = matchData.Score.FullTime.Home;
+                            match.AwayScore = matchData.Score.FullTime.Away;
+                        }
+                        await FinalizeMatchAsync(db, match, matchData.Score?.Winner, ct);
+                    }
                     // PAUSED, SCHEDULED, etc. → dejamos en InProgress
                 }
                 catch (Exception ex)
@@ -161,10 +169,20 @@ public class FootballDataService(
         }
     }
 
-    private async Task FinalizeMatchAsync(ProdeaDbContext db, Match match, CancellationToken ct)
+    private async Task FinalizeMatchAsync(ProdeaDbContext db, Match match, string? apiWinner, CancellationToken ct)
     {
         match.Status = MatchStatus.Finished;
+
+        // apiWinner is "HOME_TEAM" | "AWAY_TEAM" | "DRAW" — store the actual team name for penalty cases
+        if (apiWinner == "HOME_TEAM") match.Winner = match.HomeTeam;
+        else if (apiWinner == "AWAY_TEAM") match.Winner = match.AwayTeam;
+
         await db.SaveChangesAsync(ct);
+
+        // For penalty matches (tied score), pass which side won so scoring gives 1 pt to correct-winner picks
+        string? winnerSide = null;
+        if (match.HomeScore == match.AwayScore && match.Winner != null)
+            winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
 
         var predictions = await db.Predictions
             .Where(p => p.MatchId == match.Id && match.HomeScore.HasValue)
@@ -172,7 +190,7 @@ public class FootballDataService(
 
         foreach (var pred in predictions)
         {
-            pred.PointsEarned = ScoringService.CalculatePoints(pred, match.HomeScore!.Value, match.AwayScore!.Value);
+            pred.PointsEarned = ScoringService.CalculatePoints(pred, match.HomeScore!.Value, match.AwayScore!.Value, winnerSide);
             pred.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -188,13 +206,19 @@ public class FootballDataService(
         foreach (var tid in tournamentIds)
             await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
 
-        if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue && match.HomeScore != match.AwayScore)
+        if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue)
             await AwardChampionPickPointsAsync(db, match, ct);
     }
 
     private static async Task AwardChampionPickPointsAsync(ProdeaDbContext db, Match match, CancellationToken ct)
     {
-        var champion = match.HomeScore > match.AwayScore ? match.HomeTeam : match.AwayTeam;
+        string? champion = null;
+        if (match.HomeScore > match.AwayScore) champion = match.HomeTeam;
+        else if (match.AwayScore > match.HomeScore) champion = match.AwayTeam;
+        else champion = match.Winner; // penalty: Winner already set from apiWinner
+
+        if (champion == null) return;
+
         var winners = await db.ChampionPicks
             .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0)
             .ToListAsync(ct);
@@ -225,7 +249,10 @@ public class FootballDataService(
 
     private record FootballDataMatchesResponse([property: JsonPropertyName("matches")] List<FootballDataMatch> Matches);
     private record FootballDataMatch(int Id, int? Minute, FootballDataScore? Score);
-    private record FootballDataScore([property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime);
+    private record FootballDataScore(
+        [property: JsonPropertyName("winner")] string? Winner,
+        [property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime
+    );
     private record FootballDataFullTime(int? Home, int? Away);
-    private record FootballDataSingleMatch(string Status);
+    private record FootballDataSingleMatch(string Status, FootballDataScore? Score);
 }
