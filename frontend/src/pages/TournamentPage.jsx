@@ -335,7 +335,7 @@ export default function TournamentPage() {
         ) : (
           <div className="flex flex-col min-h-full">
             <div className="pt-3">
-              <ChampionPickBanner tournamentId={id} currentUserId={user?.id} />
+              <ChampionPickBanner tournamentId={id} currentUserId={user?.id} readOnly />
             </div>
             {/* Phase tabs */}
             <div

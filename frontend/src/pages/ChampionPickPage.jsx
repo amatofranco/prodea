@@ -41,6 +41,7 @@ export default function ChampionPickPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const [tournamentId, setTournamentId] = useState(null)
+  const [allTournamentIds, setAllTournamentIds] = useState([])
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -52,9 +53,10 @@ export default function ChampionPickPage() {
     api.getTournaments()
       .then(ts => {
         if (!ts.length) { setLoading(false); return }
-        const tid = ts[0].id
-        setTournamentId(tid)
-        return api.getChampionPick(tid).then(setStatus)
+        const ids = ts.map(t => t.id)
+        setAllTournamentIds(ids)
+        setTournamentId(ids[0])
+        return api.getChampionPick(ids[0]).then(setStatus)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -63,7 +65,8 @@ export default function ChampionPickPage() {
     setSaving(true)
     setSaved(false)
     try {
-      await api.submitChampionPick(tournamentId, countryName)
+      // Guardar en todos los torneos para que quede sincronizado
+      await Promise.all(allTournamentIds.map(tid => api.submitChampionPick(tid, countryName)))
       const updated = await api.getChampionPick(tournamentId)
       setStatus(updated)
       setSaved(true)
