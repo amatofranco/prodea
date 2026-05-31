@@ -316,7 +316,6 @@ export default function TournamentPage() {
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'tabla' ? (
           <div className="py-4 flex flex-col gap-2">
-            <ChampionPickBanner tournamentId={id} currentUserId={user?.id} />
             <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold px-4 mb-1">
               Tabla de posiciones
             </p>

@@ -146,15 +146,35 @@ function MatchCard({ match, navigate }) {
   )
 }
 
+function ChampionPickEntry({ tournament, navigate }) {
+  return (
+    <div
+      onClick={() => navigate(`/predicciones/campeon/${tournament.id}`)}
+      className="flex items-center gap-3 px-4 py-3 border-b border-[#1A1A2E] bg-[#0D0D0D] cursor-pointer active:bg-[#1A1A2E] transition-colors"
+    >
+      <div className="w-12 h-[34px] rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex items-center justify-center text-xl flex-shrink-0">
+        🏆
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-white font-semibold text-sm">Campeón del Mundial</p>
+        <p className="text-[#8A8A9A] text-xs truncate">{tournament.name}</p>
+      </div>
+      <span className="text-[#F59E0B] text-xs font-semibold shrink-0">Elegir →</span>
+    </div>
+  )
+}
+
 export default function PredictionsPage() {
   const navigate = useNavigate()
   const [matches, setMatches] = useState([])
+  const [tournaments, setTournaments] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedTab, setSelectedTab] = useState('group-1')
   const tabBarRef = useRef(null)
 
   useEffect(() => {
     api.getMyPredictions().then(setMatches).finally(() => setLoading(false))
+    api.getTournaments().then(setTournaments).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -216,6 +236,11 @@ export default function PredictionsPage() {
         </div>
         <p className="text-[#8A8A9A] text-xs">Cargá tus resultados antes de cada partido</p>
       </div>
+
+      {/* Champion pick entry por torneo */}
+      {tournaments.map(t => (
+        <ChampionPickEntry key={t.id} tournament={t} navigate={navigate} />
+      ))}
 
       {/* Tabs */}
       <div

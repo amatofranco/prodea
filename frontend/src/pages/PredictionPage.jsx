@@ -4,9 +4,7 @@ import { ChevronLeft, ChevronRight, Check, Zap } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { api } from '../services/api'
 import GoalPicker from '../components/GoalPicker'
-import ChampionPickBanner from '../components/ChampionPickBanner'
 import { getTeam, getFlagUrl } from '../data/teamsData'
-import { useAuthStore } from '../store/authStore'
 
 const PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
 const TURBO_COUNTDOWN_SECS = 5
@@ -142,8 +140,6 @@ function TurboCountdown({ onComplete, onSkip, resetKey }) {
 export default function PredictionPage() {
   const { matchId } = useParams()
   const navigate = useNavigate()
-  const user = useAuthStore((s) => s.user)
-  const [tournamentIds, setTournamentIds] = useState([])
 
   const [allMatches, setAllMatches] = useState([])
   const [match, setMatch] = useState(null)
@@ -174,7 +170,6 @@ export default function PredictionPage() {
   // Carga inicial
   useEffect(() => {
     api.getMyPredictions().then(setAllMatches).catch(() => navigate(-1))
-    api.getTournaments().then((ts) => setTournamentIds(ts.map((t) => t.id))).catch(() => {})
   }, [])
 
   // Reset por-partido cuando cambia matchId
@@ -366,11 +361,6 @@ export default function PredictionPage() {
           </p>
         </div>
       )}
-
-      {/* Champion pick — recordatorio si hay torneos activos */}
-      {tournamentIds.map((tid) => (
-        <ChampionPickBanner key={tid} tournamentId={tid} currentUserId={user?.id} />
-      ))}
 
       {/* Contenido animado */}
       <AnimatePresence mode="wait" custom={slideDir.current}>
