@@ -15,7 +15,8 @@ public class FixtureService(
     public async Task<int> UpdateKnockoutTeamNamesAsync()
     {
         var tbdMatches = await db.Matches
-            .Where(m => m.Phase != MatchPhase.Group && m.Status == MatchStatus.Scheduled && m.HomeTeam == "TBD")
+            .Where(m => m.Phase != MatchPhase.Group && m.Status == MatchStatus.Scheduled
+                        && (m.HomeTeam == "TBD" || m.AwayTeam == "TBD"))
             .ToListAsync();
 
         if (tbdMatches.Count == 0) return 0;
