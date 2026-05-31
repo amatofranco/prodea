@@ -189,43 +189,70 @@ using (var scope = app.Services.CreateScope())
                 "PickedAt"     timestamptz NOT NULL DEFAULT now(),
                 "PointsEarned" int NOT NULL DEFAULT 0
             );
-            CREATE UNIQUE INDEX IF NOT EXISTS "IX_ChampionPicks_UserId" ON "ChampionPicks"("UserId");
             """);
     }
     catch (Exception ex)
     {
         startupLogger.LogWarning(ex, "Migración ChampionPicks (create): {Msg}", ex.Message);
     }
-    // Migración ChampionPick: eliminar TournamentId si la tabla ya existía con esa columna
+    // Migración ChampionPick: eliminar TournamentId si la tabla ya existía con esa columna.
+    // Ejecutamos cada paso por separado para que un fallo no bloquee los demás.
     try
     {
+        // Paso 1: deduplicar registros por UserId (conservar el de menor Id)
         await db.Database.ExecuteSqlRawAsync("""
-            DO $$
-            BEGIN
-                IF EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_name = 'ChampionPicks' AND column_name = 'TournamentId'
-                ) THEN
-                    -- Deduplicar: conservar el registro de menor Id por usuario
-                    DELETE FROM "ChampionPicks"
-                    WHERE "Id" NOT IN (
-                        SELECT MIN("Id") FROM "ChampionPicks" GROUP BY "UserId"
-                    );
-                    -- Eliminar constraints relacionados a TournamentId
-                    ALTER TABLE "ChampionPicks"
-                        DROP CONSTRAINT IF EXISTS "FK_ChampionPicks_Tournaments_TournamentId";
-                    DROP INDEX IF EXISTS "IX_ChampionPicks_TournamentId_UserId";
-                    -- Eliminar columna
-                    ALTER TABLE "ChampionPicks" DROP COLUMN "TournamentId";
-                    -- Índice único por usuario
-                    CREATE UNIQUE INDEX IF NOT EXISTS "IX_ChampionPicks_UserId" ON "ChampionPicks"("UserId");
-                END IF;
-            END$$;
+            DELETE FROM "ChampionPicks"
+            WHERE "Id" NOT IN (
+                SELECT MIN("Id") FROM "ChampionPicks" GROUP BY "UserId"
+            );
             """);
     }
     catch (Exception ex)
     {
-        startupLogger.LogWarning(ex, "Migración ChampionPicks (remove TournamentId): {Msg}", ex.Message);
+        startupLogger.LogWarning(ex, "Migración ChampionPicks (dedup): {Msg}", ex.Message);
+    }
+    try
+    {
+        // Paso 2: eliminar FK y columna TournamentId si existe
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "ChampionPicks"
+                DROP CONSTRAINT IF EXISTS "FK_ChampionPicks_Tournaments_TournamentId";
+            """);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogWarning(ex, "Migración ChampionPicks (drop FK): {Msg}", ex.Message);
+    }
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            DROP INDEX IF EXISTS "IX_ChampionPicks_TournamentId_UserId";
+            """);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogWarning(ex, "Migración ChampionPicks (drop idx TournamentId): {Msg}", ex.Message);
+    }
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "ChampionPicks" DROP COLUMN IF EXISTS "TournamentId";
+            """);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogWarning(ex, "Migración ChampionPicks (drop col TournamentId): {Msg}", ex.Message);
+    }
+    try
+    {
+        // Paso 3: índice único por UserId (solo si no existen duplicados)
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_ChampionPicks_UserId" ON "ChampionPicks"("UserId");
+            """);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogWarning(ex, "Migración ChampionPicks (unique idx UserId): {Msg}", ex.Message);
     }
 
     var apiKey = app.Configuration["FootballData:ApiKey"];

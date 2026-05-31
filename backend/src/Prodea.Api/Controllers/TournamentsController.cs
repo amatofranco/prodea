@@ -59,9 +59,12 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
             .ToListAsync();
 
-        var championPoints = await db.ChampionPicks
+        var championPicksList = await db.ChampionPicks
             .Where(cp => participantIds.Contains(cp.UserId))
-            .ToDictionaryAsync(cp => cp.UserId, cp => cp.PointsEarned);
+            .ToListAsync();
+        var championPoints = championPicksList
+            .GroupBy(cp => cp.UserId)
+            .ToDictionary(g => g.Key, g => g.Max(cp => cp.PointsEarned));
 
         var lastBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == id && mb.Phase != "")
@@ -191,9 +194,12 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
             .ToListAsync();
 
-        var championPoints = await db.ChampionPicks
+        var champPicksList2 = await db.ChampionPicks
             .Where(cp => participantIds.Contains(cp.UserId))
-            .ToDictionaryAsync(cp => cp.UserId, cp => cp.PointsEarned);
+            .ToListAsync();
+        var championPoints = champPicksList2
+            .GroupBy(cp => cp.UserId)
+            .ToDictionary(g => g.Key, g => g.Max(cp => cp.PointsEarned));
 
         var lastBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == id && mb.Phase != "")
@@ -274,9 +280,12 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
                     .ToListAsync();
 
                 var participantUserIds = participants.Select(tp => tp.UserId).ToList();
-                var picks = await db.ChampionPicks
+                var picksList = await db.ChampionPicks
                     .Where(cp => participantUserIds.Contains(cp.UserId))
-                    .ToDictionaryAsync(cp => cp.UserId, cp => cp.CountryName);
+                    .ToListAsync();
+                var picks = picksList
+                    .GroupBy(cp => cp.UserId)
+                    .ToDictionary(g => g.Key, g => g.First().CountryName);
 
                 allPicks = participants
                     .Select(tp => new ParticipantPickDto(
