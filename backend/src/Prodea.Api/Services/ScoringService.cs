@@ -11,19 +11,22 @@ public static class ScoringService
 
         if (isPenaltyMatch)
         {
-            // En un partido que fue a penales el resultado completo es: score 90' + ganador por penales.
-            // 3 pts: acertó el score de 90 min Y acertó quién ganó por penales.
-            // 1 pt:  acertó el score de 90 min (sin pick o pick equivocado), O predijo el ganador correcto.
+            // Partido decidido por penales: el resultado "completo" es score exacto + ganador por penales.
+            // 3 pts: score exacto Y acertó quién ganó por penales.
+            // 1 pt:  score exacto (sin pick o pick equivocado),
+            //        O predijo empate (cualquier marcador) → acertó que iría a penales,
+            //        O predijo el ganador correcto con un score no empatado (ej. 2-1 home).
             bool exactScore = prediction.PredictedHomeScore == actualHome && prediction.PredictedAwayScore == actualAway;
+            bool predictedDrawScore = prediction.PredictedHomeScore == prediction.PredictedAwayScore;
 
-            // Ganador que el usuario predijo (home/away/null si predijo draw sin pick de penales)
             string? predictedWinner =
                 prediction.PredictedHomeScore > prediction.PredictedAwayScore ? "home" :
                 prediction.PredictedHomeScore < prediction.PredictedAwayScore ? "away" :
-                prediction.PredictedPenaltyWinner; // draw predicho → usa el pick de penales
+                prediction.PredictedPenaltyWinner; // draw → usa el pick de penales
 
             if (exactScore && predictedWinner == winnerSide) return 3;
             if (exactScore) return 1;
+            if (predictedDrawScore) return 1; // cualquier empate predicho → acertó que habría penales
             if (predictedWinner == winnerSide) return 1;
             return 0;
         }
