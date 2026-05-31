@@ -95,13 +95,15 @@ function TeamPickerModal({ teams, onSelect, onClose }) {
 export default function ChampionPickBanner({ tournamentId, currentUserId }) {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [apiError, setApiError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
 
   const fetchStatus = useCallback(() => {
+    setApiError(null)
     api.getChampionPick(tournamentId)
       .then(setStatus)
-      .catch(() => {})
+      .catch((err) => setApiError(err.message || 'Error desconocido'))
       .finally(() => setLoading(false))
   }, [tournamentId])
 
@@ -122,6 +124,14 @@ export default function ChampionPickBanner({ tournamentId, currentUserId }) {
 
   if (loading) {
     return <div className="mx-4 h-20 rounded-2xl bg-[#1A1A2E] animate-pulse mb-2" />
+  }
+  if (apiError) {
+    return (
+      <div className="mx-4 mb-3 px-4 py-3 rounded-2xl border border-red-500/30 bg-red-500/10">
+        <p className="text-red-400 text-xs font-semibold">Error cargando candidato</p>
+        <p className="text-red-400/70 text-[10px] mt-0.5">{apiError}</p>
+      </div>
+    )
   }
   if (!status) return null
 
