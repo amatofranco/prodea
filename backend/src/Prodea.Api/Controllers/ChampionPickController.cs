@@ -24,7 +24,9 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
             .AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == userId);
         if (!isMember) return Forbid();
 
-        var firstMatchTime = await db.Matches.MinAsync(m => m.MatchDate);
+        var firstMatchTime = await db.Matches.AnyAsync()
+            ? await db.Matches.MinAsync(m => m.MatchDate)
+            : DateTime.UtcNow.AddYears(1);
         var lockTime = firstMatchTime - LockBeforeFirstMatch;
         var isLocked = DateTime.UtcNow >= lockTime;
 
@@ -88,7 +90,9 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
             .AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == userId);
         if (!isMember) return Forbid();
 
-        var firstMatchTime = await db.Matches.MinAsync(m => m.MatchDate);
+        var firstMatchTime = await db.Matches.AnyAsync()
+            ? await db.Matches.MinAsync(m => m.MatchDate)
+            : DateTime.UtcNow.AddYears(1);
         if (DateTime.UtcNow >= firstMatchTime - LockBeforeFirstMatch)
             return BadRequest(new { message = "El pick de campeón ya está cerrado." });
 
