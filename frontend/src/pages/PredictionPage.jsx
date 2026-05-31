@@ -481,8 +481,8 @@ export default function PredictionPage() {
                 </p>
                 {isKnockout && isDraw ? (
                   <p className="text-[#8A8A9A] text-xs mt-0.5">
-                    Score 90' → <span className="text-[#00FF87] font-semibold">+1 pt</span>
-                    {' · '}Score 90' + penales → <span className="text-[#00FF87] font-semibold">+3 pts</span>
+                    Score exacto → <span className="text-[#00FF87] font-semibold">+1 pt</span>
+                    {' · '}Score exacto + penales → <span className="text-[#00FF87] font-semibold">+3 pts</span>
                   </p>
                 ) : (
                   <p className="text-[#8A8A9A] text-xs mt-0.5">{resultLabel} · Si acertás exacto → <span className="text-[#00FF87] font-semibold">+3 pts</span></p>
