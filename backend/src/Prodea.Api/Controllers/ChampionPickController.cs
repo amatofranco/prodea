@@ -19,6 +19,8 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ChampionPickStatusDto>> GetStatus(int tournamentId)
     {
+        try
+        {
         var userId = CurrentUserId;
         var isMember = await db.TournamentParticipants
             .AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == userId);
@@ -80,6 +82,11 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
         }
 
         return Ok(new ChampionPickStatusDto(myPick, isLocked, lockTime, champion, allPicks, teams));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message, inner = ex.InnerException?.Message });
+        }
     }
 
     [HttpPost]
