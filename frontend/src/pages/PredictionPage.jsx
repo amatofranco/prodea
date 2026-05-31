@@ -415,8 +415,8 @@ export default function PredictionPage() {
                   {match.userPrediction.predictedPenaltyWinner && (
                     <p className="text-[#F59E0B] text-xs mt-1">
                       Penales: {match.userPrediction.predictedPenaltyWinner === 'home'
-                        ? (match.homeTeamLabel ?? match.homeTeam)
-                        : (match.awayTeamLabel ?? match.awayTeam)}
+                        ? match.homeTeam
+                        : match.awayTeam}
                     </p>
                   )}
                   {match.status === 'Finished' && (
@@ -456,7 +456,7 @@ export default function PredictionPage() {
                           : 'text-[#8A8A9A] active:bg-[#2A2A3E]'
                       }`}
                     >
-                      {match.homeTeamLabel ?? match.homeTeam}
+                      {match.homeTeam}
                     </button>
                     <div className="w-px bg-[#2A2A3E]" />
                     <button
@@ -467,7 +467,7 @@ export default function PredictionPage() {
                           : 'text-[#8A8A9A] active:bg-[#2A2A3E]'
                       }`}
                     >
-                      {match.awayTeamLabel ?? match.awayTeam}
+                      {match.awayTeam}
                     </button>
                   </div>
                 </div>
