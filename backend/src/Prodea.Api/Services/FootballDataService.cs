@@ -108,10 +108,11 @@ public class FootballDataService(
                     changed = true;
                 }
 
-                if (apiMatch.Score?.FullTime?.Home != null)
+                var (liveHome, liveAway) = FinalScore(apiMatch.Score);
+                if (liveHome != null)
                 {
-                    match.HomeScore = apiMatch.Score.FullTime.Home;
-                    match.AwayScore = apiMatch.Score.FullTime.Away;
+                    match.HomeScore = liveHome;
+                    match.AwayScore = liveAway;
                     changed = true;
                 }
 
@@ -146,11 +147,12 @@ public class FootballDataService(
 
                     if (matchData?.Status is "FINISHED" or "AWARDED")
                     {
-                        // Update final scores from individual match fetch (in case they changed)
-                        if (matchData.Score?.FullTime?.Home != null)
+                        // Usar extraTime si hubo alargue, sino fullTime
+                        var (finalHome, finalAway) = FinalScore(matchData.Score);
+                        if (finalHome != null)
                         {
-                            match.HomeScore = matchData.Score.FullTime.Home;
-                            match.AwayScore = matchData.Score.FullTime.Away;
+                            match.HomeScore = finalHome;
+                            match.AwayScore = finalAway;
                         }
                         await FinalizeMatchAsync(db, match, matchData.Score?.Winner, ct);
                     }
@@ -251,8 +253,16 @@ public class FootballDataService(
     private record FootballDataMatch(int Id, int? Minute, FootballDataScore? Score);
     private record FootballDataScore(
         [property: JsonPropertyName("winner")] string? Winner,
-        [property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime
+        [property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime,
+        [property: JsonPropertyName("extraTime")] FootballDataFullTime? ExtraTime
     );
     private record FootballDataFullTime(int? Home, int? Away);
     private record FootballDataSingleMatch(string Status, FootballDataScore? Score);
+
+    // Devuelve el score definitivo: extraTime si hubo alargue, si no fullTime.
+    private static (int? Home, int? Away) FinalScore(FootballDataScore? score)
+    {
+        var s = score?.ExtraTime ?? score?.FullTime;
+        return (s?.Home, s?.Away);
+    }
 }
