@@ -366,9 +366,6 @@ export default function TournamentPage() {
           </div>
         ) : (
           <div className="flex flex-col min-h-full">
-            <div className="pt-3">
-              <ChampionPickBanner tournamentId={id} currentUserId={user?.id} readOnly />
-            </div>
             {/* Phase tabs */}
             <div
               ref={phaseBarRef}
@@ -404,6 +401,9 @@ export default function TournamentPage() {
                 transition={{ duration: 0.15 }}
                 className="px-4 py-4 flex flex-col gap-2"
               >
+                {phaseTab === 'Final' && (
+                  <ChampionPickBanner tournamentId={id} currentUserId={user?.id} readOnly />
+                )}
                 {visibleMatches.map((m) => (
                   <TournamentMatchCard key={m.id} match={m} onTap={openPredictions} />
                 ))}
