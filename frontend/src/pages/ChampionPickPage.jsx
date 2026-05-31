@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Search, Lock, Check } from 'lucide-react'
 import { api } from '../services/api'
 import { getTeam, getFlagUrl } from '../data/teamsData'
-import { useAuthStore } from '../store/authStore'
 
 function FlagImg({ country, size = 40 }) {
   const { flag } = getTeam(country)
@@ -39,9 +38,6 @@ function Countdown({ lockTime }) {
 
 export default function ChampionPickPage() {
   const navigate = useNavigate()
-  const user = useAuthStore((s) => s.user)
-  const [tournamentId, setTournamentId] = useState(null)
-  const [allTournamentIds, setAllTournamentIds] = useState([])
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -50,14 +46,8 @@ export default function ChampionPickPage() {
   const [changing, setChanging] = useState(false)
 
   useEffect(() => {
-    api.getTournaments()
-      .then(ts => {
-        if (!ts.length) { setLoading(false); return }
-        const ids = ts.map(t => t.id)
-        setAllTournamentIds(ids)
-        setTournamentId(ids[0])
-        return api.getChampionPick(ids[0]).then(setStatus)
-      })
+    api.getChampionPick()
+      .then(setStatus)
       .finally(() => setLoading(false))
   }, [])
 
@@ -65,9 +55,8 @@ export default function ChampionPickPage() {
     setSaving(true)
     setSaved(false)
     try {
-      // Guardar en todos los torneos para que quede sincronizado
-      await Promise.all(allTournamentIds.map(tid => api.submitChampionPick(tid, countryName)))
-      const updated = await api.getChampionPick(tournamentId)
+      await api.submitChampionPick(countryName)
+      const updated = await api.getChampionPick()
       setStatus(updated)
       setSaved(true)
       setChanging(false)
@@ -89,7 +78,7 @@ export default function ChampionPickPage() {
     )
   }
 
-  const { myPick, isLocked, lockTime, availableTeams, allPicks, champion } = status ?? {}
+  const { myPick, isLocked, lockTime, availableTeams, champion } = status ?? {}
   const filtered = (availableTeams ?? []).filter(t => t.toLowerCase().includes(query.toLowerCase()))
   const showPicker = !isLocked && (!myPick || changing)
 
@@ -153,40 +142,6 @@ export default function ChampionPickPage() {
             <div>
               <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡Campeón del mundo!</p>
               <p className="text-white font-bold">{champion}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Locked: grid of all picks */}
-        {isLocked && allPicks?.length > 0 && (
-          <div className="mx-4 mt-3">
-            <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-2">Picks del grupo</p>
-            <div className="grid grid-cols-3 gap-2">
-              {allPicks.map(p => {
-                const isMe = p.userId === user?.id
-                const hit = p.correctPick
-                return (
-                  <div key={p.userId} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border ${
-                    hit ? 'bg-[#00FF87]/10 border-[#00FF87]/40'
-                    : isMe ? 'bg-[#F59E0B]/5 border-[#F59E0B]/30'
-                    : 'bg-[#1A1A2E] border-[#2A2A3E]'
-                  }`}>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isMe ? 'bg-[#F59E0B] text-black' : 'bg-[#2A2A3E] text-white'}`}>
-                      {p.username[0].toUpperCase()}
-                    </div>
-                    <p className="text-[9px] text-[#8A8A9A] truncate w-full text-center">{p.username}</p>
-                    {p.countryName ? (
-                      <>
-                        <FlagImg country={p.countryName} size={32} />
-                        <p className={`text-[9px] font-semibold truncate w-full text-center ${hit ? 'text-[#00FF87]' : 'text-white'}`}>{p.countryName}</p>
-                        {hit && <span className="text-[9px] text-[#00FF87] font-bold">+10 pts</span>}
-                      </>
-                    ) : (
-                      <p className="text-[9px] text-[#8A8A9A] italic">Sin pick</p>
-                    )}
-                  </div>
-                )
-              })}
             </div>
           </div>
         )}

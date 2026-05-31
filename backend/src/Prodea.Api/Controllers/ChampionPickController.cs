@@ -9,82 +9,60 @@ using Prodea.Api.Models;
 namespace Prodea.Api.Controllers;
 
 [ApiController]
-[Route("api/tournaments/{tournamentId}/champion-pick")]
+[Route("api/champion-pick")]
 [Authorize]
 public class ChampionPickController(ProdeaDbContext db) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private static readonly TimeSpan LockBeforeFirstMatch = TimeSpan.FromMinutes(15);
 
-    [HttpGet]
-    public async Task<ActionResult<ChampionPickStatusDto>> GetStatus(int tournamentId)
+    private async Task<(DateTime lockTime, bool isLocked)> GetLockStatusAsync()
     {
-        try
-        {
-        var userId = CurrentUserId;
-        var isMember = await db.TournamentParticipants
-            .AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == userId);
-        if (!isMember) return Forbid();
-
         var firstMatchTime = await db.Matches.AnyAsync()
             ? await db.Matches.MinAsync(m => m.MatchDate)
             : DateTime.UtcNow.AddYears(1);
         var lockTime = firstMatchTime - LockBeforeFirstMatch;
-        var isLocked = DateTime.UtcNow >= lockTime;
+        return (lockTime, DateTime.UtcNow >= lockTime);
+    }
 
-        var myPick = await db.ChampionPicks
-            .Where(cp => cp.TournamentId == tournamentId && cp.UserId == userId)
-            .Select(cp => cp.CountryName)
-            .FirstOrDefaultAsync();
-
-        // Champion is the winner of the Final match
-        string? champion = null;
+    private static async Task<string?> GetChampionAsync(ProdeaDbContext db)
+    {
         var finalMatch = await db.Matches
             .Where(m => m.Phase == MatchPhase.Final && m.Status == MatchStatus.Finished)
             .FirstOrDefaultAsync();
-        if (finalMatch?.HomeScore != null && finalMatch.HomeScore != finalMatch.AwayScore)
-        {
-            champion = finalMatch.HomeScore > finalMatch.AwayScore
-                ? finalMatch.HomeTeam
-                : finalMatch.AwayTeam;
-        }
+        if (finalMatch?.HomeScore == null || finalMatch.HomeScore == finalMatch.AwayScore) return null;
+        return finalMatch.HomeScore > finalMatch.AwayScore ? finalMatch.HomeTeam : finalMatch.AwayTeam;
+    }
 
-        // Available teams from Group phase (both home and away, confirmed only)
+    private static async Task<List<string>> GetAvailableTeamsAsync(ProdeaDbContext db)
+    {
         var groupMatches = await db.Matches
             .Where(m => m.Phase == MatchPhase.Group)
             .Select(m => new { m.HomeTeam, m.AwayTeam })
             .ToListAsync();
-        var teams = groupMatches
+        return groupMatches
             .SelectMany(m => new[] { m.HomeTeam, m.AwayTeam })
             .Where(t => t != "TBD")
-            .Distinct()
-            .OrderBy(t => t)
-            .ToList();
+            .Distinct().OrderBy(t => t).ToList();
+    }
 
-        // All picks — visible only after lock
-        List<ParticipantPickDto> allPicks = [];
-        if (isLocked)
+    [HttpGet]
+    public async Task<ActionResult<ChampionPickStatusDto>> GetStatus()
+    {
+        try
         {
-            var participants = await db.TournamentParticipants
-                .Where(tp => tp.TournamentId == tournamentId)
-                .Include(tp => tp.User)
-                .ToListAsync();
+            var userId = CurrentUserId;
+            var (lockTime, isLocked) = await GetLockStatusAsync();
 
-            var picks = await db.ChampionPicks
-                .Where(cp => cp.TournamentId == tournamentId)
-                .ToDictionaryAsync(cp => cp.UserId, cp => cp.CountryName);
+            var myPick = await db.ChampionPicks
+                .Where(cp => cp.UserId == userId)
+                .Select(cp => cp.CountryName)
+                .FirstOrDefaultAsync();
 
-            allPicks = participants
-                .Select(tp => new ParticipantPickDto(
-                    tp.UserId,
-                    tp.User.Username,
-                    picks.GetValueOrDefault(tp.UserId),
-                    champion != null && picks.GetValueOrDefault(tp.UserId) == champion
-                ))
-                .ToList();
-        }
+            var champion = await GetChampionAsync(db);
+            var teams = await GetAvailableTeamsAsync(db);
 
-        return Ok(new ChampionPickStatusDto(myPick, isLocked, lockTime, champion, allPicks, teams));
+            return Ok(new ChampionPickStatusDto(myPick, isLocked, lockTime, champion, [], teams));
         }
         catch (Exception ex)
         {
@@ -93,38 +71,31 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> SubmitPick(int tournamentId, SubmitChampionPickRequest request)
+    public async Task<IActionResult> SubmitPick(SubmitChampionPickRequest request)
     {
-        var userId = CurrentUserId;
-        var isMember = await db.TournamentParticipants
-            .AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == userId);
-        if (!isMember) return Forbid();
-
-        var firstMatchTime = await db.Matches.AnyAsync()
-            ? await db.Matches.MinAsync(m => m.MatchDate)
-            : DateTime.UtcNow.AddYears(1);
-        if (DateTime.UtcNow >= firstMatchTime - LockBeforeFirstMatch)
-            return BadRequest(new { message = "El pick de campeón ya está cerrado." });
-
-        var existing = await db.ChampionPicks
-            .FirstOrDefaultAsync(cp => cp.TournamentId == tournamentId && cp.UserId == userId);
-
-        if (existing != null)
+        try
         {
-            existing.CountryName = request.CountryName;
-            existing.PickedAt = DateTime.UtcNow;
-        }
-        else
-        {
-            db.ChampionPicks.Add(new ChampionPick
+            var userId = CurrentUserId;
+            var (_, isLocked) = await GetLockStatusAsync();
+            if (isLocked) return BadRequest(new { message = "El pick de campeón ya está cerrado." });
+
+            var existing = await db.ChampionPicks.FirstOrDefaultAsync(cp => cp.UserId == userId);
+            if (existing != null)
             {
-                UserId = userId,
-                TournamentId = tournamentId,
-                CountryName = request.CountryName,
-            });
-        }
+                existing.CountryName = request.CountryName;
+                existing.PickedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                db.ChampionPicks.Add(new ChampionPick { UserId = userId, CountryName = request.CountryName });
+            }
 
-        await db.SaveChangesAsync();
-        return NoContent();
+            await db.SaveChangesAsync();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message, inner = ex.InnerException?.Message });
+        }
     }
 }

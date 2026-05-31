@@ -120,15 +120,11 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
 
         modelBuilder.Entity<ChampionPick>(e =>
         {
-            e.HasIndex(cp => new { cp.TournamentId, cp.UserId }).IsUnique();
+            e.HasIndex(cp => cp.UserId).IsUnique();
             e.Property(cp => cp.CountryName).HasMaxLength(100);
             e.HasOne(cp => cp.User)
-                .WithMany(u => u.ChampionPicks)
-                .HasForeignKey(cp => cp.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(cp => cp.Tournament)
-                .WithMany(t => t.ChampionPicks)
-                .HasForeignKey(cp => cp.TournamentId)
+                .WithOne(u => u.ChampionPick)
+                .HasForeignKey<ChampionPick>(cp => cp.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
