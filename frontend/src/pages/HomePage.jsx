@@ -275,7 +275,7 @@ export default function HomePage() {
   })
   const upcomingMatches = todayTomorrowMatches.length > 0 ? todayTomorrowMatches : allUpcoming.slice(0, 3)
 
-  const isEmpty = liveMatches.length === 0 && recentFinished.length === 0 && upcomingMatches.length === 0
+  const isEmpty = matches.length === 0 && recentFinished.length === 0 && upcomingMatches.length === 0
 
   const avatar = user?.username?.[0]?.toUpperCase() || '?'
 
@@ -300,23 +300,29 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Partidos en curso */}
-      {liveMatches.length > 0 && (
-        <div className="px-5 mb-5">
-          <h3 className="text-[#FF6B35] text-xs uppercase tracking-widest mb-2 font-semibold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-            En curso
-          </h3>
-          {liveMatches.length === 1
-            ? liveMatches.map((m) => <LiveCard key={m.id} match={m} />)
-            : (
-              <div className="grid grid-cols-2 gap-2">
-                {liveMatches.map((m) => <LiveCard key={m.id} match={m} compact />)}
-              </div>
-            )
-          }
-        </div>
-      )}
+      {/* Partidos en curso — siempre visible */}
+      <div className="px-5 mb-5">
+        <h3 className="text-[#FF6B35] text-xs uppercase tracking-widest mb-2 font-semibold flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full bg-[#FF6B35] ${liveMatches.length > 0 ? 'animate-pulse' : 'opacity-30'}`} />
+          En vivo
+        </h3>
+        {liveMatches.length === 0 ? (
+          <div className="p-4 rounded-2xl border border-[#FF6B35]/20 border-dashed flex items-center gap-3">
+            <span className="text-xl">📡</span>
+            <div>
+              <p className="text-sm font-semibold text-[#8A8A9A]">Sin partidos en vivo ahora</p>
+              <p className="text-xs text-[#3A3A4E] mt-0.5">Cuando haya un partido en curso, el marcador aparece acá en tiempo real</p>
+            </div>
+          </div>
+        ) : liveMatches.length === 1
+          ? liveMatches.map((m) => <LiveCard key={m.id} match={m} />)
+          : (
+            <div className="grid grid-cols-2 gap-2">
+              {liveMatches.map((m) => <LiveCard key={m.id} match={m} compact />)}
+            </div>
+          )
+        }
+      </div>
 
       {/* Últimos resultados */}
       <div className="mb-5 px-5">
