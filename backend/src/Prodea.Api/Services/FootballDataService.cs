@@ -147,14 +147,7 @@ public class FootballDataService(
 
                     if (matchData?.Status is "FINISHED" or "AWARDED")
                     {
-                        // Usar extraTime si hubo alargue, sino fullTime
-                        var (finalHome, finalAway) = FinalScore(matchData.Score);
-                        if (finalHome != null)
-                        {
-                            match.HomeScore = finalHome;
-                            match.AwayScore = finalAway;
-                        }
-                        await FinalizeMatchAsync(db, match, matchData.Score?.Winner, ct);
+                        await FinalizeMatchAsync(db, match, matchData.Score, ct);
                     }
                     // PAUSED, SCHEDULED, etc. → dejamos en InProgress
                 }
@@ -171,28 +164,42 @@ public class FootballDataService(
         }
     }
 
-    private async Task FinalizeMatchAsync(ProdeaDbContext db, Match match, string? apiWinner, CancellationToken ct)
+    private async Task FinalizeMatchAsync(ProdeaDbContext db, Match match, FootballDataScore? apiScore, CancellationToken ct)
     {
         match.Status = MatchStatus.Finished;
 
-        // apiWinner is "HOME_TEAM" | "AWAY_TEAM" | "DRAW" — store the actual team name for penalty cases
+        // apiWinner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW"
+        string? apiWinner = apiScore?.Winner;
         if (apiWinner == "HOME_TEAM") match.Winner = match.HomeTeam;
         else if (apiWinner == "AWAY_TEAM") match.Winner = match.AwayTeam;
 
+        // Display score: regularTime + extraTime (shows final result including ET goals)
+        var (finalHome, finalAway) = FinalScore(apiScore);
+        if (finalHome != null)
+        {
+            match.HomeScore = finalHome;
+            match.AwayScore = finalAway;
+        }
+
         await db.SaveChangesAsync(ct);
 
-        // For penalty matches (tied score), pass which side won so scoring gives 1 pt to correct-winner picks
+        // Scoring usa siempre el marcador a los 90' (regularTime).
+        // Si no hay regularTime (partido de grupo sin ET), coincide con el score almacenado.
+        int home90 = apiScore?.RegularTime?.Home ?? match.HomeScore ?? 0;
+        int away90 = apiScore?.RegularTime?.Away ?? match.AwayScore ?? 0;
+
+        // winnerSide: quién pasó de ronda — aplica cuando empate a 90' en knockout (ET o penales)
         string? winnerSide = null;
-        if (match.HomeScore == match.AwayScore && match.Winner != null)
+        if (home90 == away90 && match.Winner != null)
             winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
 
         var predictions = await db.Predictions
-            .Where(p => p.MatchId == match.Id && match.HomeScore.HasValue)
+            .Where(p => p.MatchId == match.Id)
             .ToListAsync(ct);
 
         foreach (var pred in predictions)
         {
-            pred.PointsEarned = ScoringService.CalculatePoints(pred, match.HomeScore!.Value, match.AwayScore!.Value, winnerSide);
+            pred.PointsEarned = ScoringService.CalculatePoints(pred, home90, away90, winnerSide);
             pred.UpdatedAt = DateTime.UtcNow;
         }
 

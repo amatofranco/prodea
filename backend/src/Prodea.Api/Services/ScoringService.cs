@@ -4,47 +4,35 @@ namespace Prodea.Api.Services;
 
 public static class ScoringService
 {
-    // winnerSide = "home" | "away" when match went to penalties (scores tied but there's a winner)
+    // Score siempre se evalúa en los 90' (regularTime).
+    // winnerSide = "home" | "away" — quién pasó de ronda (ET o penales); solo en knockout con empate a 90'.
+    // +2 bonus: predijo empate Y acertó quién pasa. Stackeable con el exacto → máximo 5 pts.
     public static int CalculatePoints(Prediction prediction, int actualHome, int actualAway, string? winnerSide = null)
     {
-        bool isPenaltyMatch = actualHome == actualAway && winnerSide != null;
+        bool exactScore    = prediction.PredictedHomeScore == actualHome && prediction.PredictedAwayScore == actualAway;
+        bool predictedDraw = prediction.PredictedHomeScore == prediction.PredictedAwayScore;
+        bool actualDraw    = actualHome == actualAway;
 
-        if (isPenaltyMatch)
+        int points;
+        if (exactScore)
         {
-            // Partido decidido por penales: el resultado "completo" es score exacto + ganador por penales.
-            // 3 pts: score exacto Y acertó quién ganó por penales.
-            // 1 pt:  score exacto (sin pick o pick equivocado),
-            //        O predijo empate (cualquier marcador) → acertó que iría a penales,
-            //        O predijo el ganador correcto con un score no empatado (ej. 2-1 home).
-            bool exactScore = prediction.PredictedHomeScore == actualHome && prediction.PredictedAwayScore == actualAway;
-            bool predictedDrawScore = prediction.PredictedHomeScore == prediction.PredictedAwayScore;
+            points = 3;
+        }
+        else
+        {
+            bool predictedHomeWin = prediction.PredictedHomeScore > prediction.PredictedAwayScore;
+            bool predictedAwayWin = prediction.PredictedHomeScore < prediction.PredictedAwayScore;
+            bool actualHomeWin    = actualHome > actualAway;
+            bool actualAwayWin    = actualHome < actualAway;
 
-            string? predictedWinner =
-                prediction.PredictedHomeScore > prediction.PredictedAwayScore ? "home" :
-                prediction.PredictedHomeScore < prediction.PredictedAwayScore ? "away" :
-                prediction.PredictedPenaltyWinner; // draw → usa el pick de penales
-
-            if (exactScore && predictedWinner == winnerSide) return 3;
-            if (exactScore) return 1;
-            if (predictedDrawScore) return 1; // cualquier empate predicho → acertó que habría penales
-            if (predictedWinner == winnerSide) return 1;
-            return 0;
+            points = ((predictedHomeWin && actualHomeWin) || (predictedDraw && actualDraw) || (predictedAwayWin && actualAwayWin))
+                ? 1 : 0;
         }
 
-        // Partido normal (sin penales)
-        if (prediction.PredictedHomeScore == actualHome && prediction.PredictedAwayScore == actualAway)
-            return 3;
+        // Bonus +2: predijo empate y acertó quién avanza (penales o alargue)
+        if (predictedDraw && actualDraw && winnerSide != null && prediction.PredictedPenaltyWinner == winnerSide)
+            points += 2;
 
-        bool predictedHomeWin = prediction.PredictedHomeScore > prediction.PredictedAwayScore;
-        bool predictedDraw    = prediction.PredictedHomeScore == prediction.PredictedAwayScore;
-        bool predictedAwayWin = prediction.PredictedHomeScore < prediction.PredictedAwayScore;
-        bool actualHomeWin    = actualHome > actualAway;
-        bool actualDraw       = actualHome == actualAway;
-        bool actualAwayWin    = actualHome < actualAway;
-
-        if ((predictedHomeWin && actualHomeWin) || (predictedDraw && actualDraw) || (predictedAwayWin && actualAwayWin))
-            return 1;
-
-        return 0;
+        return points;
     }
 }

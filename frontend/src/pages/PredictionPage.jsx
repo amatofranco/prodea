@@ -414,7 +414,7 @@ export default function PredictionPage() {
                   </p>
                   {match.userPrediction.predictedPenaltyWinner && (
                     <p className="text-[#F59E0B] text-xs mt-1">
-                      Penales: {match.userPrediction.predictedPenaltyWinner === 'home'
+                      Pasa de ronda: {match.userPrediction.predictedPenaltyWinner === 'home'
                         ? match.homeTeam
                         : match.awayTeam}
                     </p>
@@ -445,7 +445,7 @@ export default function PredictionPage() {
               {isKnockout && isDraw && (
                 <div className="w-full rounded-2xl bg-[#1A1A2E] border border-[#F59E0B]/40 overflow-hidden">
                   <p className="text-center text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] pt-2 pb-1">
-                    ¿Quién gana por penales?
+                    ¿Quién pasa de ronda?
                   </p>
                   <div className="flex">
                     <button
@@ -481,8 +481,8 @@ export default function PredictionPage() {
                 </p>
                 {isKnockout && isDraw ? (
                   <p className="text-[#8A8A9A] text-xs mt-0.5">
-                    Score exacto → <span className="text-[#00FF87] font-semibold">+1 pt</span>
-                    {' · '}Score exacto + penales → <span className="text-[#00FF87] font-semibold">+3 pts</span>
+                    Exacto en 90': <span className="text-[#00FF87] font-semibold">+3 pts</span>
+                    {' · '}Quién pasa: <span className="text-[#00FF87] font-semibold">+2 pts adicionales</span>
                   </p>
                 ) : (
                   <p className="text-[#8A8A9A] text-xs mt-0.5">{resultLabel} · Si acertás exacto → <span className="text-[#00FF87] font-semibold">+3 pts</span></p>
