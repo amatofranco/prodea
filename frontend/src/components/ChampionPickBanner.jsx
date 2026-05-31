@@ -101,7 +101,7 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
 
   const fetchStatus = useCallback(() => {
     setApiError(null)
-    api.getChampionPick(tournamentId)
+    api.getTournamentChampionPick(tournamentId)
       .then(setStatus)
       .catch((err) => setApiError(err.message || 'Error desconocido'))
       .finally(() => setLoading(false))
@@ -113,7 +113,7 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
     setShowPicker(false)
     setSaving(true)
     try {
-      await api.submitChampionPick(tournamentId, countryName)
+      await api.submitChampionPick(countryName)
       await fetchStatus()
     } catch (err) {
       console.error(err)

@@ -15,5 +15,5 @@ public class User
     public ICollection<Prediction> Predictions { get; set; } = [];
     public ICollection<MatchdayBadge> MatchdayBadges { get; set; } = [];
     public ICollection<AccumulativeBadge> AccumulativeBadges { get; set; } = [];
-    public ICollection<ChampionPick> ChampionPicks { get; set; } = [];
+    public ChampionPick? ChampionPick { get; set; }
 }

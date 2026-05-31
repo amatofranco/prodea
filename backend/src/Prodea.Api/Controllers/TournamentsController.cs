@@ -203,6 +203,73 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .ToList());
     }
 
+    [HttpGet("{id}/champion-pick")]
+    public async Task<ActionResult<ChampionPickStatusDto>> GetTournamentChampionPick(int id)
+    {
+        try
+        {
+            var userId = CurrentUserId;
+            var isMember = await db.TournamentParticipants
+                .AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
+            if (!isMember) return Forbid();
+
+            var firstMatchTime = await db.Matches.AnyAsync()
+                ? await db.Matches.MinAsync(m => m.MatchDate)
+                : DateTime.UtcNow.AddYears(1);
+            var lockTime = firstMatchTime - TimeSpan.FromMinutes(15);
+            var isLocked = DateTime.UtcNow >= lockTime;
+
+            var myPick = await db.ChampionPicks
+                .Where(cp => cp.UserId == userId)
+                .Select(cp => cp.CountryName)
+                .FirstOrDefaultAsync();
+
+            string? champion = null;
+            var finalMatch = await db.Matches
+                .Where(m => m.Phase == MatchPhase.Final && m.Status == MatchStatus.Finished)
+                .FirstOrDefaultAsync();
+            if (finalMatch?.HomeScore != null && finalMatch.HomeScore != finalMatch.AwayScore)
+                champion = finalMatch.HomeScore > finalMatch.AwayScore ? finalMatch.HomeTeam : finalMatch.AwayTeam;
+
+            var groupMatches = await db.Matches
+                .Where(m => m.Phase == MatchPhase.Group)
+                .Select(m => new { m.HomeTeam, m.AwayTeam })
+                .ToListAsync();
+            var teams = groupMatches
+                .SelectMany(m => new[] { m.HomeTeam, m.AwayTeam })
+                .Where(t => t != "TBD")
+                .Distinct().OrderBy(t => t).ToList();
+
+            List<ParticipantPickDto> allPicks = [];
+            if (isLocked)
+            {
+                var participants = await db.TournamentParticipants
+                    .Where(tp => tp.TournamentId == id)
+                    .Include(tp => tp.User)
+                    .ToListAsync();
+
+                var participantUserIds = participants.Select(tp => tp.UserId).ToList();
+                var picks = await db.ChampionPicks
+                    .Where(cp => participantUserIds.Contains(cp.UserId))
+                    .ToDictionaryAsync(cp => cp.UserId, cp => cp.CountryName);
+
+                allPicks = participants
+                    .Select(tp => new ParticipantPickDto(
+                        tp.UserId, tp.User.Username,
+                        picks.GetValueOrDefault(tp.UserId),
+                        champion != null && picks.GetValueOrDefault(tp.UserId) == champion
+                    ))
+                    .ToList();
+            }
+
+            return Ok(new ChampionPickStatusDto(myPick, isLocked, lockTime, champion, allPicks, teams));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message, inner = ex.InnerException?.Message });
+        }
+    }
+
     private static string GenerateCode()
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

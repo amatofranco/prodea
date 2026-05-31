@@ -52,9 +52,10 @@ export const api = {
 
   getProfile: (tournamentId, userId) => request(`/tournaments/${tournamentId}/profile/${userId}`),
 
-  getChampionPick: (tournamentId) => request(`/tournaments/${tournamentId}/champion-pick`),
-  submitChampionPick: (tournamentId, countryName) =>
-    request(`/tournaments/${tournamentId}/champion-pick`, { method: 'POST', body: JSON.stringify({ countryName }) }),
+  getChampionPick: () => request('/champion-pick'),
+  submitChampionPick: (countryName) =>
+    request('/champion-pick', { method: 'POST', body: JSON.stringify({ countryName }) }),
+  getTournamentChampionPick: (tournamentId) => request(`/tournaments/${tournamentId}/champion-pick`),
 
   getMatchPredictions: (tournamentId, matchId) =>
     request(`/tournaments/${tournamentId}/matches/${matchId}/predictions`),
