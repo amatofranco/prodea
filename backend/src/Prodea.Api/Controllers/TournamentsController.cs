@@ -37,6 +37,8 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<TournamentDetailDto>> GetTournament(int id)
     {
+        try
+        {
         var userId = CurrentUserId;
         var isMember = await db.TournamentParticipants
             .AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
@@ -85,6 +87,11 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             tournament.AdminUserId, tournament.Admin.Username,
             ranked, tournament.CreatedAt
         ));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.Message, step = "GetTournament" });
+        }
     }
 
     [HttpPost]
@@ -166,6 +173,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
     [HttpGet("{id}/leaderboard")]
     public async Task<ActionResult<List<LeaderboardEntryDto>>> GetLeaderboard(int id)
     {
+      try {
         var userId = CurrentUserId;
         var isMember = await db.TournamentParticipants.AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
         if (!isMember) return Forbid();
@@ -209,6 +217,11 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
                 );
             })
             .ToList());
+      }
+      catch (Exception ex)
+      {
+          return StatusCode(500, new { message = ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.Message, step = "GetLeaderboard" });
+      }
     }
 
     [HttpGet("{id}/champion-pick")]
