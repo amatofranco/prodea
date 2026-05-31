@@ -254,15 +254,28 @@ public class FootballDataService(
     private record FootballDataScore(
         [property: JsonPropertyName("winner")] string? Winner,
         [property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime,
+        [property: JsonPropertyName("regularTime")] FootballDataFullTime? RegularTime,
         [property: JsonPropertyName("extraTime")] FootballDataFullTime? ExtraTime
     );
     private record FootballDataFullTime(int? Home, int? Away);
     private record FootballDataSingleMatch(string Status, FootballDataScore? Score);
 
-    // Devuelve el score definitivo: extraTime si hubo alargue, si no fullTime.
+    // Score definitivo antes de penales:
+    //   regularTime + extraTime  (cuando hubo alargue; extraTime tiene solo los goles del alargue, no acumulativo)
+    //   regularTime              (partido definido en 90')
+    //   fullTime                 (fallback — partidos de liga o respuestas sin regularTime)
+    // NOTA: fullTime de la API incluye goles de tanda de penales, por eso no se usa en knockout.
     private static (int? Home, int? Away) FinalScore(FootballDataScore? score)
     {
-        var s = score?.ExtraTime ?? score?.FullTime;
-        return (s?.Home, s?.Away);
+        if (score == null) return (null, null);
+
+        if (score.RegularTime?.Home != null)
+        {
+            var etHome = score.ExtraTime?.Home ?? 0;
+            var etAway = score.ExtraTime?.Away ?? 0;
+            return (score.RegularTime.Home + etHome, score.RegularTime.Away + etAway);
+        }
+
+        return (score.FullTime?.Home, score.FullTime?.Away);
     }
 }
