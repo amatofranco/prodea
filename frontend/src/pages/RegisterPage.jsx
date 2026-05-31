@@ -76,14 +76,10 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D]">
-      <div className="mb-10 text-center">
-        <h1
-          className="text-6xl text-[#00FF87] neon-text"
-          style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif', letterSpacing: '0.08em' }}
-        >
-          PRODEÁ
-        </h1>
-        <p className="text-[#8A8A9A] text-sm mt-1">Creá tu cuenta</p>
+      <div className="mb-10 flex flex-col items-center gap-0">
+        <img src="/logo-icon.png" alt="Prodea" className="w-[264px] h-[264px] object-contain" />
+        <img src="/logo-wordmark.png" alt="Prodea" className="h-[70px] object-contain -mt-6" />
+        <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-3" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">
