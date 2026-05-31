@@ -65,9 +65,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D]">
       {/* Logo */}
-      <div className="mb-10 flex flex-col items-center gap-2">
+      <div className="mb-10 flex flex-col items-center gap-0">
         <img src="/logo-icon.png" alt="Prodea" className="w-[264px] h-[264px] object-contain" />
-        <img src="/logo-wordmark.png" alt="Prodea" className="h-[60px] object-contain" />
+        <img src="/logo-wordmark.png" alt="Prodea" className="h-[70px] object-contain -mt-2" />
+        <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-1" style={{ fontFamily: "'Barlow Condensed', 'Bebas Neue', sans-serif" }}>Mundial 2026</p>
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">
