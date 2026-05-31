@@ -146,7 +146,7 @@ function MatchCard({ match, navigate }) {
   )
 }
 
-function ChampionPickEntry({ navigate }) {
+function ChampionPickEntry({ navigate, myPick, isLocked }) {
   return (
     <div
       onClick={() => navigate('/predicciones/campeon')}
@@ -156,10 +156,12 @@ function ChampionPickEntry({ navigate }) {
         🏆
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-sm">Campeón del Mundial</p>
-        <p className="text-[#8A8A9A] text-xs">Mundial 2026</p>
+        <p className="text-white font-semibold text-sm">Campeón del Torneo</p>
+        <p className="text-[#8A8A9A] text-xs truncate">{myPick ?? 'Sin candidato elegido'}</p>
       </div>
-      <span className="text-[#F59E0B] text-xs font-semibold shrink-0">Elegir →</span>
+      <span className="text-[#F59E0B] text-xs font-semibold shrink-0">
+        {isLocked ? 'Ver →' : myPick ? 'Cambiar →' : 'Elegir →'}
+      </span>
     </div>
   )
 }
@@ -168,6 +170,7 @@ export default function PredictionsPage() {
   const navigate = useNavigate()
   const [matches, setMatches] = useState([])
   const [tournaments, setTournaments] = useState([])
+  const [championPick, setChampionPick] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedTab, setSelectedTab] = useState('group-1')
   const tabBarRef = useRef(null)
@@ -175,6 +178,7 @@ export default function PredictionsPage() {
   useEffect(() => {
     api.getMyPredictions().then(setMatches).finally(() => setLoading(false))
     api.getTournaments().then(setTournaments).catch(() => {})
+    api.getChampionPick().then(setChampionPick).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -238,7 +242,13 @@ export default function PredictionsPage() {
       </div>
 
       {/* Champion pick — entrada única global */}
-      {tournaments.length > 0 && <ChampionPickEntry navigate={navigate} />}
+      {tournaments.length > 0 && (
+        <ChampionPickEntry
+          navigate={navigate}
+          myPick={championPick?.myPick}
+          isLocked={championPick?.isLocked}
+        />
+      )}
 
       {/* Tabs */}
       <div
