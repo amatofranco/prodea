@@ -261,8 +261,22 @@ public class AdminController(
             return Forbid();
 
         var badgeService = new BadgeService(db);
-        await badgeService.RecalculateAccumulativeBadgesAsync(tournamentId);
-        return Ok(new { message = $"Badges acumulativos recalculados para torneo {tournamentId}" });
+
+        // Recalcular badges de jornada para todas las fases/jornadas ya terminadas
+        var finishedPhaseMatchdays = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finished)
+            .Select(m => new { m.Phase, Matchday = m.Matchday ?? 0 })
+            .Distinct()
+            .ToListAsync();
+
+        int matchdayCount = 0;
+        foreach (var pm in finishedPhaseMatchdays)
+        {
+            await badgeService.AssignMatchdayBadgesAsync(tournamentId, pm.Phase, pm.Matchday);
+            matchdayCount++;
+        }
+
+        return Ok(new { message = $"Badges recalculados para torneo {tournamentId}: {matchdayCount} jornadas/fases procesadas." });
     }
 
     [HttpGet("polling-status")]
