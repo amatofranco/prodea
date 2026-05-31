@@ -62,5 +62,6 @@ public record MatchPredictionDto(
     string Username,
     int? PredictedHomeScore,
     int? PredictedAwayScore,
-    int PointsEarned
+    int PointsEarned,
+    string? PredictedPenaltyWinner = null
 );

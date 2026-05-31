@@ -300,15 +300,15 @@ export default function PredictionPage() {
           </button>
           <div className="flex items-center gap-2 px-10 w-full min-w-0">
             <p className="flex-1 text-center text-base font-bold text-white leading-tight">
-              {match.homeTeam === 'TBD' && !match.homeTeamLabel
-                ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
-                : (match.homeTeamLabel ?? match.homeTeam)}
+              {match.homeTeam !== 'TBD'
+                ? match.homeTeam
+                : match.homeTeamLabel ?? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>}
             </p>
             <span className="text-[#8A8A9A] text-sm font-light flex-shrink-0">vs</span>
             <p className="flex-1 text-center text-base font-bold text-white leading-tight">
-              {match.awayTeam === 'TBD' && !match.awayTeamLabel
-                ? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>
-                : (match.awayTeamLabel ?? match.awayTeam)}
+              {match.awayTeam !== 'TBD'
+                ? match.awayTeam
+                : match.awayTeamLabel ?? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>}
             </p>
           </div>
         </div>

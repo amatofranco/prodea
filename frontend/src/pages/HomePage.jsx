@@ -29,8 +29,8 @@ function calcLivePoints(pred, homeScore, awayScore) {
 
 function LiveCard({ match, compact = false }) {
   const pred = match.userPrediction
-  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
-  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+  const homeDisplay = match.homeTeam !== 'TBD' ? match.homeTeam : (match.homeTeamLabel ?? match.homeTeam)
+  const awayDisplay = match.awayTeam !== 'TBD' ? match.awayTeam : (match.awayTeamLabel ?? match.awayTeam)
 
   if (compact) {
     return (
@@ -123,8 +123,8 @@ function FinishedCard({ match }) {
   const pred = match.userPrediction
   const home = match.homeScore ?? 0
   const away = match.awayScore ?? 0
-  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
-  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+  const homeDisplay = match.homeTeam !== 'TBD' ? match.homeTeam : (match.homeTeamLabel ?? match.homeTeam)
+  const awayDisplay = match.awayTeam !== 'TBD' ? match.awayTeam : (match.awayTeamLabel ?? match.awayTeam)
 
   return (
     <div className="p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] flex flex-col gap-2">
@@ -160,8 +160,8 @@ function FinishedCard({ match }) {
 }
 
 function PlaceholderCard({ match }) {
-  const homeDisplay = match.homeTeamLabel ?? match.homeTeam
-  const awayDisplay = match.awayTeamLabel ?? match.awayTeam
+  const homeDisplay = match.homeTeam !== 'TBD' ? match.homeTeam : (match.homeTeamLabel ?? match.homeTeam)
+  const awayDisplay = match.awayTeam !== 'TBD' ? match.awayTeam : (match.awayTeamLabel ?? match.awayTeam)
   const dateLabel = new Date(match.matchDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
   return (
     <div className="p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] border-dashed flex flex-col gap-2 opacity-50">
@@ -194,8 +194,8 @@ function UpcomingCard({ match, navigate }) {
   const isTomorrow = matchDate.toDateString() === new Date(now.getTime() + 86400000).toDateString()
   const dayLabel = isToday ? 'Hoy' : isTomorrow ? 'Mañana' : matchDate.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
   const timeLabel = matchDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-  const homeDisplay = match.homeTeamLabel ?? (teamsConfirmed ? match.homeTeam : 'Por confirmar')
-  const awayDisplay = match.awayTeamLabel ?? (teamsConfirmed ? match.awayTeam : 'Por confirmar')
+  const homeDisplay = match.homeTeam !== 'TBD' ? match.homeTeam : (match.homeTeamLabel ?? 'Por confirmar')
+  const awayDisplay = match.awayTeam !== 'TBD' ? match.awayTeam : (match.awayTeamLabel ?? 'Por confirmar')
 
   return (
     <div

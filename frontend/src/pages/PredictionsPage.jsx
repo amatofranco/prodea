@@ -40,7 +40,7 @@ function TeamFlag({ name, label }) {
   const isTbd = name === 'TBD'
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
-  const displayName = label ?? name
+  const displayName = name !== 'TBD' ? name : (label ?? name)
   return (
     <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
       <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-[#2A2A3E]">
@@ -118,16 +118,23 @@ function MatchCard({ match, navigate }) {
       </div>
 
       {pred ? (
-        <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-center gap-2">
-          <span className="text-xs text-[#8A8A9A]">Predicción:</span>
-          <span className="text-xs font-bold text-[#00FF87]">
-            {pred.predictedHomeScore} – {pred.predictedAwayScore}
-          </span>
-          {isFinished && (
-            <span className={`text-xs font-bold ml-2 ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-              +{pred.pointsEarned} pts
+        <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex flex-col items-center gap-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#8A8A9A]">Predicción:</span>
+            <span className="text-xs font-bold text-[#00FF87]">
+              {pred.predictedHomeScore} – {pred.predictedAwayScore}
             </span>
-          )}
+            {pred.predictedPenaltyWinner && (
+              <span className="text-xs text-[#F59E0B]">
+                · Pasa: {pred.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
+              </span>
+            )}
+            {isFinished && (
+              <span className={`text-xs font-bold ml-1 ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                +{pred.pointsEarned} pts
+              </span>
+            )}
+          </div>
         </div>
       ) : canPredict ? (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex justify-center">

@@ -24,7 +24,7 @@ function getPhaseKey(m) {
 function FlagImg({ name, label, size = 40 }) {
   const { flag } = getTeam(name)
   const url = getFlagUrl(flag)
-  const display = label ?? name
+  const display = name !== 'TBD' ? name : (label ?? name)
   return (
     <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
       <div className="rounded-md overflow-hidden bg-[#2A2A3E]" style={{ width: size, height: Math.round(size * 0.67) }}>
@@ -91,6 +91,11 @@ function TournamentMatchCard({ match, onTap }) {
         {pred ? (
           <span className="text-xs text-[#8A8A9A]">
             Predicción: <span className="text-[#00FF87] font-bold">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
+            {pred.predictedPenaltyWinner && (
+              <span className="text-[#F59E0B]">
+                {' · Pasa: '}{pred.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
+              </span>
+            )}
             {isFinished && (
               <span className={`ml-2 font-bold ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
                 +{pred.pointsEarned} pts
@@ -158,9 +163,16 @@ function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
               </div>
               <span className="flex-1 text-white text-sm font-medium truncate">{p.username}</span>
               {p.predictedHomeScore != null ? (
-                <span className="text-white font-bold text-sm" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-                  {p.predictedHomeScore} – {p.predictedAwayScore}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-white font-bold text-sm" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                    {p.predictedHomeScore} – {p.predictedAwayScore}
+                  </span>
+                  {p.predictedPenaltyWinner && (
+                    <span className="text-[9px] text-[#F59E0B]">
+                      Pasa: {p.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
+                    </span>
+                  )}
+                </div>
               ) : (
                 <span className="text-[#8A8A9A] text-xs italic">Sin pred</span>
               )}

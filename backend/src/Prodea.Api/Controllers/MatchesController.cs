@@ -76,7 +76,8 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
                 return new MatchPredictionDto(
                     tp.UserId, tp.User.Username,
                     pred?.PredictedHomeScore, pred?.PredictedAwayScore,
-                    pred?.PointsEarned ?? 0
+                    pred?.PointsEarned ?? 0,
+                    pred?.PredictedPenaltyWinner
                 );
             })
             .OrderByDescending(p => p.PointsEarned)
