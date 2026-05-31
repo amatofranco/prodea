@@ -300,7 +300,7 @@ export default function HomePage() {
       {isFinalFinished && tournaments.length > 0 && (
         <div className="px-5 mb-4">
           <div
-            onClick={() => navigate(tournaments.length === 1 ? `/torneos/${tournaments[0].id}` : '/')}
+            onClick={() => navigate(tournaments.length === 1 ? `/torneos/${tournaments[0].id}` : '/torneos')}
             className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/40 cursor-pointer active:opacity-80"
           >
             <span className="text-3xl shrink-0">🏆</span>
