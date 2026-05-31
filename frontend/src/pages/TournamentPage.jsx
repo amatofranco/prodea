@@ -335,6 +335,9 @@ export default function TournamentPage() {
           </div>
         ) : (
           <div className="flex flex-col min-h-full">
+            <div className="pt-3">
+              <ChampionPickBanner tournamentId={id} currentUserId={user?.id} />
+            </div>
             {/* Phase tabs */}
             <div
               ref={phaseBarRef}
