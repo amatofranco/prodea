@@ -309,10 +309,7 @@ export default function HomePage() {
         {liveMatches.length === 0 ? (
           <div className="p-4 rounded-2xl border border-[#FF6B35]/20 border-dashed flex items-center gap-3">
             <span className="text-xl">📡</span>
-            <div>
-              <p className="text-sm font-semibold text-[#8A8A9A]">Sin partidos en vivo ahora</p>
-              <p className="text-xs text-[#3A3A4E] mt-0.5">Cuando haya un partido en curso, el marcador aparece acá en tiempo real</p>
-            </div>
+            <p className="text-sm font-semibold text-[#8A8A9A]">Sin partidos en vivo ahora</p>
           </div>
         ) : liveMatches.length === 1
           ? liveMatches.map((m) => <LiveCard key={m.id} match={m} />)
