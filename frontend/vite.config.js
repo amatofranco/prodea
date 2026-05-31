@@ -38,7 +38,7 @@ export default defineConfig({
       },
 
       workbox: {
-        // Precachea todos los assets del build (JS, CSS, HTML)
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
 
         runtimeCaching: [
