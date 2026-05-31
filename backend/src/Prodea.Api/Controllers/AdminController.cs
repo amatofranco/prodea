@@ -117,6 +117,8 @@ public class AdminController(
         match.Minute     = request.Minute;
         if (request.MatchDate.HasValue)
             match.MatchDate = request.MatchDate.Value;
+        if (request.HomeTeam != null) match.HomeTeam = request.HomeTeam;
+        if (request.AwayTeam != null) match.AwayTeam = request.AwayTeam;
 
         await db.SaveChangesAsync();
 
@@ -130,6 +132,81 @@ public class AdminController(
             homeScore = match.HomeScore,
             awayScore = match.AwayScore,
             matchDate = match.MatchDate,
+        });
+    }
+
+    [HttpPost("matches/{id}/finalize")]
+    public async Task<IActionResult> FinalizeMatch(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromBody] FinalizeMatchRequest request)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var match = await db.Matches.FindAsync(id);
+        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+
+        match.HomeScore = request.HomeScore;
+        match.AwayScore = request.AwayScore;
+        match.Status = MatchStatus.Finished;
+
+        // winner: "home" | "away" — para penales cuando scores son iguales
+        if (request.Winner == "home") match.Winner = match.HomeTeam;
+        else if (request.Winner == "away") match.Winner = match.AwayTeam;
+        else match.Winner = null;
+
+        await db.SaveChangesAsync();
+
+        string? winnerSide = null;
+        if (match.HomeScore == match.AwayScore && match.Winner != null)
+            winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
+
+        var predictions = await db.Predictions
+            .Where(p => p.MatchId == match.Id)
+            .ToListAsync();
+
+        foreach (var pred in predictions)
+        {
+            pred.PointsEarned = ScoringService.CalculatePoints(pred, match.HomeScore!.Value, match.AwayScore!.Value, winnerSide);
+            pred.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await db.SaveChangesAsync();
+
+        var badgeService = new BadgeService(db);
+        var tournamentIds = await db.TournamentParticipants
+            .Select(tp => tp.TournamentId).Distinct().ToListAsync();
+        foreach (var tid in tournamentIds)
+            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
+
+        if (match.Phase == MatchPhase.Final)
+        {
+            string? champion = match.HomeScore > match.AwayScore ? match.HomeTeam
+                : match.AwayScore > match.HomeScore ? match.AwayTeam
+                : match.Winner;
+            if (champion != null)
+            {
+                var picks = await db.ChampionPicks
+                    .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0).ToListAsync();
+                foreach (var pick in picks) pick.PointsEarned = 10;
+                await db.SaveChangesAsync();
+            }
+        }
+
+        return Ok(new
+        {
+            message      = $"Partido {id} finalizado con scoring",
+            matchId      = match.Id,
+            homeTeam     = match.HomeTeam,
+            awayTeam     = match.AwayTeam,
+            homeScore    = match.HomeScore,
+            awayScore    = match.AwayScore,
+            winner       = match.Winner,
+            winnerSide,
+            predictionsScored = predictions.Count,
+            details = predictions.Select(p => new { p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.PredictedPenaltyWinner, p.PointsEarned }),
         });
     }
 
@@ -336,7 +413,8 @@ public class AdminController(
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore, int? Minute = null, DateTime? MatchDate = null);
+    public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore, int? Minute = null, DateTime? MatchDate = null, string? HomeTeam = null, string? AwayTeam = null);
+    public record FinalizeMatchRequest(int HomeScore, int AwayScore, string? Winner = null); // Winner: "home" | "away" para penales
     public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null, bool Force = false);
 
     private record BackupPrediction(
