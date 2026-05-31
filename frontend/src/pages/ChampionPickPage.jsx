@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Search, Lock, Check } from 'lucide-react'
 import { api } from '../services/api'
 import { getTeam, getFlagUrl } from '../data/teamsData'
@@ -38,9 +38,9 @@ function Countdown({ lockTime }) {
 }
 
 export default function ChampionPickPage() {
-  const { tournamentId } = useParams()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
+  const [tournamentId, setTournamentId] = useState(null)
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -49,10 +49,15 @@ export default function ChampionPickPage() {
   const [changing, setChanging] = useState(false)
 
   useEffect(() => {
-    api.getChampionPick(tournamentId)
-      .then(setStatus)
+    api.getTournaments()
+      .then(ts => {
+        if (!ts.length) { setLoading(false); return }
+        const tid = ts[0].id
+        setTournamentId(tid)
+        return api.getChampionPick(tid).then(setStatus)
+      })
       .finally(() => setLoading(false))
-  }, [tournamentId])
+  }, [])
 
   async function handleSelect(countryName) {
     setSaving(true)

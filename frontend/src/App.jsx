@@ -30,7 +30,7 @@ export default function App() {
             <Route path="/torneos" element={<TorneosPage />} />
             <Route path="/predicciones" element={<PredictionsPage />} />
             <Route path="/predicciones/:matchId" element={<PredictionPage />} />
-            <Route path="/predicciones/campeon/:tournamentId" element={<ChampionPickPage />} />
+            <Route path="/predicciones/campeon" element={<ChampionPickPage />} />
             <Route path="/torneos/:id" element={<TournamentPage />} />
             <Route path="/torneos/:tournamentId/perfil/:userId" element={<ProfilePage />} />
           </Route>

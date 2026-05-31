@@ -146,10 +146,10 @@ function MatchCard({ match, navigate }) {
   )
 }
 
-function ChampionPickEntry({ tournament, navigate }) {
+function ChampionPickEntry({ navigate }) {
   return (
     <div
-      onClick={() => navigate(`/predicciones/campeon/${tournament.id}`)}
+      onClick={() => navigate('/predicciones/campeon')}
       className="flex items-center gap-3 px-4 py-3 border-b border-[#1A1A2E] bg-[#0D0D0D] cursor-pointer active:bg-[#1A1A2E] transition-colors"
     >
       <div className="w-12 h-[34px] rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex items-center justify-center text-xl flex-shrink-0">
@@ -157,7 +157,7 @@ function ChampionPickEntry({ tournament, navigate }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white font-semibold text-sm">Campeón del Mundial</p>
-        <p className="text-[#8A8A9A] text-xs truncate">{tournament.name}</p>
+        <p className="text-[#8A8A9A] text-xs">Mundial 2026</p>
       </div>
       <span className="text-[#F59E0B] text-xs font-semibold shrink-0">Elegir →</span>
     </div>
@@ -237,10 +237,8 @@ export default function PredictionsPage() {
         <p className="text-[#8A8A9A] text-xs">Cargá tus resultados antes de cada partido</p>
       </div>
 
-      {/* Champion pick entry por torneo */}
-      {tournaments.map(t => (
-        <ChampionPickEntry key={t.id} tournament={t} navigate={navigate} />
-      ))}
+      {/* Champion pick — entrada única global */}
+      {tournaments.length > 0 && <ChampionPickEntry navigate={navigate} />}
 
       {/* Tabs */}
       <div
