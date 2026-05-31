@@ -136,6 +136,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "HomeTeamLabel" varchar(200);
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "AwayTeamLabel" varchar(200);
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "Minute" int;
+            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "Winner" varchar(100);
             CREATE TABLE IF NOT EXISTS "PredictionBackups" (
                 "Id"        serial PRIMARY KEY,
                 "CreatedAt" timestamptz NOT NULL,

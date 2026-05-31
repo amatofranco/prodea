@@ -99,7 +99,14 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         match.AwayScore = request.AwayScore;
         match.Status = MatchStatus.Finished;
 
+        // For penalty matches: admin passes winner = "home" | "away"
+        if (request.HomeScore == request.AwayScore && request.Winner != null)
+            match.Winner = request.Winner == "home" ? match.HomeTeam : match.AwayTeam;
+
         await db.SaveChangesAsync();
+
+        string? winnerSide = (request.HomeScore == request.AwayScore && request.Winner != null)
+            ? request.Winner : null;
 
         var predictions = await db.Predictions
             .Where(p => p.MatchId == matchId)
@@ -107,7 +114,7 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         foreach (var pred in predictions)
         {
-            pred.PointsEarned = ScoringService.CalculatePoints(pred, request.HomeScore, request.AwayScore);
+            pred.PointsEarned = ScoringService.CalculatePoints(pred, request.HomeScore, request.AwayScore, winnerSide);
             pred.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -121,14 +128,21 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         foreach (var tid in allTournamentIds)
             await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
 
-        if (match.Phase == MatchPhase.Final && request.HomeScore != request.AwayScore)
+        if (match.Phase == MatchPhase.Final)
         {
-            var champion = request.HomeScore > request.AwayScore ? match.HomeTeam : match.AwayTeam;
-            var winningPicks = await db.ChampionPicks
-                .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0)
-                .ToListAsync();
-            foreach (var pick in winningPicks) pick.PointsEarned = 10;
-            await db.SaveChangesAsync();
+            string? champion = null;
+            if (request.HomeScore > request.AwayScore) champion = match.HomeTeam;
+            else if (request.AwayScore > request.HomeScore) champion = match.AwayTeam;
+            else champion = match.Winner; // penalty case
+
+            if (champion != null)
+            {
+                var winningPicks = await db.ChampionPicks
+                    .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0)
+                    .ToListAsync();
+                foreach (var pick in winningPicks) pick.PointsEarned = 10;
+                await db.SaveChangesAsync();
+            }
         }
 
         var payload = new

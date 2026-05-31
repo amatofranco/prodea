@@ -30,8 +30,10 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
         var finalMatch = await db.Matches
             .Where(m => m.Phase == MatchPhase.Final && m.Status == MatchStatus.Finished)
             .FirstOrDefaultAsync();
-        if (finalMatch?.HomeScore == null || finalMatch.HomeScore == finalMatch.AwayScore) return null;
-        return finalMatch.HomeScore > finalMatch.AwayScore ? finalMatch.HomeTeam : finalMatch.AwayTeam;
+        if (finalMatch?.HomeScore == null) return null;
+        if (finalMatch.HomeScore > finalMatch.AwayScore) return finalMatch.HomeTeam;
+        if (finalMatch.AwayScore > finalMatch.HomeScore) return finalMatch.AwayTeam;
+        return finalMatch.Winner; // penalty case
     }
 
     private static async Task<List<string>> GetAvailableTeamsAsync(ProdeaDbContext db)
