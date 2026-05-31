@@ -160,7 +160,7 @@ function ChampionPickEntry({ navigate, myPick, isLocked }) {
         }
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-sm">Campeón del Torneo</p>
+        <p className="text-white font-semibold text-sm">🏆 Campeón del Torneo</p>
         <p className="text-[#8A8A9A] text-xs truncate">{myPick ?? 'Sin candidato elegido'}</p>
       </div>
       <span className="text-[#F59E0B] text-xs font-semibold shrink-0">
