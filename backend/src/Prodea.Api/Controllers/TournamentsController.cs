@@ -57,6 +57,10 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
             .ToListAsync();
 
+        var championPoints = await db.ChampionPicks
+            .Where(cp => participantIds.Contains(cp.UserId))
+            .ToDictionaryAsync(cp => cp.UserId, cp => cp.PointsEarned);
+
         var lastBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == id && mb.Phase != "")
             .GroupBy(mb => mb.UserId)
@@ -67,10 +71,10 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var badgeMap = lastBadges.ToDictionary(b => b.UserId, b => b.BadgeType.ToString());
 
         var ranked = tournament.Participants
-            .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0))
+            .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
             .Select((tp, idx) => new ParticipantDto(
                 tp.UserId, tp.User.Username, tp.User.AvatarUrl,
-                pointsMap.GetValueOrDefault(tp.UserId, 0),
+                pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
                 idx + 1,
                 badgeMap.GetValueOrDefault(tp.UserId)
             ))
@@ -179,6 +183,10 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
             .ToListAsync();
 
+        var championPoints = await db.ChampionPicks
+            .Where(cp => participantIds.Contains(cp.UserId))
+            .ToDictionaryAsync(cp => cp.UserId, cp => cp.PointsEarned);
+
         var lastBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == id && mb.Phase != "")
             .GroupBy(mb => mb.UserId)
@@ -189,13 +197,13 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var badgeMap = lastBadges.ToDictionary(b => b.UserId, b => b);
 
         return Ok(participants
-            .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0))
+            .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
             .Select((tp, idx) =>
             {
                 var badge = badgeMap.GetValueOrDefault(tp.UserId);
                 return new LeaderboardEntryDto(
                     idx + 1, tp.UserId, tp.User.Username, tp.User.AvatarUrl,
-                    pointsMap.GetValueOrDefault(tp.UserId, 0),
+                    pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
                     badge?.BadgeType.ToString(),
                     badge != null ? BadgeService.GetEmoji(badge.BadgeType) : null
                 );
