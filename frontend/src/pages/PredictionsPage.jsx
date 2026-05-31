@@ -147,13 +147,17 @@ function MatchCard({ match, navigate }) {
 }
 
 function ChampionPickEntry({ navigate, myPick, isLocked }) {
+  const flagUrl = myPick ? getFlagUrl(getTeam(myPick).flag) : null
   return (
     <div
       onClick={() => navigate('/predicciones/campeon')}
       className="flex items-center gap-3 px-4 py-3 border-b border-[#1A1A2E] bg-[#0D0D0D] cursor-pointer active:bg-[#1A1A2E] transition-colors"
     >
-      <div className="w-12 h-[34px] rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex items-center justify-center text-xl flex-shrink-0">
-        🏆
+      <div className="w-12 h-[34px] rounded-lg overflow-hidden bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex items-center justify-center text-xl flex-shrink-0">
+        {flagUrl
+          ? <img src={flagUrl} alt={myPick} className="w-full h-full object-cover" />
+          : '🏆'
+        }
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white font-semibold text-sm">Campeón del Torneo</p>
