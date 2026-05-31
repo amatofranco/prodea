@@ -50,13 +50,16 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
         }
 
         // Available teams from Group phase (both home and away, confirmed only)
-        var teams = await db.Matches
+        var groupMatches = await db.Matches
             .Where(m => m.Phase == MatchPhase.Group)
+            .Select(m => new { m.HomeTeam, m.AwayTeam })
+            .ToListAsync();
+        var teams = groupMatches
             .SelectMany(m => new[] { m.HomeTeam, m.AwayTeam })
             .Where(t => t != "TBD")
             .Distinct()
             .OrderBy(t => t)
-            .ToListAsync();
+            .ToList();
 
         // All picks — visible only after lock
         List<ParticipantPickDto> allPicks = [];
