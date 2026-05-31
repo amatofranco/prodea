@@ -101,7 +101,8 @@ public class BadgeService(ProdeaDbContext db)
                 { TotalPoints: var p } when p == minPoints && participants.Count > 1                   => MatchdayBadgeType.Mufa,
                 { ExactCount: >= 2 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 1 }                                                                   => MatchdayBadgeType.Francotirador,
-                _                                                                                      => MatchdayBadgeType.Payaso,
+                { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
+                _                                                                                      => MatchdayBadgeType.Francotirador,
             };
 
             var existing = await db.MatchdayBadges
