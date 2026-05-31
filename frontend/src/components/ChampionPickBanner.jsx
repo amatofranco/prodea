@@ -92,7 +92,7 @@ function TeamPickerModal({ teams, onSelect, onClose }) {
   )
 }
 
-export default function ChampionPickBanner({ tournamentId, currentUserId }) {
+export default function ChampionPickBanner({ tournamentId, currentUserId, readOnly = false }) {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(null)
@@ -171,14 +171,18 @@ export default function ChampionPickBanner({ tournamentId, currentUserId }) {
                     <Countdown lockTime={lockTime} />
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowPicker(true)}
-                  disabled={saving}
-                  className="text-[#00FF87] text-xs font-semibold shrink-0"
-                >
-                  Cambiar
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => setShowPicker(true)}
+                    disabled={saving}
+                    className="text-[#00FF87] text-xs font-semibold shrink-0"
+                  >
+                    Cambiar
+                  </button>
+                )}
               </div>
+            ) : readOnly ? (
+              <p className="text-[#8A8A9A] text-xs italic">Sin candidato elegido</p>
             ) : (
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
