@@ -12,7 +12,7 @@ export default function UpdateBanner() {
     <div className="fixed bottom-20 left-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/40 shadow-lg max-w-[448px] mx-auto">
       <span className="text-[#00FF87] text-lg">🔄</span>
       <p className="flex-1 text-sm text-white">
-        Hay una nueva versión de Prodeá disponible
+        Hay una nueva versión de Prodea disponible
       </p>
       <button
         onClick={() => updateServiceWorker(true)}

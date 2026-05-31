@@ -12,8 +12,8 @@ export default defineConfig({
       devOptions: { enabled: true },
 
       manifest: {
-        name: 'Prodeá — Mundial 2026',
-        short_name: 'Prodeá',
+        name: 'Prodea — Mundial 2026',
+        short_name: 'Prodea',
         description: 'El prode del Mundial 2026 con tus amigos',
         theme_color: '#0D0D0D',
         background_color: '#0D0D0D',
@@ -32,7 +32,7 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             form_factor: 'narrow',
-            label: 'Prodeá — Fixture',
+            label: 'Prodea — Fixture',
           },
         ],
       },

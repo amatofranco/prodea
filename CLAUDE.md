@@ -1,8 +1,8 @@
-# Prodeá — Brief para Claude Code
+# Prodea — Brief para Claude Code
 
 ## Descripción general
 
-Prodeá es una app mobile-first de prode futbolero entre amigos, pensada para el Mundial 2026. El diferencial no es solo el prode en sí, sino la capa de humor y viralidad: cada jugador recibe un mote por fecha ("El Mufa", "El Crack", etc.) que se muestra en cards compartibles estilo figurita, diseñadas para compartir en WhatsApp e Instagram.
+Prodea es una app mobile-first de prode futbolero entre amigos, pensada para el Mundial 2026. El diferencial no es solo el prode en sí, sino la capa de humor y viralidad: cada jugador recibe un mote por fecha ("El Mufa", "El Crack", etc.) que se muestra en cards compartibles estilo figurita, diseñadas para compartir en WhatsApp e Instagram.
 
 El objetivo es que sea divertida, visualmente llamativa, y que se viralice orgánicamente entre grupos de amigos.
 
@@ -78,7 +78,7 @@ Al terminar cada fecha, se genera automáticamente una **card estilo figurita de
 - Posición actual en la tabla del torneo
 - Frase graciosa según el mote (ver listado abajo)
 - Nombre del torneo y fecha
-- Branding de Prodeá
+- Branding de Prodea
 
 **Cards especiales:**
 - 🏆 **Card Campeón del Torneo** — al terminar el mundial, card especial con trofeo para el ganador del grupo
@@ -216,7 +216,7 @@ AccumulativeBadge
 - Emoji + nombre del mote centrado
 - Puntos de la fecha y posición en tabla
 - Frase graciosa en itálica
-- Logo Prodeá en el footer
+- Logo Prodea en el footer
 - Borde brillante animado (en app) o estático (en la imagen exportada)
 
 ---

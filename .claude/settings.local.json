@@ -4,7 +4,8 @@
       "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\)+\";\"+[System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); [System.Convert]::ToBase64String\\([System.Security.Cryptography.RandomNumberGenerator]::GetBytes\\(48\\)\\))",
       "PowerShell(git remote *)",
       "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\)+\";\"+[System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); cd C:\\\\prodea && git branch -a 2>&1)",
-      "PowerShell(gh repo *)"
+      "PowerShell(gh repo *)",
+      "WebFetch(domain:en.wikipedia.org)"
     ]
   }
 }

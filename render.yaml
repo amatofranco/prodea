@@ -25,7 +25,7 @@ services:
       - key: Resend__ApiKey
         sync: false
       - key: Resend__From
-        value: "Prodeá <noreply@prodea.app>"
+        value: "Prodea <noreply@prodea.app>"
       - key: Frontend__Url
         sync: false
       - key: Cors__AllowedOrigins__0

@@ -1,4 +1,4 @@
-# Prodeá
+# Prodea
 
 App mobile-first de prode futbolero entre amigos para el Mundial 2026, con motes virales (El Crack, El Mufa, etc.) y cards compartibles estilo figurita.
 
@@ -105,7 +105,7 @@ El archivo `render.yaml` en la raíz define todo: el servicio web (Docker) y la 
 | `FootballData__ApiKey` | Setear manualmente — API key de football-data.org |
 | `Google__ClientId` | Setear manualmente — Client ID de Google OAuth |
 | `Resend__ApiKey` | Setear manualmente — API key de Resend |
-| `Resend__From` | `Prodeá <noreply@prodea.app>` (en `render.yaml`) |
+| `Resend__From` | `Prodea <noreply@prodea.app>` (en `render.yaml`) |
 | `Frontend__Url` | Setear manualmente — URL del frontend en Vercel |
 | `Cors__AllowedOrigins__0` | Setear manualmente — URL del frontend en Vercel |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (en `render.yaml`) |

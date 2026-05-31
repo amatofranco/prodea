@@ -100,7 +100,7 @@ public class BackupService(
         {
             try
             {
-                var from   = config["Resend:From"] ?? "Prodeá <noreply@prodea.app>";
+                var from   = config["Resend:From"] ?? "Prodea <noreply@prodea.app>";
                 var resend = scope.ServiceProvider.GetRequiredService<IResend>();
 
                 var preview = json.Length > 8000 ? json[..8000] + "\n... (truncado)" : json;
@@ -108,14 +108,14 @@ public class BackupService(
                 {
                     From     = from,
                     To       = { adminEmail },
-                    Subject  = $"[Prodeá] Backup predicciones — {payload.GeneratedAt:yyyy-MM-dd}",
+                    Subject  = $"[Prodea] Backup predicciones — {payload.GeneratedAt:yyyy-MM-dd}",
                     HtmlBody = $"""
                         <div style="font-family:monospace;background:#0D0D0D;color:#fff;padding:24px;border-radius:8px;max-width:600px;">
-                          <h2 style="color:#00FF87;margin:0 0 12px;">Backup predicciones Prodeá</h2>
+                          <h2 style="color:#00FF87;margin:0 0 12px;">Backup predicciones Prodea</h2>
                           <p style="color:#8A8A9A;margin:0 0 8px;">Fecha: <strong style="color:#fff">{payload.GeneratedAt:yyyy-MM-dd HH:mm} UTC</strong></p>
                           <p style="color:#8A8A9A;margin:0 0 16px;">Predicciones: <strong style="color:#fff">{predictions.Count}</strong> &nbsp;|&nbsp; Tamaño: <strong style="color:#fff">{sizeKb:F1} KB</strong></p>
                           <pre style="background:#1A1A2E;padding:16px;border-radius:6px;color:#8A8A9A;font-size:11px;overflow-x:auto;max-height:400px;">{preview}</pre>
-                          <p style="margin-top:16px;color:#3A3A4E;font-size:12px;">Generado automáticamente por Prodeá.</p>
+                          <p style="margin-top:16px;color:#3A3A4E;font-size:12px;">Generado automáticamente por Prodea.</p>
                         </div>
                         """,
                     TextBody = json,

@@ -123,7 +123,7 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   ctx.font = '700 10px "DM Sans", system-ui, sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,0.4)'
   ctx.textBaseline = 'top'
-  ctx.textAlign = 'left';  ctx.fillText('PRODEÁ', 20, y)
+  ctx.textAlign = 'left';  ctx.fillText('Prodea', 20, y)
   ctx.textAlign = 'right'; ctx.fillText(jornada.toUpperCase(), W - 20, y)
   y += 12 + GAP
 
@@ -242,7 +242,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
 
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
-          text: `${username} fue "${label}" en ${jornada} · Prodeá Mundial 2026`,
+          text: `${username} fue "${label}" en ${jornada} · Prodea Mundial 2026`,
           files: [file],
         })
       } else {
@@ -271,7 +271,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
       <div className={`w-56 rounded-3xl bg-gradient-to-b ${gradient} p-[3px]`}>
         <div className="rounded-[22px] bg-[#0A0A0A] px-5 pt-4 pb-5 flex flex-col items-center gap-3">
           <div className="w-full flex justify-between items-center">
-            <span className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Prodeá</span>
+            <span className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Prodea</span>
             <span className="text-[9px] text-white/40 uppercase tracking-wider">{jornada}</span>
           </div>
           <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black text-[#0A0A0A]" style={{ backgroundColor: accent }}>
