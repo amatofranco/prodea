@@ -148,7 +148,7 @@ function FinishedCard({ match }) {
       {pred && (
         <div className="pt-2 border-t border-[#2A2A3E] flex items-center justify-between">
           <span className="text-[9px] text-[#8A8A9A]">
-            pred <span className="font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
+            PRED <span className="font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
           </span>
           <span className={`text-xs font-black ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
             +{pred.pointsEarned}pts
