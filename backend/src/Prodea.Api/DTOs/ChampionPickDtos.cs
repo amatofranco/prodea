@@ -14,6 +14,7 @@ public record ChampionPickStatusDto(
 public record ParticipantPickDto(
     int UserId,
     string Username,
+    string? FullName,
     string? CountryName,
     bool CorrectPick
 );

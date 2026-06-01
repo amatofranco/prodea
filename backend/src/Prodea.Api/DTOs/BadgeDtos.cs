@@ -21,6 +21,7 @@ public record AccumulativeBadgeDto(
 public record PlayerProfileDto(
     int UserId,
     string Username,
+    string? FullName,
     string? AvatarUrl,
     int TotalPoints,
     int Rank,
@@ -32,6 +33,7 @@ public record LeaderboardEntryDto(
     int Rank,
     int UserId,
     string Username,
+    string? FullName,
     string? AvatarUrl,
     int TotalPoints,
     string? CurrentBadge,

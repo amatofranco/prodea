@@ -293,7 +293,7 @@ export default function HomePage() {
         </div>
         <div>
           <p className="text-[#8A8A9A] text-sm">Hola,</p>
-          <h2 className="text-2xl font-bold text-white">{user?.username}</h2>
+          <h2 className="text-2xl font-bold text-white">{user?.firstName ?? user?.username}</h2>
         </div>
       </div>
 

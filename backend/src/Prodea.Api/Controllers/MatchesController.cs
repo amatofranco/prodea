@@ -73,8 +73,10 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
             .Select(tp =>
             {
                 predictions.TryGetValue(tp.UserId, out var pred);
+                var fullName = (tp.User.FirstName != null || tp.User.LastName != null)
+                    ? $"{tp.User.FirstName} {tp.User.LastName}".Trim() : null;
                 return new MatchPredictionDto(
-                    tp.UserId, tp.User.Username,
+                    tp.UserId, tp.User.Username, fullName,
                     pred?.PredictedHomeScore, pred?.PredictedAwayScore,
                     pred?.PointsEarned ?? 0,
                     pred?.PredictedPenaltyWinner

@@ -49,7 +49,8 @@ export default function ProfilePage() {
 
   if (loading) return <div className="flex-1 bg-[#0D0D0D]" />
 
-  const avatar = profile.username[0].toUpperCase()
+  const displayName = profile.fullName ?? profile.username
+  const avatar = displayName[0].toUpperCase()
   const isMe = currentUser?.id === Number(userId)
 
   return (
@@ -69,7 +70,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">
-              {profile.username} {isMe && <span className="text-[#8A8A9A] text-base font-normal">(vos)</span>}
+              {displayName} {isMe && <span className="text-[#8A8A9A] text-base font-normal">(vos)</span>}
             </h1>
             <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
           </div>
@@ -173,7 +174,7 @@ export default function ProfilePage() {
           >
             <FigurineCard
               badge={selectedBadge}
-              username={profile.username}
+              username={displayName}
               tournamentName={tournament?.name}
               rank={profile.rank}
             />

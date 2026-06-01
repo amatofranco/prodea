@@ -66,8 +66,10 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
             .Where(ab => ab.TournamentId == tournamentId && ab.UserId == userId)
             .ToListAsync();
 
+        var fullName = (user.FirstName != null || user.LastName != null)
+            ? $"{user.FirstName} {user.LastName}".Trim() : null;
         return Ok(new PlayerProfileDto(
-            userId, user.Username, user.AvatarUrl, totalPoints, rank,
+            userId, user.Username, fullName, user.AvatarUrl, totalPoints, rank,
             matchdayBadges.Select(mb => new MatchdayBadgeDto(
                 mb.Phase,
                 mb.Matchday,

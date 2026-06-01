@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ username: '', email: '', password: '' })
+  const [form, setForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -83,6 +83,10 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">
+        <div className="flex gap-3">
+          {field('firstName', 'text', 'Nombre')}
+          {field('lastName', 'text', 'Apellido')}
+        </div>
         <div className="flex flex-col gap-1">
           {field('username', 'text', 'Nombre de usuario')}
           <p className="text-xs text-[#8A8A9A] px-1">Solo letras, números y _ (sin espacios ni símbolos)</p>

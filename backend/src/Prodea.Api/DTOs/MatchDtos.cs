@@ -60,6 +60,7 @@ public record UpdateMatchResultRequest(
 public record MatchPredictionDto(
     int UserId,
     string Username,
+    string? FullName,
     int? PredictedHomeScore,
     int? PredictedAwayScore,
     int PointsEarned,

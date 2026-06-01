@@ -159,9 +159,9 @@ function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
             <div key={p.userId} className={`flex items-center gap-3 p-3 rounded-2xl border ${pointBg(p.pointsEarned)}`}>
               <span className="text-[#8A8A9A] text-xs w-4 text-center font-bold">{i + 1}</span>
               <div className="w-8 h-8 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                {p.username[0].toUpperCase()}
+                {(p.fullName ?? p.username)[0].toUpperCase()}
               </div>
-              <span className="flex-1 text-white text-sm font-medium truncate">{p.username}</span>
+              <span className="flex-1 text-white text-sm font-medium truncate">{p.fullName ?? p.username}</span>
               {p.predictedHomeScore != null ? (
                 <div className="flex flex-col items-end">
                   <span className="text-white font-bold text-sm" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
@@ -201,10 +201,10 @@ function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
       </p>
       <div className="flex items-center gap-3">
         <div className="w-14 h-14 rounded-full bg-[#F59E0B] flex items-center justify-center text-black font-bold text-2xl shrink-0">
-          {winner.username[0].toUpperCase()}
+          {(winner.fullName ?? winner.username)[0].toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white font-bold text-xl leading-tight truncate">{winner.username}</p>
+          <p className="text-white font-bold text-xl leading-tight truncate">{winner.fullName ?? winner.username}</p>
           <p className="text-[#F59E0B] text-sm font-semibold">{winner.totalPoints} puntos</p>
         </div>
         <span className="text-4xl">🏆</span>
@@ -455,11 +455,11 @@ function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
     >
       <span className={`w-7 text-center font-bold text-sm ${rankColors[index] || 'text-[#8A8A9A]'}`}>{entry.rank}</span>
       <div className="w-9 h-9 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white font-bold text-sm shrink-0">
-        {entry.username[0].toUpperCase()}
+        {(entry.fullName ?? entry.username)[0].toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <p className={`font-semibold text-sm truncate ${isMe ? 'text-[#00FF87]' : 'text-white'}`}>
-          {entry.username} {isMe && <span className="text-xs font-normal">(vos)</span>}
+          {entry.fullName ?? entry.username} {isMe && <span className="text-xs font-normal">(vos)</span>}
         </p>
         {entry.currentBadge && <BadgePill type={entry.currentBadge} className="mt-0.5 text-[10px]" />}
       </div>

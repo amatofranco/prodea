@@ -35,6 +35,7 @@ public record TournamentDetailDto(
 public record ParticipantDto(
     int UserId,
     string Username,
+    string? FullName,
     string? AvatarUrl,
     int TotalPoints,
     int Rank,

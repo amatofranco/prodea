@@ -30,6 +30,8 @@ public class AuthController(
         {
             Username = request.Username,
             Email = request.Email,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
         };
 
@@ -38,7 +40,7 @@ public class AuthController(
 
         return Ok(new AuthResponse(
             jwtService.GenerateToken(user),
-            new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl)
+            new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl, user.FirstName, user.LastName)
         ));
     }
 
@@ -54,7 +56,7 @@ public class AuthController(
 
         return Ok(new AuthResponse(
             jwtService.GenerateToken(user),
-            new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl)
+            new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl, user.FirstName, user.LastName)
         ));
     }
 
@@ -96,6 +98,8 @@ public class AuthController(
                 {
                     Username = username,
                     Email = payload.Email,
+                    FirstName = payload.GivenName,
+                    LastName = payload.FamilyName,
                     GoogleId = payload.Subject,
                     AvatarUrl = payload.Picture,
                 };
@@ -106,7 +110,7 @@ public class AuthController(
 
         return Ok(new AuthResponse(
             jwtService.GenerateToken(user),
-            new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl)
+            new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl, user.FirstName, user.LastName)
         ));
     }
 

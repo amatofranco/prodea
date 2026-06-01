@@ -78,7 +78,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var ranked = tournament.Participants
             .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
             .Select((tp, idx) => new ParticipantDto(
-                tp.UserId, tp.User.Username, tp.User.AvatarUrl,
+                tp.UserId, tp.User.Username, FullName(tp.User), tp.User.AvatarUrl,
                 pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
                 idx + 1,
                 badgeMap.GetValueOrDefault(tp.UserId)
@@ -216,7 +216,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             {
                 var badge = badgeMap.GetValueOrDefault(tp.UserId);
                 return new LeaderboardEntryDto(
-                    idx + 1, tp.UserId, tp.User.Username, tp.User.AvatarUrl,
+                    idx + 1, tp.UserId, tp.User.Username, FullName(tp.User), tp.User.AvatarUrl,
                     pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
                     badge?.BadgeType.ToString(),
                     badge != null ? BadgeService.GetEmoji(badge.BadgeType) : null
@@ -289,7 +289,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
 
                 allPicks = participants
                     .Select(tp => new ParticipantPickDto(
-                        tp.UserId, tp.User.Username,
+                        tp.UserId, tp.User.Username, FullName(tp.User),
                         picks.GetValueOrDefault(tp.UserId),
                         champion != null && picks.GetValueOrDefault(tp.UserId) == champion
                     ))
@@ -309,4 +309,9 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         return new string(Enumerable.Range(0, 6).Select(_ => chars[Random.Shared.Next(chars.Length)]).ToArray());
     }
+
+    private static string? FullName(User u) =>
+        (u.FirstName != null || u.LastName != null)
+            ? $"{u.FirstName} {u.LastName}".Trim()
+            : null;
 }

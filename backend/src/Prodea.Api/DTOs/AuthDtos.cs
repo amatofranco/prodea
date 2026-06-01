@@ -5,7 +5,9 @@ namespace Prodea.Api.DTOs;
 public record RegisterRequest(
     [Required, MinLength(3), MaxLength(50), RegularExpression(@"^[a-zA-Z0-9_]+$", ErrorMessage = "El nombre de usuario solo puede contener letras, números y guión bajo")] string Username,
     [Required, EmailAddress] string Email,
-    [Required, MinLength(6)] string Password
+    [Required, MinLength(6)] string Password,
+    [Required, MaxLength(100)] string FirstName,
+    [Required, MaxLength(100)] string LastName
 );
 
 public record LoginRequest(
@@ -22,7 +24,9 @@ public record UserDto(
     int Id,
     string Username,
     string Email,
-    string? AvatarUrl
+    string? AvatarUrl,
+    string? FirstName = null,
+    string? LastName = null
 );
 
 public record ForgotPasswordRequest(
