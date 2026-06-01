@@ -287,10 +287,14 @@ export default function TournamentPage() {
 
   function copyInvite() {
     const link = `${window.location.origin}/join/${tournament?.inviteLink}`
-    const text = `¡Te invito al torneo *${tournament?.name}* en Prodea! Uníte acá: ${link}`
     if (navigator.share) {
-      navigator.share({ text }).catch(() => {})
+      navigator.share({
+        title: 'Prodea',
+        text: `¡Te invito al torneo ${tournament?.name} en Prodea!`,
+        url: link,
+      }).catch(() => {})
     } else {
+      const text = `¡Te invito al torneo ${tournament?.name} en Prodea! Uníte acá: ${link}`
       navigator.clipboard.writeText(text).catch(() => {})
     }
   }
