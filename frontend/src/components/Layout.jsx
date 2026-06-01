@@ -12,12 +12,12 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <main className="flex-1 overflow-y-auto">
+    <div className="flex flex-col flex-1">
+      <main className="flex-1 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
 
-      <nav className="shrink-0 bg-[#1A1A2E] border-t border-[#2A2A3E] pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#1A1A2E] border-t border-[#2A2A3E] pb-safe z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex justify-around items-center h-14">
           <NavLink
             to="/"
