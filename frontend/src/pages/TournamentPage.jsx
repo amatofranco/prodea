@@ -287,7 +287,12 @@ export default function TournamentPage() {
 
   function copyInvite() {
     const link = `${window.location.origin}/join/${tournament?.inviteLink}`
-    navigator.clipboard.writeText(link).catch(() => {})
+    const text = `¡Te invito al torneo *${tournament?.name}* en Prodea! Uníte acá: ${link}`
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(text).catch(() => {})
+    }
   }
 
   if (loading) {
