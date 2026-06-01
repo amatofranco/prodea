@@ -420,7 +420,7 @@ export default function TournamentPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.15 }}
-                className="px-4 py-4 flex flex-col gap-2"
+                className="px-4 pt-4 pb-[calc(3.5rem+env(safe-area-inset-bottom))] flex flex-col gap-2"
               >
                 {phaseTab === 'Final' && (
                   <ChampionPickBanner tournamentId={id} currentUserId={user?.id} readOnly />
