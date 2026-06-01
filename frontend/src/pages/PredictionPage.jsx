@@ -178,6 +178,7 @@ export default function PredictionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [triedSubmit, setTriedSubmit] = useState(false)
   const [turboMode, setTurboMode] = useState(false)
   const [turboComplete, setTurboComplete] = useState(false)
   const [turboFlash, setTurboFlash] = useState(false)
@@ -264,9 +265,9 @@ export default function PredictionPage() {
   const isDraw = home === away
   const needsPenaltyWinner = isKnockout && isDraw && !penaltyWinner
 
-  // Si deja de ser empate, limpiar el pick de penales
+  // Si deja de ser empate, limpiar el pick de penales y el aviso
   useEffect(() => {
-    if (!isDraw) setPenaltyWinner(null)
+    if (!isDraw) { setPenaltyWinner(null); setTriedSubmit(false) }
   }, [isDraw])
 
   const teamsConfirmed = match?.homeTeam !== 'TBD' && match?.awayTeam !== 'TBD'
@@ -284,6 +285,7 @@ export default function PredictionPage() {
 
   async function handleSubmit() {
     if (submitGuard.current || isLocked || saving) return
+    if (needsPenaltyWinner) { setTriedSubmit(true); return }
     submitGuard.current = true
     setSaving(true)
     setError('')
@@ -477,9 +479,9 @@ export default function PredictionPage() {
 
               {/* Selector de penales — solo eliminatoria con empate */}
               {isKnockout && isDraw && (
-                <div className={`w-full rounded-2xl bg-[#1A1A2E] overflow-hidden border ${needsPenaltyWinner ? 'border-[#F59E0B]' : 'border-[#F59E0B]/40'}`}>
+                <div className={`w-full rounded-2xl bg-[#1A1A2E] overflow-hidden border ${triedSubmit && needsPenaltyWinner ? 'border-[#FF6B35]' : 'border-[#F59E0B]/40'}`}>
                   <p className="text-center text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] pt-2 pb-1">
-                    ¿Quién pasa de ronda? {needsPenaltyWinner && <span className="text-[#FF6B35]">· Obligatorio</span>}
+                    ¿Quién pasa de ronda? {triedSubmit && needsPenaltyWinner && <span className="text-[#FF6B35]">· Obligatorio</span>}
                   </p>
                   <div className="flex">
                     <button
@@ -526,7 +528,7 @@ export default function PredictionPage() {
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               {showTurboCountdown ? (
-                <button onClick={handleSubmit} disabled={needsPenaltyWinner} className="text-sm font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60 disabled:opacity-30 disabled:no-underline">
+                <button onClick={handleSubmit} className="text-sm font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60">
                   Confirmar ya →
                 </button>
               ) : justSaved && turboMode ? (
@@ -539,7 +541,7 @@ export default function PredictionPage() {
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={saving || isLocked || needsPenaltyWinner}
+                  disabled={saving || isLocked}
                   className={`w-full py-3 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${
                     saved ? 'bg-[#1A1A2E] border border-[#00FF87] text-[#00FF87]' : 'bg-[#00FF87] text-black'
                   } disabled:opacity-50`}
