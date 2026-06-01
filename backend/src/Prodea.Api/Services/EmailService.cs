@@ -1,22 +1,33 @@
-using Resend;
+using System.Net;
+using System.Net.Mail;
 
 namespace Prodea.Api.Services;
 
-public class EmailService(IResend resend, IConfiguration config)
+public class EmailService(IConfiguration config, ILogger<EmailService> logger)
 {
-    private readonly string _from = config["Resend:From"] ?? "Prodea <noreply@prodea.app>";
     private readonly string _frontendUrl = config["Frontend:Url"] ?? "http://localhost:5173";
 
     public async Task SendPasswordResetAsync(string toEmail, string token)
     {
+        var host = config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host no configurado");
+        var port = int.Parse(config["Smtp:Port"] ?? "587");
+        var user = config["Smtp:User"] ?? throw new InvalidOperationException("Smtp:User no configurado");
+        var pass = config["Smtp:Pass"] ?? throw new InvalidOperationException("Smtp:Pass no configurado");
+
         var resetLink = $"{_frontendUrl}/reset-password?token={token}";
 
-        var message = new EmailMessage
+        using var client = new SmtpClient(host, port)
         {
-            From = _from,
-            To = { toEmail },
+            Credentials = new NetworkCredential(user, pass),
+            EnableSsl = true,
+        };
+
+        var mail = new MailMessage
+        {
+            From = new MailAddress(user, "Prodea"),
             Subject = "Recuperá tu contraseña de Prodea",
-            HtmlBody = $"""
+            IsBodyHtml = true,
+            Body = $"""
                 <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; background: #0D0D0D; color: #fff; padding: 32px; border-radius: 12px;">
                     <h1 style="color: #00FF87; font-size: 28px; margin-bottom: 8px;">Prodea 🏆</h1>
                     <p style="color: #8A8A9A;">Recibiste este email porque pediste recuperar tu contraseña.</p>
@@ -30,7 +41,9 @@ public class EmailService(IResend resend, IConfiguration config)
                 </div>
                 """
         };
+        mail.To.Add(toEmail);
 
-        await resend.EmailSendAsync(message);
+        await client.SendMailAsync(mail);
+        logger.LogInformation("Email de recuperación enviado a {Email}", toEmail);
     }
 }
