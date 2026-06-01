@@ -437,24 +437,26 @@ export default function PredictionPage() {
                   : 'El partido ya empezó o terminó'}
               </p>
               {match.userPrediction && (
-                <div className="mt-4 p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E]">
-                  <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-1">Predicción</p>
-                  <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-                    {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
-                  </p>
-                  {match.userPrediction.predictedPenaltyWinner && (
-                    <p className="text-[#F59E0B] text-xs mt-1">
-                      Pasa de ronda: {match.userPrediction.predictedPenaltyWinner === 'home'
-                        ? match.homeTeam
-                        : match.awayTeam}
+                <>
+                  <div className="mt-4 p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] w-full">
+                    <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-1">Predicción</p>
+                    <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                      {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
+                    </p>
+                    {match.userPrediction.predictedPenaltyWinner && (
+                      <p className="text-[#F59E0B] text-xs mt-1">
+                        Pasa de ronda: {match.userPrediction.predictedPenaltyWinner === 'home'
+                          ? match.homeTeam
+                          : match.awayTeam}
+                      </p>
+                    )}
+                  </div>
+                  {match.status === 'Finished' && (
+                    <p className={`text-2xl font-black mt-3 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                      +{match.userPrediction.pointsEarned} pts
                     </p>
                   )}
-                </div>
-                {match.status === 'Finished' && (
-                  <p className={`text-2xl font-black mt-3 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-                    +{match.userPrediction.pointsEarned} pts
-                  </p>
-                )}
+                </>
               )}
             </div>
           ) : (
