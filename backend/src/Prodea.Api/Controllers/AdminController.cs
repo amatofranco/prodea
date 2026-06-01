@@ -16,6 +16,27 @@ public class AdminController(
     FixtureService fixtureService,
     PollingStatusService pollingStatus) : ControllerBase
 {
+    [HttpGet("matches")]
+    public async Task<IActionResult> ListMatches(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromQuery] string? phase = null)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var query = db.Matches.AsQueryable();
+        if (phase != null && Enum.TryParse<MatchPhase>(phase, true, out var p))
+            query = query.Where(m => m.Phase == p);
+
+        var matches = await query
+            .OrderBy(m => m.MatchDate)
+            .Select(m => new { m.Id, m.ExternalId, m.HomeTeam, m.AwayTeam, m.Phase, m.Matchday, m.Status, m.MatchDate, m.HomeScore, m.AwayScore })
+            .ToListAsync();
+
+        return Ok(matches);
+    }
+
     [HttpPost("seed-fixture")]
     public async Task<IActionResult> SeedFixture(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey,
