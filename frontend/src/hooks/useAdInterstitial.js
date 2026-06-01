@@ -1,5 +1,6 @@
 const AD_LAST_SHOWN_KEY = 'ad_last_shown'
 const FIXTURE_TAB_COUNT_KEY = 'ad_fixture_count'
+const TABLA_TAB_COUNT_KEY = 'ad_tabla_count'
 const MIN_INTERVAL_MS = 3 * 60 * 1000 // 3 min
 
 export function useAdInterstitial(hasLiveMatch = false) {
@@ -20,5 +21,12 @@ export function useAdInterstitial(hasLiveMatch = false) {
     return count % 3 === 0 && canShow()
   }
 
-  return { canShow, markShown, checkFixtureTab }
+  // Devuelve true cada 3 visitas al tab tabla
+  function checkTablaTab() {
+    const count = parseInt(localStorage.getItem(TABLA_TAB_COUNT_KEY) || '0') + 1
+    localStorage.setItem(TABLA_TAB_COUNT_KEY, count.toString())
+    return count % 3 === 0 && canShow()
+  }
+
+  return { canShow, markShown, checkFixtureTab, checkTablaTab }
 }

@@ -234,7 +234,7 @@ export default function TournamentPage() {
   const [predSheet, setPredSheet] = useState(null) // { match, predictions, loading }
   const [showAd, setShowAd] = useState(false)
   const phaseBarRef = useRef(null)
-  const { canShow, markShown, checkFixtureTab } = useAdInterstitial(liveCount > 0)
+  const { canShow, markShown, checkFixtureTab, checkTablaTab } = useAdInterstitial(liveCount > 0)
 
   function fetchMatches() {
     api.getMatches(id).then((m) => {
@@ -357,8 +357,7 @@ export default function TournamentPage() {
               key={tab}
               onClick={() => {
                 setActiveTab(tab)
-                const hasFinished = matches.some((m) => m.status === 'Finished')
-                if (tab === 'tabla' && hasFinished && canShow()) {
+                if (tab === 'tabla' && checkTablaTab()) {
                   markShown(); setShowAd(true)
                 } else if (tab === 'fixture' && checkFixtureTab()) {
                   markShown(); setShowAd(true)
