@@ -66,7 +66,7 @@ export default function InstallBanner() {
     <div className="mx-4 mb-4 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/30 p-4 flex gap-3 items-start">
       <img src="/logo-icon.png" alt="" className="w-10 h-10 object-contain shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-sm">¡Instalá Prodea en tu celu!</p>
+        <p className="text-white font-semibold text-sm">¡Instalá Prodea en tu celular!</p>
         {ios ? (
           <p className="text-[#8A8A9A] text-xs mt-0.5">
             Tocá <Share size={11} className="inline mb-0.5" /> <strong>Compartir</strong> → <strong>"Agregar a inicio"</strong> para una mejor experiencia
