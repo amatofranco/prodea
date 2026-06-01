@@ -514,7 +514,7 @@ export default function PredictionPage() {
                 </p>
                 {isKnockout && isDraw ? (
                   <p className="text-[#8A8A9A] text-xs mt-0.5">
-                    Exacto en 90': <span className="text-[#00FF87] font-semibold">+3 pts</span>
+                    Exacto en 120': <span className="text-[#00FF87] font-semibold">+3 pts</span>
                     {' · '}Quién pasa: <span className="text-[#00FF87] font-semibold">+2 pts adicionales</span>
                   </p>
                 ) : (
