@@ -354,12 +354,12 @@ export default function HomePage() {
         >
           {recentFinished.length > 0
             ? recentFinished.map((m) => (
-                <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
+                <div key={m.id} className="flex-shrink-0 w-[44%] snap-start">
                   <FinishedCard match={m} />
                 </div>
               ))
             : allUpcoming.slice(0, 4).map((m) => (
-                <div key={m.id} className="flex-shrink-0 w-[calc(50%-4px)] snap-start">
+                <div key={m.id} className="flex-shrink-0 w-[44%] snap-start">
                   <PlaceholderCard match={m} />
                 </div>
               ))
