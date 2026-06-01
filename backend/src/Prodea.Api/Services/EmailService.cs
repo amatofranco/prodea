@@ -1,34 +1,24 @@
-using System.Net;
-using System.Net.Mail;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace Prodea.Api.Services;
 
-public class EmailService(IConfiguration config, ILogger<EmailService> logger)
+public class EmailService(IConfiguration config, IHttpClientFactory httpClientFactory, ILogger<EmailService> logger)
 {
     private readonly string _frontendUrl = config["Frontend:Url"] ?? "http://localhost:5173";
 
     public async Task SendPasswordResetAsync(string toEmail, string token)
     {
-        var host = config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host no configurado");
-        var port = int.Parse(config["Smtp:Port"] ?? "587");
-        var user = config["Smtp:User"] ?? throw new InvalidOperationException("Smtp:User no configurado");
-        var pass = config["Smtp:Pass"] ?? throw new InvalidOperationException("Smtp:Pass no configurado");
-
+        var apiKey = config["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend:ApiKey no configurado");
         var resetLink = $"{_frontendUrl}/reset-password?token={token}";
 
-        using var client = new SmtpClient(host, port)
+        var payload = new
         {
-            Credentials = new NetworkCredential(user, pass),
-            EnableSsl = true,
-            Timeout = 10_000,
-        };
-
-        var mail = new MailMessage
-        {
-            From = new MailAddress(user, "Prodea"),
-            Subject = "Recuperá tu contraseña de Prodea",
-            IsBodyHtml = true,
-            Body = $"""
+            from = "Prodea <onboarding@resend.dev>",
+            to = new[] { toEmail },
+            subject = "Recuperá tu contraseña de Prodea",
+            html = $"""
                 <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; background: #0D0D0D; color: #fff; padding: 32px; border-radius: 12px;">
                     <h1 style="color: #00FF87; font-size: 28px; margin-bottom: 8px;">Prodea 🏆</h1>
                     <p style="color: #8A8A9A;">Recibiste este email porque pediste recuperar tu contraseña.</p>
@@ -42,9 +32,20 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger)
                 </div>
                 """
         };
-        mail.To.Add(toEmail);
 
-        await client.SendMailAsync(mail);
+        var client = httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("https://api.resend.com/emails", content);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Resend error {response.StatusCode}: {body}");
+        }
+
         logger.LogInformation("Email de recuperación enviado a {Email}", toEmail);
     }
 }
