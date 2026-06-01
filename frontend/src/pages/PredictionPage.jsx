@@ -450,8 +450,8 @@ export default function PredictionPage() {
                     </p>
                   )}
                   {match.status === 'Finished' && (
-                    <p className={`text-sm font-bold mt-1 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-                      +{match.userPrediction.pointsEarned} puntos
+                    <p className={`text-lg font-black mt-2 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                      +{match.userPrediction.pointsEarned} pts
                     </p>
                   )}
                 </div>
