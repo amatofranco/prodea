@@ -425,7 +425,7 @@ export default function PredictionPage() {
               <p className="text-[#8A8A9A] text-sm mt-1">No quedan partidos por predecir</p>
             </motion.div>
           ) : isLocked ? (
-            <div className="text-center">
+            <div className="text-center w-full">
               <p className="text-[#FF6B35] font-semibold text-lg">
                 {!teamsConfirmed ? 'Equipos por confirmar' : 'Predicciones cerradas'}
               </p>
