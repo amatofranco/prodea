@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Google.Apis.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;

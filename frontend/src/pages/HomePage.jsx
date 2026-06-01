@@ -286,7 +286,10 @@ export default function HomePage() {
     <div className="flex flex-col min-h-full bg-[#0D0D0D] pb-4">
       <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <div className="flex items-center justify-between mb-3">
-          <img src="/logo-wordmark.png" alt="Prodea" className="h-10 object-contain" />
+          <div className="flex items-center gap-2">
+            <img src="/logo-icon.png" alt="" className="w-10 h-10 object-contain" />
+            <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain" />
+          </div>
           <div className="w-11 h-11 rounded-full bg-[#00FF87] flex items-center justify-center text-black font-bold text-lg">
             {avatar}
           </div>
