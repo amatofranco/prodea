@@ -11,7 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+var rawConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = (!string.IsNullOrEmpty(rawConnection) ? rawConnection : null)
     ?? Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? throw new InvalidOperationException("No database connection string configured");
 
