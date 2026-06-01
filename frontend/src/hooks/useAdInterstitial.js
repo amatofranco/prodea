@@ -1,6 +1,6 @@
 const AD_LAST_SHOWN_KEY = 'ad_last_shown'
 const FIXTURE_TAB_COUNT_KEY = 'ad_fixture_count'
-const MIN_INTERVAL_MS = 5 * 60 * 1000 // 5 min
+const MIN_INTERVAL_MS = 3 * 60 * 1000 // 3 min
 
 export function useAdInterstitial(hasLiveMatch = false) {
   function canShow() {
