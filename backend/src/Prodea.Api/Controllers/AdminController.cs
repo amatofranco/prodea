@@ -408,6 +408,9 @@ public class AdminController(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey,
         [FromQuery] string? confirm = null)
     {
+        if (env.IsProduction())
+            return NotFound();
+
         var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
         if (expectedKey == null || adminKey != expectedKey)
             return Forbid();
