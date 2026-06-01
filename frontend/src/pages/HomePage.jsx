@@ -7,6 +7,7 @@ import { getTeam, getFlagUrl } from '../data/teamsData'
 import InstallBanner from '../components/InstallBanner'
 
 const LIVE_POLL_MS = 60_000
+const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
 
 function FlagOnly({ name, label }) {
   const { flag } = getTeam(name)
@@ -290,7 +291,14 @@ export default function HomePage() {
     <div className="flex flex-col min-h-full bg-[#0D0D0D] pb-4">
       <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <div className="flex items-center justify-between mb-3">
-          <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain object-left -ml-[23px]" />
+          <div className="flex flex-col gap-1">
+            <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain object-left -ml-[23px]" />
+            {IS_TESTING && (
+              <span className="ml-0.5 self-start px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase bg-[#FF6B35]/20 text-[#FF6B35] border border-[#FF6B35]/40">
+                Testing
+              </span>
+            )}
+          </div>
           <div className="relative">
             <button
               onClick={() => setShowLogout((v) => !v)}
