@@ -287,7 +287,7 @@ export default function HomePage() {
     <div className="flex flex-col min-h-full bg-[#0D0D0D] pb-4">
       <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <div className="flex items-center justify-between mb-3">
-          <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain" />
+          <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain object-left" />
           <div className="w-11 h-11 rounded-full bg-[#00FF87] flex items-center justify-center text-black font-bold text-lg">
             {avatar}
           </div>
@@ -348,7 +348,7 @@ export default function HomePage() {
       <div className="mb-5 px-5">
         <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
         <div
-          className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 snap-x snap-mandatory"
+          className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
         >
