@@ -4,6 +4,7 @@ import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
 
 export default function LoginPage() {
   const [form, setForm] = useState({ usernameOrEmail: '', password: '' })
@@ -71,6 +72,11 @@ export default function LoginPage() {
         <img src="/logo-icon.png" alt="Prodea" className="w-[264px] h-[264px] object-contain" />
         <img src="/logo-wordmark.png" alt="Prodea" className="h-[70px] object-contain -mt-6" />
         <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-3" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
+        {IS_TESTING && (
+          <span className="mt-2 px-3 py-0.5 rounded-full text-xs font-bold tracking-widest uppercase bg-[#FF6B35]/20 text-[#FF6B35] border border-[#FF6B35]/40">
+            Testing
+          </span>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">

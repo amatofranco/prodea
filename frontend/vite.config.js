@@ -1,9 +1,13 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const isTesting = env.VITE_APP_ENV === 'testing'
+
+  return {
   plugins: [
     react(),
     tailwindcss(),
@@ -12,8 +16,8 @@ export default defineConfig({
       devOptions: { enabled: true },
 
       manifest: {
-        name: 'Prodea — Mundial 2026',
-        short_name: 'Prodea',
+        name: isTesting ? 'Prodea — Testing' : 'Prodea — Mundial 2026',
+        short_name: isTesting ? 'Prodea Test' : 'Prodea',
         description: 'El prode del Mundial 2026 con tus amigos',
         theme_color: '#0D0D0D',
         background_color: '#0D0D0D',
@@ -113,4 +117,5 @@ export default defineConfig({
       '/hubs': { target: 'http://localhost:5000', ws: true },
     },
   },
+  }
 })
