@@ -16,6 +16,8 @@ appsettings.*.local.json
 .env
 .env.local
 .env.production
+# Excepción: frontend/.env solo tiene valores públicos de OG tags
+!frontend/.env
 
 # Frontend
 node_modules/
