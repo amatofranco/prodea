@@ -34,12 +34,12 @@ function FlagCard({ name }) {
   const flagUrl = getFlagUrl(flag)
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-[#2A2A3E]">
+      <div className="relative w-16 h-[72px] rounded-xl overflow-hidden bg-[#2A2A3E]">
         {flagUrl && (
           <img src={flagUrl} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-85" />
         )}
       </div>
-      <p className="text-xs font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{name}</p>
+      <p className="text-[10px] font-semibold text-white text-center leading-tight line-clamp-2" style={{ maxWidth: 64 }}>{name}</p>
     </div>
   )
 }
@@ -69,7 +69,7 @@ function MatchCountdown({ matchDate, className = 'text-sm' }) {
   )
 }
 
-function TurboCountdown({ onComplete, onSkip, resetKey }) {
+function TurboCountdown({ onComplete, onSkip, resetKey, compact = false }) {
   const [progress, setProgress] = useState(1)
   const [display, setDisplay] = useState(TURBO_COUNTDOWN_SECS)
   const doneRef = useRef(false)
@@ -100,8 +100,35 @@ function TurboCountdown({ onComplete, onSkip, resetKey }) {
     return () => cancelAnimationFrame(rafId)
   }, [resetKey])
 
-  const r = 44
+  const r = compact ? 24 : 44
+  const size = compact ? 56 : 112
+  const sw = compact ? 4 : 5
   const circumference = 2 * Math.PI * r
+
+  if (compact) {
+    return (
+      <motion.button
+        onClick={onSkip}
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+        className="relative flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Confirmar ya"
+      >
+        <svg width={size} height={size} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#2A2A3E" strokeWidth={sw} />
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            fill="none" stroke="#FF6B35" strokeWidth={sw}
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - progress)}
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="absolute text-xl font-black text-[#FF6B35] tabular-nums select-none">{display}</span>
+      </motion.button>
+    )
+  }
 
   return (
     <motion.div
@@ -429,12 +456,18 @@ export default function PredictionPage() {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-4 w-full">
+              <div className="flex items-center gap-2 w-full">
                 <div className="flex-1 flex flex-col items-center gap-2">
                   <FlagCard name={match.homeTeam} />
                   <GoalPicker value={home} onChange={setHome} disabled={isLocked} />
                 </div>
-                <span className="text-2xl text-[#2A2A3E] font-light mb-8">–</span>
+                <div className="flex items-center justify-center w-14 self-stretch">
+                  {showTurboCountdown ? (
+                    <TurboCountdown key={matchId} onComplete={handleSubmit} onSkip={handleSubmit} resetKey={matchId} compact />
+                  ) : (
+                    <span className="text-2xl text-[#2A2A3E] font-light">–</span>
+                  )}
+                </div>
                 <div className="flex-1 flex flex-col items-center gap-2">
                   <FlagCard name={match.awayTeam} />
                   <GoalPicker value={away} onChange={setAway} disabled={isLocked} />
@@ -492,7 +525,9 @@ export default function PredictionPage() {
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               {showTurboCountdown ? (
-                <TurboCountdown key={matchId} onComplete={handleSubmit} onSkip={handleSubmit} resetKey={matchId} />
+                <button onClick={handleSubmit} className="text-sm font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60">
+                  Confirmar ya →
+                </button>
               ) : justSaved && turboMode ? (
                 <motion.div
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
