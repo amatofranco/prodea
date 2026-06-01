@@ -290,11 +290,11 @@ export default function TournamentPage() {
     if (navigator.share) {
       navigator.share({
         title: 'Prodea',
-        text: `¡Te invito al torneo ${tournament?.name} en Prodea!`,
+        text: `¡Te invito al torneo *${tournament?.name}* en Prodea!`,
         url: link,
       }).catch(() => {})
     } else {
-      const text = `¡Te invito al torneo ${tournament?.name} en Prodea! Uníte acá: ${link}`
+      const text = `¡Te invito al torneo *${tournament?.name}* en Prodea! Uníte acá: ${link}`
       navigator.clipboard.writeText(text).catch(() => {})
     }
   }

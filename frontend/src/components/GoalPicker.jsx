@@ -48,13 +48,13 @@ export default function GoalPicker({ value, onChange, disabled }) {
       <button
         onPointerDown={() => change(1)}
         disabled={disabled}
-        className="w-12 h-10 flex items-center justify-center text-[#00FF87] active:scale-90 transition-transform disabled:opacity-30"
+        className="w-12 h-8 flex items-center justify-center text-[#00FF87] active:scale-90 transition-transform disabled:opacity-30"
       >
-        <ChevronUp size={28} strokeWidth={2.5} />
+        <ChevronUp size={24} strokeWidth={2.5} />
       </button>
 
       <div
-        className="w-24 h-24 relative flex items-center justify-center overflow-hidden cursor-ns-resize"
+        className="w-20 h-20 relative flex items-center justify-center overflow-hidden cursor-ns-resize"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={() => { touchStartY.current = null }}
@@ -81,9 +81,9 @@ export default function GoalPicker({ value, onChange, disabled }) {
       <button
         onPointerDown={() => change(-1)}
         disabled={disabled}
-        className="w-12 h-10 flex items-center justify-center text-[#00FF87] active:scale-90 transition-transform disabled:opacity-30"
+        className="w-12 h-8 flex items-center justify-center text-[#00FF87] active:scale-90 transition-transform disabled:opacity-30"
       >
-        <ChevronDown size={28} strokeWidth={2.5} />
+        <ChevronDown size={24} strokeWidth={2.5} />
       </button>
     </div>
   )
