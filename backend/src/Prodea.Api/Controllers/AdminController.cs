@@ -403,6 +403,44 @@ public class AdminController(
         });
     }
 
+    [HttpPost("cleanup-production")]
+    public async Task<IActionResult> CleanupProduction(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromQuery] string? confirm = null)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (expectedKey == null || adminKey != expectedKey)
+            return Forbid();
+
+        if (confirm != "si")
+            return BadRequest(new { message = "Agregá ?confirm=si para confirmar la limpieza." });
+
+        // Borrar todo excepto el usuario admin
+        await db.MatchdayBadges.ExecuteDeleteAsync();
+        await db.AccumulativeBadges.ExecuteDeleteAsync();
+        await db.PredictionBackups.ExecuteDeleteAsync();
+        await db.Predictions.ExecuteDeleteAsync();
+        await db.TournamentParticipants.ExecuteDeleteAsync();
+        await db.Tournaments.ExecuteDeleteAsync();
+        await db.ChampionPicks.ExecuteDeleteAsync();
+
+        // Borrar usuarios que no sean francoamato92@gmail.com
+        var deletedUsers = await db.Users
+            .Where(u => u.Email != "francoamato92@gmail.com")
+            .ExecuteDeleteAsync();
+
+        // Re-importar fixture limpio desde la API
+        var (matchCount, source) = await fixtureService.ImportAsync(force: true);
+
+        return Ok(new
+        {
+            message = "Producción limpia.",
+            usersDeleted = deletedUsers,
+            matchesReimported = matchCount,
+            fixtureSource = source,
+        });
+    }
+
     [HttpPost("reset-simulation")]
     public async Task<IActionResult> ResetSimulation(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey)
