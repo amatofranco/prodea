@@ -157,6 +157,21 @@ public class AuthController(
         return Ok(new { message = "Contraseña actualizada correctamente." });
     }
 
+    [HttpPut("me")]
+    [Authorize]
+    public async Task<ActionResult<UserDto>> UpdateProfile(UpdateProfileRequest request)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var user = await db.Users.FindAsync(userId);
+        if (user == null) return NotFound();
+
+        user.FirstName = request.FirstName;
+        user.LastName = request.LastName;
+        await db.SaveChangesAsync();
+
+        return Ok(new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl, user.FirstName, user.LastName));
+    }
+
     private async Task<string> GenerateUniqueUsernameAsync(string email)
     {
         var base_ = email.Split('@')[0]

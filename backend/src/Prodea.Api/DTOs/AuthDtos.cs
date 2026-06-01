@@ -41,3 +41,8 @@ public record ResetPasswordRequest(
 public record GoogleLoginRequest(
     [Required] string IdToken
 );
+
+public record UpdateProfileRequest(
+    [Required, MaxLength(100)] string FirstName,
+    [Required, MaxLength(100)] string LastName
+);
