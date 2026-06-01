@@ -57,16 +57,14 @@ function LiveCard({ match, compact = false }) {
         </div>
         {pred && (() => {
           const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
-          const hasPts = pts != null
           return (
             <div className="pt-2 border-t border-[#FF6B35]/20 flex items-center justify-between">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[8px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
-                <span className="text-xs font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
-              </div>
-              {hasPts && (
-                <span className={`px-2 py-0.5 rounded-full text-xs font-black ${pts > 0 ? 'bg-[#00FF87]/15 text-[#00FF87]' : 'bg-[#2A2A3E] text-[#8A8A9A]'}`}>
-                  +{pts} pts
+              <span className="text-[9px] text-[#8A8A9A]">
+                PRED <span className="font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
+              </span>
+              {pts != null && (
+                <span className={`text-xs font-black ${pts > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                  +{pts}pts
                 </span>
               )}
             </div>
@@ -104,13 +102,12 @@ function LiveCard({ match, compact = false }) {
         const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
         return (
           <div className="mt-3 pt-3 border-t border-[#FF6B35]/20 flex items-center justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
-              <span className="text-sm font-bold text-white">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
-            </div>
+            <span className="text-[9px] text-[#8A8A9A]">
+              PRED <span className="font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
+            </span>
             {pts != null && (
-              <span className={`px-3 py-1 rounded-full text-sm font-black ${pts > 0 ? 'bg-[#00FF87]/15 text-[#00FF87]' : 'bg-[#2A2A3E] text-[#8A8A9A]'}`}>
-                +{pts} pts
+              <span className={`text-xs font-black ${pts > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                +{pts}pts
               </span>
             )}
           </div>
