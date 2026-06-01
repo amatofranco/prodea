@@ -262,6 +262,7 @@ export default function PredictionPage() {
 
   const isKnockout = match?.phase && match.phase !== 'Group'
   const isDraw = home === away
+  const needsPenaltyWinner = isKnockout && isDraw && !penaltyWinner
 
   // Si deja de ser empate, limpiar el pick de penales
   useEffect(() => {
@@ -476,9 +477,9 @@ export default function PredictionPage() {
 
               {/* Selector de penales — solo eliminatoria con empate */}
               {isKnockout && isDraw && (
-                <div className="w-full rounded-2xl bg-[#1A1A2E] border border-[#F59E0B]/40 overflow-hidden">
+                <div className={`w-full rounded-2xl bg-[#1A1A2E] overflow-hidden border ${needsPenaltyWinner ? 'border-[#F59E0B]' : 'border-[#F59E0B]/40'}`}>
                   <p className="text-center text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] pt-2 pb-1">
-                    ¿Quién pasa de ronda?
+                    ¿Quién pasa de ronda? {needsPenaltyWinner && <span className="text-[#FF6B35]">· Obligatorio</span>}
                   </p>
                   <div className="flex">
                     <button
@@ -525,7 +526,7 @@ export default function PredictionPage() {
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               {showTurboCountdown ? (
-                <button onClick={handleSubmit} className="text-sm font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60">
+                <button onClick={handleSubmit} disabled={needsPenaltyWinner} className="text-sm font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60 disabled:opacity-30 disabled:no-underline">
                   Confirmar ya →
                 </button>
               ) : justSaved && turboMode ? (
@@ -538,7 +539,7 @@ export default function PredictionPage() {
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={saving || isLocked}
+                  disabled={saving || isLocked || needsPenaltyWinner}
                   className={`w-full py-3 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${
                     saved ? 'bg-[#1A1A2E] border border-[#00FF87] text-[#00FF87]' : 'bg-[#00FF87] text-black'
                   } disabled:opacity-50`}
