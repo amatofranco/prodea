@@ -17,7 +17,8 @@ public class AuthController(
     ProdeaDbContext db,
     JwtService jwtService,
     EmailService emailService,
-    IConfiguration config) : ControllerBase
+    IConfiguration config,
+    ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
@@ -137,7 +138,8 @@ public class AuthController(
         });
         await db.SaveChangesAsync();
 
-        await emailService.SendPasswordResetAsync(user.Email, token);
+        try { await emailService.SendPasswordResetAsync(user.Email, token); }
+        catch (Exception ex) { logger.LogError(ex, "Error enviando email de recuperación a {Email}", user.Email); }
 
         return Ok(new { message = "Si el email existe, te enviamos un link para recuperar tu contraseña." });
     }
