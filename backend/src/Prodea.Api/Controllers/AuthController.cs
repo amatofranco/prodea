@@ -138,8 +138,9 @@ public class AuthController(
         });
         await db.SaveChangesAsync();
 
-        try { await emailService.SendPasswordResetAsync(user.Email, token); }
-        catch (Exception ex) { logger.LogError(ex, "Error enviando email de recuperación a {Email}", user.Email); }
+        _ = emailService.SendPasswordResetAsync(user.Email, token)
+            .ContinueWith(t => logger.LogError(t.Exception, "Error enviando email a {Email}", user.Email),
+                TaskContinuationOptions.OnlyOnFaulted);
 
         return Ok(new { message = "Si el email existe, te enviamos un link para recuperar tu contraseña." });
     }

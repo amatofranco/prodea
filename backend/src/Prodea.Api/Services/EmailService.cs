@@ -20,6 +20,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger)
         {
             Credentials = new NetworkCredential(user, pass),
             EnableSsl = true,
+            Timeout = 10_000,
         };
 
         var mail = new MailMessage
