@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Zap } from 'lucide-react'
+import { Lock, Zap, LogOut } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { getTeam, getFlagUrl } from '../data/teamsData'
@@ -239,10 +239,17 @@ function UpcomingCard({ match, navigate }) {
 
 export default function HomePage() {
   const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
   const [matches, setMatches] = useState([])
   const [tournaments, setTournaments] = useState([])
+  const [showLogout, setShowLogout] = useState(false)
   const navigate = useNavigate()
   const pollRef = useRef(null)
+
+  function handleLogout() {
+    logout()
+    navigate('/login')
+  }
 
   useEffect(() => {
     api.getMyPredictions().then(setMatches)
@@ -288,8 +295,26 @@ export default function HomePage() {
       <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <div className="flex items-center justify-between mb-3">
           <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain object-left -ml-[23px]" />
-          <div className="w-11 h-11 rounded-full bg-[#00FF87] flex items-center justify-center text-black font-bold text-lg">
-            {avatar}
+          <div className="relative">
+            <button
+              onClick={() => setShowLogout((v) => !v)}
+              className="w-11 h-11 rounded-full bg-[#00FF87] flex items-center justify-center text-black font-bold text-lg active:scale-95 transition-transform"
+            >
+              {avatar}
+            </button>
+            {showLogout && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowLogout(false)} />
+                <div className="absolute right-0 top-13 z-50 bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-400 font-semibold active:bg-[#2A2A3E] transition-colors"
+                  >
+                    <LogOut size={16} /> Cerrar sesión
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
         <div>

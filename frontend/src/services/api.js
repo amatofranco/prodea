@@ -52,6 +52,7 @@ export const api = {
     request(`/predictions/${matchId}`, { method: 'POST', body: JSON.stringify(body) }),
 
   getProfile: (tournamentId, userId) => request(`/tournaments/${tournamentId}/profile/${userId}`),
+  getGlobalRanking: () => request('/ranking'),
 
   getChampionPick: () => request('/champion-pick'),
   submitChampionPick: (countryName) =>
