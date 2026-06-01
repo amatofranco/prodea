@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 
@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect') || '/'
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return
@@ -39,7 +41,7 @@ export default function LoginPage() {
     try {
       const data = await api.googleLogin(credential)
       setAuth(data.token, data.user)
-      navigate('/')
+      navigate(redirect, { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -54,7 +56,7 @@ export default function LoginPage() {
     try {
       const data = await api.login(form)
       setAuth(data.token, data.user)
-      navigate('/')
+      navigate(redirect, { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
