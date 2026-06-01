@@ -10,6 +10,8 @@ import { BadgePill } from '../components/BadgePill'
 import ApiStatusBanner from '../components/ApiStatusBanner'
 import ChampionPickBanner from '../components/ChampionPickBanner'
 import { getTeam, getFlagUrl } from '../data/teamsData'
+import AdInterstitial from '../components/AdInterstitial'
+import { useAdInterstitial } from '../hooks/useAdInterstitial'
 
 const PHASE_ORDER = ['group-1', 'group-2', 'group-3', 'R32', 'R16', 'QF', 'SF', 'ThirdPlace', 'Final']
 const TAB_LABELS = {
@@ -230,7 +232,9 @@ export default function TournamentPage() {
   const [activeTab, setActiveTab] = useState('tabla')
   const [phaseTab, setPhaseTab] = useState(null)
   const [predSheet, setPredSheet] = useState(null) // { match, predictions, loading }
+  const [showAd, setShowAd] = useState(false)
   const phaseBarRef = useRef(null)
+  const { canShow, markShown, checkFixtureTab } = useAdInterstitial(liveCount > 0)
 
   function fetchMatches() {
     api.getMatches(id).then((m) => {
@@ -351,7 +355,15 @@ export default function TournamentPage() {
           {['tabla', 'fixture'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab)
+                const hasFinished = matches.some((m) => m.status === 'Finished')
+                if (tab === 'tabla' && hasFinished && canShow()) {
+                  markShown(); setShowAd(true)
+                } else if (tab === 'fixture' && checkFixtureTab()) {
+                  markShown(); setShowAd(true)
+                }
+              }}
               className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-colors ${
                 activeTab === tab
                   ? 'bg-[#00FF87] text-black'
@@ -445,6 +457,8 @@ export default function TournamentPage() {
           />
         )}
       </AnimatePresence>
+
+      {showAd && <AdInterstitial onClose={() => setShowAd(false)} />}
     </div>
   )
 }
