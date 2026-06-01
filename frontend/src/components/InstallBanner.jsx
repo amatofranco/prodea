@@ -73,7 +73,7 @@ export default function InstallBanner() {
           </p>
         ) : (
           <p className="text-[#8A8A9A] text-xs mt-0.5">
-            Instalala en tu pantalla de inicio para una mejor experiencia
+            Agregala en tu pantalla de inicio para una mejor experiencia
           </p>
         )}
         {!ios && (
