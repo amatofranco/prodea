@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { X, Share, Plus } from 'lucide-react'
 
 const STORAGE_KEY = 'prodea_install_dismissed'
-const DISMISS_DAYS = 7
+const DISMISS_DAYS = 1
 
 function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches
