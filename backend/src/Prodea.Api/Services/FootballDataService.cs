@@ -183,14 +183,15 @@ public class FootballDataService(
 
         await db.SaveChangesAsync(ct);
 
-        // Scoring usa siempre el marcador a los 90' (regularTime).
-        // Si no hay regularTime (partido de grupo sin ET), coincide con el score almacenado.
-        int home90 = apiScore?.RegularTime?.Home ?? match.HomeScore ?? 0;
-        int away90 = apiScore?.RegularTime?.Away ?? match.AwayScore ?? 0;
+        // Scoring se evalúa contra el score al cierre del tiempo jugado (90' o 120' si hubo alargue),
+        // antes de penales. FinalScore() ya maneja ambos casos correctamente.
+        var (scoredHome, scoredAway) = FinalScore(apiScore);
+        int homeFinal = scoredHome ?? match.HomeScore ?? 0;
+        int awayFinal = scoredAway ?? match.AwayScore ?? 0;
 
-        // winnerSide: quién pasó de ronda — aplica cuando empate a 90' en knockout (ET o penales)
+        // winnerSide: quién pasó de ronda — aplica solo cuando el partido terminó empatado al cierre (fue a penales)
         string? winnerSide = null;
-        if (home90 == away90 && match.Winner != null)
+        if (homeFinal == awayFinal && match.Winner != null)
             winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
 
         var predictions = await db.Predictions
@@ -199,7 +200,7 @@ public class FootballDataService(
 
         foreach (var pred in predictions)
         {
-            pred.PointsEarned = ScoringService.CalculatePoints(pred, home90, away90, winnerSide);
+            pred.PointsEarned = ScoringService.CalculatePoints(pred, homeFinal, awayFinal, winnerSide);
             pred.UpdatedAt = DateTime.UtcNow;
         }
 

@@ -4,8 +4,8 @@ namespace Prodea.Api.Services;
 
 public static class ScoringService
 {
-    // Score siempre se evalúa en los 90' (regularTime).
-    // winnerSide = "home" | "away" — quién pasó de ronda (ET o penales); solo en knockout con empate a 90'.
+    // Score se evalúa contra el tiempo jugado final (90' o 120' si hubo alargue), antes de penales.
+    // winnerSide = "home" | "away" — quién pasó de ronda; solo aplica en knockout cuando el score final es empate (fue a penales).
     // +2 bonus: predijo empate Y acertó quién pasa. Stackeable con el exacto → máximo 5 pts.
     public static int CalculatePoints(Prediction prediction, int actualHome, int actualAway, string? winnerSide = null)
     {
