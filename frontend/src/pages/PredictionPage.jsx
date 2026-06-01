@@ -413,7 +413,7 @@ export default function PredictionPage() {
           }}
           initial="enter" animate="center" exit="exit"
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="flex-1 flex flex-col items-center justify-center gap-4 px-6"
+          className="flex-1 flex flex-col items-center justify-center gap-4 px-6 overflow-y-auto py-4"
         >
           {turboComplete ? (
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">

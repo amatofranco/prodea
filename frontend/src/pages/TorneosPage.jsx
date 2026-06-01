@@ -144,9 +144,9 @@ export default function TorneosPage() {
 
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end" onClick={onClose}>
       <div
-        className="w-full max-w-[480px] mx-auto bg-[#1A1A2E] rounded-t-3xl p-6 pb-10 flex flex-col gap-4"
+        className="w-full max-w-[480px] mx-auto bg-[#1A1A2E] rounded-t-3xl p-6 pb-[calc(2.5rem+env(safe-area-inset-bottom))] flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
