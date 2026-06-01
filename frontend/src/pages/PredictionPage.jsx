@@ -449,12 +449,12 @@ export default function PredictionPage() {
                         : match.awayTeam}
                     </p>
                   )}
-                  {match.status === 'Finished' && (
-                    <p className={`text-lg font-black mt-2 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-                      +{match.userPrediction.pointsEarned} pts
-                    </p>
-                  )}
                 </div>
+                {match.status === 'Finished' && (
+                  <p className={`text-2xl font-black mt-3 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                    +{match.userPrediction.pointsEarned} pts
+                  </p>
+                )}
               )}
             </div>
           ) : (
