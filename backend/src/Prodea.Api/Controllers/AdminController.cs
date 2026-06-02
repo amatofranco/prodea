@@ -403,6 +403,34 @@ public class AdminController(
         });
     }
 
+    [HttpPost("finalize-group-stage")]
+    public async Task<IActionResult> FinalizeGroupStage(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        if (env.IsProduction())
+            return NotFound();
+
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (expectedKey == null || adminKey != expectedKey)
+            return Forbid();
+
+        var matches = await db.Matches
+            .Where(m => m.Phase == MatchPhase.Group)
+            .ToListAsync();
+
+        var rng = new Random();
+        foreach (var m in matches)
+        {
+            m.HomeScore = rng.Next(0, 5);
+            m.AwayScore = rng.Next(0, 5);
+            m.Status = MatchStatus.Finished;
+            m.Minute = null;
+        }
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = $"{matches.Count} partidos de fase de grupos finalizados." });
+    }
+
     [HttpPost("cleanup-production")]
     public async Task<IActionResult> CleanupProduction(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey,
