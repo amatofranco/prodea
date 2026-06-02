@@ -42,11 +42,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D]">
-      <div className="mb-10 flex flex-col items-center gap-0">
-        <img src="/logo-icon.png" alt="Prodea" className="w-[264px] h-[264px] object-contain" />
-        <img src="/logo-wordmark.png" alt="Prodea" className="h-[70px] object-contain -mt-6" />
-        <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-3" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
+    <div className="min-h-dvh flex flex-col items-center justify-center px-6 py-6 bg-[#0D0D0D]">
+      <div className="mb-6 flex flex-col items-center gap-0">
+        <img src="/logo-icon.png" alt="Prodea" className="w-[180px] h-[180px] object-contain" />
+        <img src="/logo-wordmark.png" alt="Prodea" className="h-[54px] object-contain -mt-4" />
+        <p className="text-[#8A8A9A] text-base font-semibold tracking-widest uppercase -mt-2" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
         {IS_TESTING && (
           <span className="mt-2 px-3 py-0.5 rounded-full text-xs font-bold tracking-widest uppercase bg-[#FF6B35]/20 text-[#FF6B35] border border-[#FF6B35]/40">
             Testing

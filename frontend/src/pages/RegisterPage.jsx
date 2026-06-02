@@ -51,19 +51,19 @@ export default function RegisterPage() {
       value={form[name]}
       onChange={(e) => setForm({ ...form, [name]: e.target.value })}
       required
-      className="w-full px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87] transition-colors"
+      className="w-full px-4 py-2.5 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87] transition-colors"
     />
   )
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D]">
-      <div className="mb-10 flex flex-col items-center gap-0">
-        <img src="/logo-icon.png" alt="Prodea" className="w-[264px] h-[264px] object-contain" />
-        <img src="/logo-wordmark.png" alt="Prodea" className="h-[70px] object-contain -mt-6" />
-        <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-3" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
+    <div className="min-h-dvh flex flex-col items-center justify-center px-6 py-6 bg-[#0D0D0D]">
+      <div className="mb-5 flex flex-col items-center gap-0">
+        <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] object-contain" />
+        <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] object-contain -mt-3" />
+        <p className="text-[#8A8A9A] text-sm font-semibold tracking-widest uppercase -mt-1.5" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
       </div>
 
-      <div className="w-full max-w-sm flex flex-col gap-4">
+      <div className="w-full max-w-sm flex flex-col gap-3">
         <GoogleButton onCredential={handleGoogleCredential} text="Registrarse con Google" />
 
         <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export default function RegisterPage() {
           <div className="flex-1 h-px bg-[#2A2A3E]" />
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex gap-3">
             {field('firstName', 'text', 'Nombre')}
             {field('lastName', 'text', 'Apellido')}
