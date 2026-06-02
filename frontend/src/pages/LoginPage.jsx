@@ -29,9 +29,11 @@ export default function LoginPage() {
         cancel_on_tap_outside: true,
       })
       window.google?.accounts.id.cancel()
+      const container = document.getElementById('google-btn')
+      const width = container?.offsetWidth || 320
       window.google?.accounts.id.renderButton(
-        document.getElementById('google-btn'),
-        { theme: 'filled_black', size: 'large', width: 360, text: 'signin_with', locale: 'es' }
+        container,
+        { theme: 'filled_black', size: 'large', width, text: 'signin_with', locale: 'es' }
       )
     }
     document.head.appendChild(script)
@@ -69,7 +71,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D]">
-      {/* Logo */}
       <div className="mb-10 flex flex-col items-center gap-0">
         <img src="/logo-icon.png" alt="Prodea" className="w-[264px] h-[264px] object-contain" />
         <img src="/logo-wordmark.png" alt="Prodea" className="h-[70px] object-contain -mt-6" />
@@ -81,52 +82,55 @@ export default function LoginPage() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Usuario o email"
-          value={form.usernameOrEmail}
-          onChange={(e) => setForm({ ...form, usernameOrEmail: e.target.value })}
-          required
-          className="w-full px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87] transition-colors"
-        />
-        <div className="relative">
+      <div className="w-full max-w-sm flex flex-col gap-4">
+        {GOOGLE_CLIENT_ID && (
+          <div id="google-btn" className="w-full" />
+        )}
+
+        {GOOGLE_CLIENT_ID && (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#2A2A3E]" />
+            <span className="text-[#8A8A9A] text-xs">o</span>
+            <div className="flex-1 h-px bg-[#2A2A3E]" />
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
-            type="password"
-            placeholder="Contraseña"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            type="text"
+            placeholder="Usuario o email"
+            value={form.usernameOrEmail}
+            onChange={(e) => setForm({ ...form, usernameOrEmail: e.target.value })}
             required
             className="w-full px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87] transition-colors"
           />
-        </div>
+          <div className="relative">
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+              className="w-full px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87] transition-colors"
+            />
+          </div>
 
-        <div className="flex justify-end -mt-2">
-          <Link to="/forgot-password" className="text-xs text-[#8A8A9A] hover:text-[#00FF87] transition-colors">
-            ¿Olvidaste tu contraseña?
-          </Link>
-        </div>
+          <div className="flex justify-end -mt-2">
+            <Link to="/forgot-password" className="text-xs text-[#8A8A9A] hover:text-[#00FF87] transition-colors">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
 
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={loading || googleLoading}
-          className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-base disabled:opacity-50 active:scale-95 transition-transform"
-        >
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-
-        {GOOGLE_CLIENT_ID && (
-          <>
-            <div className="flex items-center gap-3 my-1">
-              <div className="flex-1 h-px bg-[#2A2A3E]" />
-              <span className="text-[#8A8A9A] text-xs">o</span>
-              <div className="flex-1 h-px bg-[#2A2A3E]" />
-            </div>
-            <div id="google-btn" className="flex justify-center" />
-          </>
-        )}
+          <button
+            type="submit"
+            disabled={loading || googleLoading}
+            className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-base disabled:opacity-50 active:scale-95 transition-transform"
+          >
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
 
         <p className="text-center text-[#8A8A9A] text-sm">
           ¿No tenés cuenta?{' '}
@@ -134,7 +138,7 @@ export default function LoginPage() {
             Registrate
           </Link>
         </p>
-      </form>
+      </div>
     </div>
   )
 }

@@ -28,9 +28,11 @@ export default function RegisterPage() {
         cancel_on_tap_outside: true,
       })
       window.google?.accounts.id.cancel()
+      const container = document.getElementById('google-btn-register')
+      const width = container?.offsetWidth || 320
       window.google?.accounts.id.renderButton(
-        document.getElementById('google-btn-register'),
-        { theme: 'filled_black', size: 'large', width: 360, text: 'signup_with', locale: 'es' }
+        container,
+        { theme: 'filled_black', size: 'large', width, text: 'signup_with', locale: 'es' }
       )
     }
     document.head.appendChild(script)
@@ -87,44 +89,47 @@ export default function RegisterPage() {
         <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-3" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">
-        <div className="flex gap-3">
-          {field('firstName', 'text', 'Nombre')}
-          {field('lastName', 'text', 'Apellido')}
-        </div>
-        <div className="flex flex-col gap-1">
-          {field('username', 'text', 'Nombre de usuario')}
-          <p className="text-xs text-[#8A8A9A] px-1">Solo letras, números y _ (sin espacios ni símbolos)</p>
-        </div>
-        {field('email', 'email', 'Email')}
-        {field('password', 'password', 'Contraseña (mín. 6 caracteres)')}
-
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-base disabled:opacity-50 active:scale-95 transition-transform"
-        >
-          {loading ? 'Creando cuenta...' : 'Crear cuenta'}
-        </button>
+      <div className="w-full max-w-sm flex flex-col gap-4">
+        {GOOGLE_CLIENT_ID && (
+          <div id="google-btn-register" className="w-full" />
+        )}
 
         {GOOGLE_CLIENT_ID && (
-          <>
-            <div className="flex items-center gap-3 my-1">
-              <div className="flex-1 h-px bg-[#2A2A3E]" />
-              <span className="text-[#8A8A9A] text-xs">o</span>
-              <div className="flex-1 h-px bg-[#2A2A3E]" />
-            </div>
-            <div id="google-btn-register" className="flex justify-center" />
-          </>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#2A2A3E]" />
+            <span className="text-[#8A8A9A] text-xs">o</span>
+            <div className="flex-1 h-px bg-[#2A2A3E]" />
+          </div>
         )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex gap-3">
+            {field('firstName', 'text', 'Nombre')}
+            {field('lastName', 'text', 'Apellido')}
+          </div>
+          <div className="flex flex-col gap-1">
+            {field('username', 'text', 'Nombre de usuario')}
+            <p className="text-xs text-[#8A8A9A] px-1">Solo letras, números y _ (sin espacios ni símbolos)</p>
+          </div>
+          {field('email', 'email', 'Email')}
+          {field('password', 'password', 'Contraseña (mín. 6 caracteres)')}
+
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-base disabled:opacity-50 active:scale-95 transition-transform"
+          >
+            {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+          </button>
+        </form>
 
         <p className="text-center text-[#8A8A9A] text-sm">
           ¿Ya tenés cuenta?{' '}
           <Link to="/login" className="text-[#00FF87] font-semibold">Iniciá sesión</Link>
         </p>
-      </form>
+      </div>
 
       <div className="w-full max-w-sm mt-6">
         <InstallBanner />
