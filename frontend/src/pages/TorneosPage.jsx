@@ -4,6 +4,8 @@ import { Plus, Users, Zap } from 'lucide-react'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
 
+const MAX_DESC = 150
+
 export default function TorneosPage() {
   const { tournaments, setTournaments } = useTournamentStore()
   const [loading, setLoading] = useState(true)
@@ -120,11 +122,11 @@ export default function TorneosPage() {
               <textarea
                 placeholder="Premio al ganador, prenda al último... lo que quieras para darle emoción al torneo 🏆"
                 value={createDesc}
-                onChange={(e) => setCreateDesc(e.target.value.slice(0, 120))}
+                onChange={(e) => setCreateDesc(e.target.value.slice(0, MAX_DESC))}
                 rows={3}
                 className="w-full px-4 py-3 rounded-xl bg-[#0D0D0D] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87] resize-none text-sm"
               />
-              <p className="text-right text-xs text-[#8A8A9A] pr-1">{createDesc.length}/120</p>
+              <p className="text-right text-xs text-[#8A8A9A] pr-1">{createDesc.length}/{MAX_DESC}</p>
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold">Crear</button>

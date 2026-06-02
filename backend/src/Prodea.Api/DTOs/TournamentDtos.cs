@@ -4,7 +4,7 @@ namespace Prodea.Api.DTOs;
 
 public record CreateTournamentRequest(
     [Required, MinLength(3), MaxLength(100)] string Name,
-    [MaxLength(120)] string? Description
+    [MaxLength(150)] string? Description
 );
 
 public record JoinTournamentRequest(
@@ -12,7 +12,7 @@ public record JoinTournamentRequest(
 );
 
 public record UpdateTournamentRequest(
-    [MaxLength(120)] string? Description
+    [MaxLength(150)] string? Description
 );
 
 public record TournamentDto(
