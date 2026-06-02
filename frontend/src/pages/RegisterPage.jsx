@@ -25,7 +25,9 @@ export default function RegisterPage() {
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
         locale: 'es',
+        cancel_on_tap_outside: true,
       })
+      window.google?.accounts.id.cancel()
       window.google?.accounts.id.renderButton(
         document.getElementById('google-btn-register'),
         { theme: 'filled_black', size: 'large', width: 360, text: 'signup_with', locale: 'es' }
