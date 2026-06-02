@@ -15,7 +15,7 @@ public class EmailService(IConfiguration config, IHttpClientFactory httpClientFa
 
         var payload = new
         {
-            from = "Prodea <onboarding@resend.dev>",
+            from = "Prodea <noreply@prodea.app>",
             to = new[] { toEmail },
             subject = "Recuperá tu contraseña de Prodea",
             html = $"""
