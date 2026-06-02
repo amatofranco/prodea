@@ -354,13 +354,13 @@ export default function TournamentPage() {
             <div className="relative">
               <textarea
                 value={descDraft}
-                onChange={(e) => setDescDraft(e.target.value.slice(0, 200))}
+                onChange={(e) => setDescDraft(e.target.value.slice(0, 120))}
                 rows={3}
                 autoFocus
                 className="w-full px-3 py-2.5 rounded-xl bg-[#0D0D0D] border border-[#00FF87]/40 text-white text-sm placeholder-[#8A8A9A] focus:outline-none resize-none"
                 placeholder="Premio al ganador, prenda al último..."
               />
-              <p className="text-right text-xs text-[#8A8A9A] mt-0.5">{descDraft.length}/200</p>
+              <p className="text-right text-xs text-[#8A8A9A] mt-0.5">{descDraft.length}/120</p>
             </div>
             <div className="flex gap-2">
               <button onClick={saveDescription} className="flex-1 py-2 rounded-xl bg-[#00FF87] text-black text-sm font-bold">Guardar</button>
