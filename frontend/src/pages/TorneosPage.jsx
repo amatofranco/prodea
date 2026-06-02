@@ -11,6 +11,7 @@ export default function TorneosPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [createName, setCreateName] = useState('')
+  const [createDesc, setCreateDesc] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
@@ -22,10 +23,11 @@ export default function TorneosPage() {
     e.preventDefault()
     setError('')
     try {
-      const t = await api.createTournament({ name: createName })
+      const t = await api.createTournament({ name: createName, description: createDesc.trim() || null })
       setTournaments([...tournaments, t])
       setShowCreate(false)
       setCreateName('')
+      setCreateDesc('')
       navigate(`/torneos/${t.id}`)
     } catch (err) { setError(err.message) }
   }
@@ -114,6 +116,16 @@ export default function TorneosPage() {
               autoFocus
               className="w-full px-4 py-3 rounded-xl bg-[#0D0D0D] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87]"
             />
+            <div className="flex flex-col gap-1">
+              <textarea
+                placeholder="Premio al ganador, prenda al último... lo que quieras para darle emoción al torneo 🏆"
+                value={createDesc}
+                onChange={(e) => setCreateDesc(e.target.value.slice(0, 200))}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl bg-[#0D0D0D] border border-[#2A2A3E] text-white placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87] resize-none text-sm"
+              />
+              <p className="text-right text-xs text-[#8A8A9A] pr-1">{createDesc.length}/200</p>
+            </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold">Crear</button>
           </form>

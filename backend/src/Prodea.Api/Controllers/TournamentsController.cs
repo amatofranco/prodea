@@ -28,7 +28,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .ToListAsync();
 
         return Ok(tournaments.Select(t => new TournamentDto(
-            t.Id, t.Name, t.Code, t.InviteLink,
+            t.Id, t.Name, t.Description, t.Code, t.InviteLink,
             t.AdminUserId, t.Admin.Username,
             t.Participants.Count, t.CreatedAt
         )));
@@ -86,7 +86,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .ToList();
 
         return Ok(new TournamentDetailDto(
-            tournament.Id, tournament.Name, tournament.Code, tournament.InviteLink,
+            tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,
             tournament.AdminUserId, tournament.Admin.Username,
             ranked, tournament.CreatedAt
         ));
@@ -112,6 +112,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var tournament = new Tournament
         {
             Name = request.Name,
+            Description = request.Description?.Trim(),
             Code = code,
             InviteLink = inviteLink,
             AdminUserId = userId,
@@ -130,7 +131,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
 
         var admin = await db.Users.FindAsync(userId);
         return CreatedAtAction(nameof(GetTournament), new { id = tournament.Id },
-            new TournamentDto(tournament.Id, tournament.Name, tournament.Code,
+            new TournamentDto(tournament.Id, tournament.Name, tournament.Description, tournament.Code,
                 tournament.InviteLink, tournament.AdminUserId, admin!.Username, 1, tournament.CreatedAt));
     }
 
@@ -167,7 +168,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         return Ok(new TournamentDto(
-            tournament.Id, tournament.Name, tournament.Code, tournament.InviteLink,
+            tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,
             tournament.AdminUserId, tournament.Admin.Username,
             tournament.Participants.Count + 1, tournament.CreatedAt
         ));

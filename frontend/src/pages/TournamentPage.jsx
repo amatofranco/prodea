@@ -341,6 +341,10 @@ export default function TournamentPage() {
           </button>
         </div>
 
+        {tournament?.description && (
+          <p className="text-[#8A8A9A] text-sm mb-3 leading-relaxed">{tournament.description}</p>
+        )}
+
         {liveCount > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#FF6B35]/10 border border-[#FF6B35]/30 mb-2">
             <Wifi size={14} className="text-[#FF6B35] animate-pulse" />

@@ -3,7 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace Prodea.Api.DTOs;
 
 public record CreateTournamentRequest(
-    [Required, MinLength(3), MaxLength(100)] string Name
+    [Required, MinLength(3), MaxLength(100)] string Name,
+    [MaxLength(200)] string? Description
 );
 
 public record JoinTournamentRequest(
@@ -13,6 +14,7 @@ public record JoinTournamentRequest(
 public record TournamentDto(
     int Id,
     string Name,
+    string? Description,
     string Code,
     string InviteLink,
     int AdminUserId,
@@ -24,6 +26,7 @@ public record TournamentDto(
 public record TournamentDetailDto(
     int Id,
     string Name,
+    string? Description,
     string Code,
     string InviteLink,
     int AdminUserId,
