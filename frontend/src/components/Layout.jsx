@@ -1,13 +1,11 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Trophy, Target, BarChart2 } from 'lucide-react'
-import InstallBanner from './InstallBanner'
 
 export default function Layout() {
   return (
     <div className="flex flex-col flex-1">
       <main className="flex-1 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
         <Outlet />
-        <InstallBanner />
       </main>
 
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#1A1A2E] border-t border-[#2A2A3E] z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>

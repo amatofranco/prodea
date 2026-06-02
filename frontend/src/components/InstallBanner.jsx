@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Share, Plus } from 'lucide-react'
-
-const STORAGE_KEY = 'prodea_install_dismissed'
-const DISMISS_DAYS = 1
+import { Share, Download } from 'lucide-react'
 
 function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches
@@ -21,26 +18,18 @@ export default function InstallBanner() {
   useEffect(() => {
     if (isStandalone()) return
 
-    const dismissed = localStorage.getItem(STORAGE_KEY)
-    if (dismissed) {
-      const until = new Date(dismissed)
-      if (new Date() < until) return
-    }
-
     if (isIOS()) {
       setIos(true)
       setShow(true)
       return
     }
 
-    // Leer el evento capturado globalmente en main.jsx
     if (window.__pwaInstallPrompt) {
       setDeferredPrompt(window.__pwaInstallPrompt)
       setShow(true)
       return
     }
 
-    // Fallback: escuchar si todavía no disparó
     const handler = (e) => {
       e.preventDefault()
       window.__pwaInstallPrompt = e
@@ -51,52 +40,33 @@ export default function InstallBanner() {
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  function dismiss() {
-    const until = new Date()
-    until.setDate(until.getDate() + DISMISS_DAYS)
-    localStorage.setItem(STORAGE_KEY, until.toISOString())
-    setShow(false)
-  }
-
   async function install() {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') {
-      localStorage.setItem(STORAGE_KEY, new Date(9999, 0).toISOString())
-    }
+    await deferredPrompt.userChoice
     setShow(false)
-    setDeferredPrompt(null)
+    window.__pwaInstallPrompt = null
   }
 
   if (!show) return null
 
   return (
-    <div className="mx-4 mb-4 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/30 p-4 flex gap-3 items-start">
-      <img src="/logo-icon.png" alt="" className="w-10 h-10 object-contain shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-sm">¡Instalá Prodea en tu celular!</p>
-        {ios ? (
-          <p className="text-[#8A8A9A] text-xs mt-0.5">
-            Tocá <Share size={11} className="inline mb-0.5" /> <strong>Compartir</strong> → <strong>"Agregar a inicio"</strong> para una mejor experiencia
-          </p>
-        ) : (
-          <p className="text-[#8A8A9A] text-xs mt-0.5">
-            Agregala en tu pantalla de inicio para una mejor experiencia
-          </p>
-        )}
-        {!ios && (
-          <button
-            onClick={install}
-            className="mt-2 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95 transition-transform"
-          >
-            <Plus size={12} /> Instalar
-          </button>
-        )}
-      </div>
-      <button onClick={dismiss} className="text-[#8A8A9A] shrink-0 -mt-0.5">
-        <X size={18} />
-      </button>
+    <div className="mx-4 mb-3 rounded-xl bg-[#1A1A2E] border border-[#00FF87]/20 px-3 py-2 flex items-center gap-2">
+      <img src="/logo-icon.png" alt="" className="w-6 h-6 object-contain shrink-0" />
+      <p className="flex-1 text-xs text-[#8A8A9A]">
+        {ios
+          ? <><span className="text-white font-semibold">Instalá Prodea</span> — tocá <Share size={10} className="inline mb-0.5" /> y "Agregar a inicio"</>
+          : <span className="text-white font-semibold">Instalá Prodea en tu pantalla de inicio</span>
+        }
+      </p>
+      {!ios && (
+        <button
+          onClick={install}
+          className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00FF87] text-black text-[10px] font-bold active:scale-95 transition-transform"
+        >
+          <Download size={10} /> Instalar
+        </button>
+      )}
     </div>
   )
 }

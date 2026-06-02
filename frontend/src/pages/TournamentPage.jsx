@@ -12,6 +12,7 @@ import ChampionPickBanner from '../components/ChampionPickBanner'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 import AdInterstitial from '../components/AdInterstitial'
 import { useAdInterstitial } from '../hooks/useAdInterstitial'
+import InstallBanner from '../components/InstallBanner'
 
 const PHASE_ORDER = ['group-1', 'group-2', 'group-3', 'R32', 'R16', 'QF', 'SF', 'ThirdPlace', 'Final']
 const TAB_LABELS = {
@@ -322,6 +323,8 @@ export default function TournamentPage() {
 
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
+      <InstallBanner />
+
       {/* Header */}
       <div className="px-4 pt-12 pb-3 bg-[#1A1A2E]">
         <div className="flex items-center gap-3 mb-3">
