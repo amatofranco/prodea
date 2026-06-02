@@ -370,7 +370,7 @@ export default function TournamentPage() {
         ) : (
           <div className="mb-3 flex items-start gap-2 group">
             {(tournament?.description || tournament?.adminUserId === user?.id) && (
-              <p className={`flex-1 text-sm leading-relaxed ${tournament?.description ? 'text-[#8A8A9A]' : 'text-[#2A2A3E] italic'}`}>
+              <p className={`flex-1 text-sm leading-relaxed whitespace-pre-wrap ${tournament?.description ? 'text-[#8A8A9A]' : 'text-[#2A2A3E] italic'}`}>
                 {tournament?.description || (tournament?.adminUserId === user?.id ? 'Agregá una descripción, premios o prendas...' : '')}
               </p>
             )}
