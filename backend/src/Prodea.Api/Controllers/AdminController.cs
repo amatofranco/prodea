@@ -349,6 +349,56 @@ public class AdminController(
         });
     }
 
+    [HttpPost("recalculate-all/{tournamentId}")]
+    public async Task<IActionResult> RecalculateAll(
+        int tournamentId,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        if (env.IsProduction())
+            return NotFound();
+
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (expectedKey == null || adminKey != expectedKey)
+            return Forbid();
+
+        // Recalcular puntos de predicciones para todos los partidos finalizados
+        var finishedMatches = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finished && m.HomeScore != null && m.AwayScore != null)
+            .ToListAsync();
+
+        int predsUpdated = 0;
+        foreach (var match in finishedMatches)
+        {
+            var predictions = await db.Predictions
+                .Where(p => p.MatchId == match.Id)
+                .ToListAsync();
+
+            string? winnerSide = null;
+            if (match.HomeScore == match.AwayScore && match.Winner != null)
+                winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
+
+            foreach (var pred in predictions)
+            {
+                pred.PointsEarned = ScoringService.CalculatePoints(pred, match.HomeScore!.Value, match.AwayScore!.Value, winnerSide);
+                predsUpdated++;
+            }
+        }
+        await db.SaveChangesAsync();
+
+        // Recalcular badges
+        var badgeService = new BadgeService(db);
+        var phaseMatchdays = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finished)
+            .Select(m => new { m.Phase, Matchday = m.Matchday ?? 0 })
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var pm in phaseMatchdays)
+            await badgeService.AssignMatchdayBadgesAsync(tournamentId, pm.Phase, pm.Matchday);
+
+        return Ok(new { message = $"Recalculado: {predsUpdated} predicciones, {phaseMatchdays.Count} jornadas con badges." });
+    }
+
     [HttpPost("recalculate-badges/{tournamentId}")]
     public async Task<IActionResult> RecalculateBadges(
         int tournamentId,
