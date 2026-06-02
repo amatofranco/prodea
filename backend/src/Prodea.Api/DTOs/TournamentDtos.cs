@@ -11,6 +11,10 @@ public record JoinTournamentRequest(
     [Required] string CodeOrInviteLink
 );
 
+public record UpdateTournamentRequest(
+    [MaxLength(200)] string? Description
+);
+
 public record TournamentDto(
     int Id,
     string Name,

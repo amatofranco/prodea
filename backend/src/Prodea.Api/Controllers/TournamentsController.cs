@@ -97,6 +97,23 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         }
     }
 
+    [HttpPatch("{id}")]
+    public async Task<ActionResult<TournamentDetailDto>> UpdateTournament(int id, UpdateTournamentRequest request)
+    {
+        var userId = CurrentUserId;
+        var tournament = await db.Tournaments.Include(t => t.Admin).FirstOrDefaultAsync(t => t.Id == id);
+        if (tournament == null) return NotFound();
+        if (tournament.AdminUserId != userId) return Forbid();
+
+        tournament.Description = request.Description?.Trim();
+        await db.SaveChangesAsync();
+
+        return Ok(new TournamentDetailDto(
+            tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,
+            tournament.AdminUserId, tournament.Admin.Username, [], tournament.CreatedAt
+        ));
+    }
+
     [HttpPost]
     public async Task<ActionResult<TournamentDto>> CreateTournament(CreateTournamentRequest request)
     {

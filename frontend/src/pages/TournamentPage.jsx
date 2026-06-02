@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Share2, ChevronLeft, Wifi, Lock, X } from 'lucide-react'
+import { Share2, ChevronLeft, Wifi, Lock, X, Pencil } from 'lucide-react'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
 import { useAuthStore } from '../store/authStore'
@@ -234,8 +234,16 @@ export default function TournamentPage() {
   const [phaseTab, setPhaseTab] = useState(null)
   const [predSheet, setPredSheet] = useState(null) // { match, predictions, loading }
   const [showAd, setShowAd] = useState(false)
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [descDraft, setDescDraft] = useState('')
   const phaseBarRef = useRef(null)
   const { canShow, markShown, checkFixtureTab, checkTablaTab } = useAdInterstitial(liveCount > 0)
+
+  async function saveDescription() {
+    const updated = await api.updateTournament(id, { description: descDraft.trim() || null })
+    setTournament(t => ({ ...t, description: updated.description }))
+    setEditingDesc(false)
+  }
 
   function fetchMatches() {
     api.getMatches(id).then((m) => {
@@ -341,8 +349,40 @@ export default function TournamentPage() {
           </button>
         </div>
 
-        {tournament?.description && (
-          <p className="text-[#8A8A9A] text-sm mb-3 leading-relaxed">{tournament.description}</p>
+        {editingDesc ? (
+          <div className="mb-3 flex flex-col gap-2">
+            <div className="relative">
+              <textarea
+                value={descDraft}
+                onChange={(e) => setDescDraft(e.target.value.slice(0, 200))}
+                rows={3}
+                autoFocus
+                className="w-full px-3 py-2.5 rounded-xl bg-[#0D0D0D] border border-[#00FF87]/40 text-white text-sm placeholder-[#8A8A9A] focus:outline-none resize-none"
+                placeholder="Premio al ganador, prenda al último..."
+              />
+              <p className="text-right text-xs text-[#8A8A9A] mt-0.5">{descDraft.length}/200</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={saveDescription} className="flex-1 py-2 rounded-xl bg-[#00FF87] text-black text-sm font-bold">Guardar</button>
+              <button onClick={() => setEditingDesc(false)} className="flex-1 py-2 rounded-xl bg-[#2A2A3E] text-[#8A8A9A] text-sm">Cancelar</button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-3 flex items-start gap-2 group">
+            {(tournament?.description || tournament?.adminUserId === user?.id) && (
+              <p className={`flex-1 text-sm leading-relaxed ${tournament?.description ? 'text-[#8A8A9A]' : 'text-[#2A2A3E] italic'}`}>
+                {tournament?.description || (tournament?.adminUserId === user?.id ? 'Agregá una descripción, premios o prendas...' : '')}
+              </p>
+            )}
+            {tournament?.adminUserId === user?.id && (
+              <button
+                onClick={() => { setDescDraft(tournament?.description || ''); setEditingDesc(true) }}
+                className="shrink-0 text-[#8A8A9A] active:text-[#00FF87] mt-0.5"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+          </div>
         )}
 
         {liveCount > 0 && (
