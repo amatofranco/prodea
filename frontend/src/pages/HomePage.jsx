@@ -4,7 +4,6 @@ import { Lock, Zap, LogOut } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { getTeam, getFlagUrl } from '../data/teamsData'
-import InstallBanner from '../components/InstallBanner'
 
 const LIVE_POLL_MS = 60_000
 const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
@@ -326,8 +325,6 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold text-white">{user?.firstName ?? user?.username}</h2>
         </div>
       </div>
-
-      <InstallBanner />
 
       {/* Banner fin del mundial */}
       {isFinalFinished && tournaments.length > 0 && (
