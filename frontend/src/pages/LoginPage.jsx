@@ -1,56 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
+import GoogleButton from '../components/GoogleButton'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
 
 export default function LoginPage() {
   const [form, setForm] = useState({ usernameOrEmail: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
 
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.onload = () => {
-      window.google?.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-        locale: 'es',
-        cancel_on_tap_outside: true,
-      })
-      window.google?.accounts.id.cancel()
-      const container = document.getElementById('google-btn')
-      const width = container?.offsetWidth || 320
-      window.google?.accounts.id.renderButton(
-        container,
-        { theme: 'filled_black', size: 'large', width, text: 'signin_with', locale: 'es' }
-      )
-    }
-    document.head.appendChild(script)
-    return () => script.remove()
-  }, [])
-
-  async function handleGoogleResponse({ credential }) {
+  async function handleGoogleCredential(credential) {
     setError('')
-    setGoogleLoading(true)
     try {
       const data = await api.googleLogin(credential)
       setAuth(data.token, data.user)
       navigate(redirect, { replace: true })
     } catch (err) {
       setError(err.message)
-    } finally {
-      setGoogleLoading(false)
     }
   }
 
@@ -83,17 +55,13 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-sm flex flex-col gap-4">
-        {GOOGLE_CLIENT_ID && (
-          <div id="google-btn" className="w-full" />
-        )}
+        <GoogleButton onCredential={handleGoogleCredential} text="Iniciar sesión con Google" />
 
-        {GOOGLE_CLIENT_ID && (
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#2A2A3E]" />
-            <span className="text-[#8A8A9A] text-xs">o</span>
-            <div className="flex-1 h-px bg-[#2A2A3E]" />
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-[#2A2A3E]" />
+          <span className="text-[#8A8A9A] text-xs">o</span>
+          <div className="flex-1 h-px bg-[#2A2A3E]" />
+        </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
@@ -125,7 +93,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading || googleLoading}
+            disabled={loading}
             className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-base disabled:opacity-50 active:scale-95 transition-transform"
           >
             {loading ? 'Entrando...' : 'Entrar'}
