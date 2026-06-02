@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
+import InstallBanner from '../components/InstallBanner'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
@@ -122,6 +123,10 @@ export default function RegisterPage() {
           <Link to="/login" className="text-[#00FF87] font-semibold">Iniciá sesión</Link>
         </p>
       </form>
+
+      <div className="w-full max-w-sm mt-6">
+        <InstallBanner />
+      </div>
     </div>
   )
 }
