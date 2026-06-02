@@ -6,7 +6,6 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import JoinPage from './pages/JoinPage'
-import RankingPage from './pages/RankingPage'
 import HomePage from './pages/HomePage'
 import TorneosPage from './pages/TorneosPage'
 import TournamentPage from './pages/TournamentPage'
@@ -36,7 +35,6 @@ export default function App() {
             <Route path="/predicciones/campeon" element={<ChampionPickPage />} />
             <Route path="/torneos/:id" element={<TournamentPage />} />
             <Route path="/torneos/:tournamentId/perfil/:userId" element={<ProfilePage />} />
-            <Route path="/ranking" element={<RankingPage />} />
           </Route>
         </Route>
 

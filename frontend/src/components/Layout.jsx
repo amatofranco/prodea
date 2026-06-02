@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Trophy, Target, BarChart2 } from 'lucide-react'
+import { Home, Trophy, Target } from 'lucide-react'
 
 export default function Layout() {
   return (
@@ -25,10 +25,6 @@ export default function Layout() {
             <span>Predicciones</span>
           </NavLink>
 
-          <NavLink to="/ranking" className={({ isActive }) => `flex flex-col items-center gap-0.5 px-5 py-1 text-xs transition-colors ${isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-            <BarChart2 size={20} />
-            <span>Ranking</span>
-          </NavLink>
         </div>
       </nav>
     </div>
