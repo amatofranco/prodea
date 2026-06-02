@@ -33,8 +33,17 @@ export default function InstallBanner() {
       return
     }
 
+    // Leer el evento capturado globalmente en main.jsx
+    if (window.__pwaInstallPrompt) {
+      setDeferredPrompt(window.__pwaInstallPrompt)
+      setShow(true)
+      return
+    }
+
+    // Fallback: escuchar si todavía no disparó
     const handler = (e) => {
       e.preventDefault()
+      window.__pwaInstallPrompt = e
       setDeferredPrompt(e)
       setShow(true)
     }
