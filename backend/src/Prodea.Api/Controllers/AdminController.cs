@@ -478,7 +478,20 @@ public class AdminController(
         }
         await db.SaveChangesAsync();
 
-        return Ok(new { message = $"{matches.Count} partidos de fase de grupos finalizados." });
+        // Recalcular puntos de predicciones
+        int predsUpdated = 0;
+        foreach (var m in matches)
+        {
+            var predictions = await db.Predictions.Where(p => p.MatchId == m.Id).ToListAsync();
+            foreach (var pred in predictions)
+            {
+                pred.PointsEarned = ScoringService.CalculatePoints(pred, m.HomeScore!.Value, m.AwayScore!.Value);
+                predsUpdated++;
+            }
+        }
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = $"{matches.Count} partidos finalizados, {predsUpdated} predicciones recalculadas." });
     }
 
     [HttpPost("cleanup-production")]
