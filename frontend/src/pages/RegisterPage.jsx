@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
-import InstallBanner from '../components/InstallBanner'
 import GoogleButton from '../components/GoogleButton'
 
 export default function RegisterPage() {
@@ -102,9 +101,6 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      <div className="w-full max-w-sm mt-6">
-        <InstallBanner />
-      </div>
     </div>
   )
 }
