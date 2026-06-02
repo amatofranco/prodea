@@ -10,7 +10,7 @@ function isIOS() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent)
 }
 
-export default function InstallBanner() {
+export default function InstallBanner({ className = '' }) {
   const [show, setShow] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [ios, setIos] = useState(false)
@@ -51,7 +51,7 @@ export default function InstallBanner() {
   if (!show) return null
 
   return (
-    <div className="mx-4 mb-3 rounded-xl bg-[#1A1A2E] border border-[#00FF87]/20 px-3 py-2.5 flex items-center gap-2">
+    <div className={`mx-4 mb-3 rounded-xl bg-[#1A1A2E] border border-[#00FF87]/20 px-3 py-2.5 flex items-center gap-2 ${className}`}>
       <img src="/logo-icon.png" alt="" className="w-7 h-7 object-contain shrink-0" />
       <p className="flex-1 text-[13px] text-[#8A8A9A]">
         {ios

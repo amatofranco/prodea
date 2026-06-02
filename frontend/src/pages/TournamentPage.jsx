@@ -376,7 +376,7 @@ export default function TournamentPage() {
         </div>
       </div>
 
-      <InstallBanner />
+      <InstallBanner className="mt-3" />
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
