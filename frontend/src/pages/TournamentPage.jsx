@@ -323,8 +323,6 @@ export default function TournamentPage() {
 
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
-      <InstallBanner />
-
       {/* Header */}
       <div className="px-4 pt-12 pb-3 bg-[#1A1A2E]">
         <div className="flex items-center gap-3 mb-3">
@@ -377,6 +375,8 @@ export default function TournamentPage() {
           ))}
         </div>
       </div>
+
+      <InstallBanner />
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">

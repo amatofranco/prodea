@@ -51,20 +51,20 @@ export default function InstallBanner() {
   if (!show) return null
 
   return (
-    <div className="mx-4 mb-3 rounded-xl bg-[#1A1A2E] border border-[#00FF87]/20 px-3 py-2 flex items-center gap-2">
-      <img src="/logo-icon.png" alt="" className="w-6 h-6 object-contain shrink-0" />
-      <p className="flex-1 text-xs text-[#8A8A9A]">
+    <div className="mx-4 mb-3 rounded-xl bg-[#1A1A2E] border border-[#00FF87]/20 px-3 py-2.5 flex items-center gap-2">
+      <img src="/logo-icon.png" alt="" className="w-7 h-7 object-contain shrink-0" />
+      <p className="flex-1 text-[13px] text-[#8A8A9A]">
         {ios
-          ? <><span className="text-white font-semibold">Instalá Prodea</span> — tocá <Share size={10} className="inline mb-0.5" /> y "Agregar a inicio"</>
-          : <span className="text-white font-semibold">Instalá Prodea en tu pantalla de inicio</span>
+          ? <>¡<span className="text-white font-semibold">Instalá Prodea en tu celular!</span> Tocá <Share size={11} className="inline mb-0.5" /> y "Agregar a inicio"</>
+          : <span className="text-white font-semibold">¡Instalá Prodea en tu celular!</span>
         }
       </p>
       {!ios && (
         <button
           onClick={install}
-          className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00FF87] text-black text-[10px] font-bold active:scale-95 transition-transform"
+          className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95 transition-transform"
         >
-          <Download size={10} /> Instalar
+          <Download size={11} /> Instalar
         </button>
       )}
     </div>
