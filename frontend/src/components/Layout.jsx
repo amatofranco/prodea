@@ -15,14 +15,14 @@ export default function Layout() {
             <span>Inicio</span>
           </NavLink>
 
-          <NavLink to="/torneos" className={({ isActive }) => `flex flex-col items-center gap-0.5 px-5 py-1 text-xs transition-colors ${isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-            <Trophy size={20} />
-            <span>Torneos</span>
-          </NavLink>
-
           <NavLink to="/predicciones" className={({ isActive }) => `flex flex-col items-center gap-0.5 px-5 py-1 text-xs transition-colors ${isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
             <Target size={20} />
             <span>Predicciones</span>
+          </NavLink>
+
+          <NavLink to="/torneos" className={({ isActive }) => `flex flex-col items-center gap-0.5 px-5 py-1 text-xs transition-colors ${isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+            <Trophy size={20} />
+            <span>Torneos</span>
           </NavLink>
 
         </div>
