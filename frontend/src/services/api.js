@@ -37,6 +37,10 @@ export const api = {
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   resetPassword: (token, newPassword) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword }) }),
 
+  getPushPublicKey: () => request('/push/public-key'),
+  subscribePush: (body) => request('/push/subscribe', { method: 'POST', body: JSON.stringify(body) }),
+  unsubscribePush: (body) => request('/push/unsubscribe', { method: 'POST', body: JSON.stringify(body) }),
+
   getTournaments: () => request('/tournaments'),
   getTournament: (id) => request(`/tournaments/${id}`),
   createTournament: (body) => request('/tournaments', { method: 'POST', body: JSON.stringify(body) }),

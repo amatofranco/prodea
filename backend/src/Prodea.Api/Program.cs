@@ -100,6 +100,8 @@ builder.Services.AddScoped<FixtureService>();
 builder.Services.AddSingleton<PollingStatusService>();
 builder.Services.AddHostedService<FootballDataService>();
 builder.Services.AddHostedService<BackupService>();
+builder.Services.AddScoped<PushNotificationService>();
+builder.Services.AddHostedService<MatchNotificationJob>();
 
 var app = builder.Build();
 

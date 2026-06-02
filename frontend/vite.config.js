@@ -12,8 +12,11 @@ export default defineConfig(({ mode }) => {
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
-      devOptions: { enabled: true },
+      devOptions: { enabled: true, type: 'module' },
 
       manifest: {
         name: isTesting ? 'Prodea — Testing' : 'Prodea — Mundial 2026',
@@ -41,72 +44,9 @@ export default defineConfig(({ mode }) => {
         ],
       },
 
-      workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
+      injectManifest: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
-
-        runtimeCaching: [
-          // Fuentes de Google: caché larga, network-first la primera vez
-          {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-
-          // Fixture y partidos: NetworkFirst con fallback a caché
-          // Si no hay internet, muestra los datos que tenía guardados
-          {
-            urlPattern: /\/api\/tournaments\/\d+\/matches/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'matches-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 10 }, // 10 min
-              networkTimeoutSeconds: 5,
-              cacheableResponse: { statuses: [200] },
-            },
-          },
-
-          // Tabla de posiciones: NetworkFirst con fallback
-          {
-            urlPattern: /\/api\/tournaments\/\d+\/leaderboard/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'leaderboard-cache',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 5 }, // 5 min
-              networkTimeoutSeconds: 5,
-              cacheableResponse: { statuses: [200] },
-            },
-          },
-
-          // Lista de torneos del usuario: NetworkFirst
-          {
-            urlPattern: /\/api\/tournaments$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'tournaments-cache',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 }, // 1 hora
-              networkTimeoutSeconds: 5,
-              cacheableResponse: { statuses: [200] },
-            },
-          },
-
-          // Perfil: StaleWhileRevalidate (muestra lo que tiene y actualiza en segundo plano)
-          {
-            urlPattern: /\/api\/tournaments\/\d+\/profile\/.*/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'profile-cache',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 30 },
-              cacheableResponse: { statuses: [200] },
-            },
-          },
-        ],
       },
     }),
   ],

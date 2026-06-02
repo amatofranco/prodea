@@ -15,6 +15,7 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<PredictionBackup> PredictionBackups => Set<PredictionBackup>();
     public DbSet<ChampionPick> ChampionPicks => Set<ChampionPick>();
+    public DbSet<UserPushSubscription> PushSubscriptions => Set<UserPushSubscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -125,6 +126,15 @@ public class ProdeaDbContext(DbContextOptions<ProdeaDbContext> options) : DbCont
             e.HasOne(cp => cp.User)
                 .WithOne(u => u.ChampionPick)
                 .HasForeignKey<ChampionPick>(cp => cp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserPushSubscription>(e =>
+        {
+            e.HasIndex(s => s.Endpoint).IsUnique();
+            e.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

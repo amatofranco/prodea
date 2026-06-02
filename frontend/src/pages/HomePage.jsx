@@ -5,6 +5,8 @@ import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 import InstallBanner from '../components/InstallBanner'
+import { usePushNotifications } from '../hooks/usePushNotifications'
+import { Bell, BellOff } from 'lucide-react'
 
 const LIVE_POLL_MS = 60_000
 const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
@@ -234,6 +236,27 @@ function UpcomingCard({ match, navigate }) {
   )
 }
 
+function PushBanner() {
+  const { supported, permission, subscribed, subscribe, unsubscribe } = usePushNotifications()
+  if (!supported || permission === 'denied') return null
+  if (subscribed) return null
+
+  return (
+    <div className="mx-4 mb-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] px-3 py-2.5 flex items-center gap-2">
+      <Bell size={16} className="text-[#00FF87] shrink-0" />
+      <p className="flex-1 text-[13px] text-[#8A8A9A]">
+        <span className="text-white font-semibold">Activá las notificaciones</span> para no perderte ningún partido
+      </p>
+      <button
+        onClick={subscribe}
+        className="shrink-0 px-2.5 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95 transition-transform"
+      >
+        Activar
+      </button>
+    </div>
+  )
+}
+
 export default function HomePage() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -328,6 +351,7 @@ export default function HomePage() {
       </div>
 
       <InstallBanner />
+      <PushBanner />
 
       {/* Banner fin del mundial */}
       {isFinalFinished && tournaments.length > 0 && (
