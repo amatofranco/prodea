@@ -38,12 +38,16 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       })
       const json = sub.toJSON()
-      await api.subscribePush({
-        endpoint: json.endpoint,
-        p256dh: json.keys.p256dh,
-        auth: json.keys.auth,
-      })
       setSubscribed(true)
+      try {
+        await api.subscribePush({
+          endpoint: json.endpoint,
+          p256dh: json.keys.p256dh,
+          auth: json.keys.auth,
+        })
+      } catch (err) {
+        console.error('Error guardando suscripción en backend:', err)
+      }
       return true
     } catch (err) {
       console.error('Error suscribiendo push:', err)
