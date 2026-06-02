@@ -17,7 +17,8 @@ public class PushController(ProdeaDbContext db, IConfiguration config) : Control
     [HttpGet("public-key")]
     public IActionResult GetPublicKey()
     {
-        var key = config["Vapid:PublicKey"] ?? throw new InvalidOperationException("Vapid:PublicKey no configurado");
+        var key = config["Vapid:PublicKey"];
+        if (string.IsNullOrEmpty(key)) return Ok(new { publicKey = (string?)null });
         return Ok(new { publicKey = key });
     }
 

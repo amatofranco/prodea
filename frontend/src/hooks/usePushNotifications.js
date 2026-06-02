@@ -32,6 +32,10 @@ export function usePushNotifications() {
 
     try {
       const { publicKey } = await api.getPushPublicKey()
+      if (!publicKey) {
+        console.warn('VAPID public key no configurada en el servidor')
+        return false
+      }
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
