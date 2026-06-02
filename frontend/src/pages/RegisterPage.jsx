@@ -57,7 +57,6 @@ export default function RegisterPage() {
     try {
       const data = await api.register(form)
       setAuth(data.token, data.user)
-      localStorage.removeItem('prodea_install_dismissed')
       navigate(redirect, { replace: true })
     } catch (err) {
       setError(err.message)
