@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, BellOff, LogOut } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
@@ -7,6 +8,9 @@ export default function AjustesPage() {
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
   const { supported, subscribed, subscribe, unsubscribe } = usePushNotifications()
+  const [optimistic, setOptimistic] = useState(subscribed)
+
+  useEffect(() => { setOptimistic(subscribed) }, [subscribed])
 
   function handleLogout() {
     logout()
@@ -14,10 +18,12 @@ export default function AjustesPage() {
   }
 
   async function handleTogglePush() {
-    if (subscribed) {
-      await unsubscribe()
-    } else {
+    const next = !optimistic
+    setOptimistic(next)
+    if (next) {
       await subscribe()
+    } else {
+      await unsubscribe()
     }
   }
 
@@ -29,22 +35,22 @@ export default function AjustesPage() {
         {supported && (
           <div className="flex items-center justify-between bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E]">
             <div className="flex items-center gap-3">
-              {subscribed
+              {optimistic
                 ? <Bell size={20} className="text-[#00FF87]" />
                 : <BellOff size={20} className="text-[#8A8A9A]" />
               }
               <div>
                 <p className="text-white text-sm font-semibold">Notificaciones</p>
                 <p className="text-[#8A8A9A] text-xs mt-0.5">
-                  {subscribed ? 'Activadas' : 'Desactivadas'}
+                  {optimistic ? 'Activadas' : 'Desactivadas'}
                 </p>
               </div>
             </div>
             <button
               onClick={handleTogglePush}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${subscribed ? 'bg-[#00FF87]' : 'bg-[#2A2A3E]'}`}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${optimistic ? 'bg-[#00FF87]' : 'bg-[#2A2A3E]'}`}
             >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${subscribed ? 'translate-x-5' : 'translate-x-0'}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${optimistic ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
           </div>
         )}
