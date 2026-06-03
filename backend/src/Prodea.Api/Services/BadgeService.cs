@@ -13,7 +13,7 @@ public class BadgeService(ProdeaDbContext db, PushNotificationService? pushServi
         [MatchdayBadgeType.Francotirador] = ["Un tiro, un gol", "Cuando apuntás, no fallás", "La mira calibrada", "Una bala. Un cadáver", "Economía de recursos. Brutalidad de precisión"],
         [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Dos exactos. Brujo confirmado.", "Doble clarividencia", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
-        [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, dormido", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
+        [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
     };
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
