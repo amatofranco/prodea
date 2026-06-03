@@ -90,8 +90,8 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   const phrase  = `"${badge.randomPhrase}"`
 
   const tmp = document.createElement('canvas').getContext('2d')
-  tmp.font = 'italic 12px "DM Sans", system-ui, sans-serif'
-  const phraseLines = wrapLines(tmp, phrase, W - 80)
+  tmp.font = 'italic 11px "DM Sans", system-ui, sans-serif'
+  const phraseLines = wrapLines(tmp, phrase, W - 52)
 
   const H = PAD + 14 + GAP        // header (wordmark)
           + 30 + GAP              // username
@@ -210,7 +210,7 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   y += 56 + GAP
 
   // Phrase
-  ctx.font = 'italic 12px "DM Sans", system-ui, sans-serif'
+  ctx.font = 'italic 11px "DM Sans", system-ui, sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,0.5)'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
@@ -330,7 +330,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
             </div>
 
             {/* Phrase */}
-            <p className="text-[11px] italic text-white/50 text-center leading-snug px-1 mt-1">
+            <p className="text-[10px] italic text-white/50 text-center leading-snug mt-1">
               &ldquo;{badge.randomPhrase}&rdquo;
             </p>
 

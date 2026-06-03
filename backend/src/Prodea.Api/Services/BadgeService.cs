@@ -9,7 +9,7 @@ public class BadgeService(ProdeaDbContext db)
     private static readonly Dictionary<MatchdayBadgeType, string[]> Phrases = new()
     {
         [MatchdayBadgeType.Crack] = ["Clarividencia pura", "¿Sos DT o qué?", "Messi te manda saludos", "El grupo te odia un poquito", "Pedí aumento en el laburo, porque acá sobrás"],
-        [MatchdayBadgeType.Mufa] = ["Corazón: 1. Cerebro: 0.", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
+        [MatchdayBadgeType.Mufa] = ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
         [MatchdayBadgeType.Francotirador] = ["Un tiro, un gol", "Cuando apuntás, no fallás", "La mira calibrada", "Una bala. Un cadáver", "Economía de recursos. Brutalidad de precisión"],
         [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Dos exactos. Brujo confirmado.", "Doble clarividencia", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
