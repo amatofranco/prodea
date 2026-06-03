@@ -7,7 +7,8 @@ public enum MatchdayBadgeType
     Adivino,
     Francotirador,
     Payaso,
-    Dormido
+    Dormido,
+    Tibio
 }
 
 public class MatchdayBadge

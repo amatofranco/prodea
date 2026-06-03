@@ -13,7 +13,8 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Francotirador] = ["Un tiro, un gol", "Cuando apuntás, no fallás", "La mira calibrada", "Una bala. Un cadáver", "Economía de recursos. Brutalidad de precisión"],
         [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Dos exactos. Brujo confirmado.", "Doble clarividencia", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
-        [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, dormido", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
+        [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
+        [MatchdayBadgeType.Tibio] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
     };
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
@@ -24,11 +25,12 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Francotirador] = "🎯",
         [MatchdayBadgeType.Payaso] = "🤡",
         [MatchdayBadgeType.Dormido] = "😴",
+        [MatchdayBadgeType.Tibio] = "🌡️",
     };
 
     private static readonly Dictionary<AccumulativeBadgeType, string> AccumulativeEmojis = new()
     {
-        [AccumulativeBadgeType.EnCaidaLibre] = "📉",
+        [AccumulativeBadgeType.PecheadaTotal] = "🥶",
         [AccumulativeBadgeType.RachaInfernal] = "🔥",
         [AccumulativeBadgeType.ElMuro] = "🧱",
         [AccumulativeBadgeType.ElFantasma] = "👻",
@@ -41,7 +43,6 @@ public class BadgeService(ProdeaDbContext db)
     public static string GetPhrase(MatchdayBadgeType type, int userId, int occurrenceIndex)
     {
         var options = Phrases[type];
-        // Stable shuffle per user+type so the first N occurrences each get a unique phrase
         var indices = Enumerable.Range(0, options.Length).ToArray();
         var rng = new Random(HashCode.Combine(userId, (int)type));
         for (int i = indices.Length - 1; i > 0; i--)
@@ -53,7 +54,7 @@ public class BadgeService(ProdeaDbContext db)
     }
 
     // matchday: 1/2/3 para grupos; 0 para fases eliminatorias
-    public async Task AssignMatchdayBadgesAsync(int tournamentId, MatchPhase phase, int matchday)
+    public async Task AssignMatchdayBadgesAsync(int tournamentId, MatchPhase phase, int matchday, PushNotificationService? push = null)
     {
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == tournamentId)
@@ -89,6 +90,7 @@ public class BadgeService(ProdeaDbContext db)
         int minPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
 
         var phaseStr = phase.ToString();
+        bool anyNewBadge = false;
 
         foreach (var userId in participants)
         {
@@ -102,7 +104,7 @@ public class BadgeService(ProdeaDbContext db)
                 { ExactCount: >= 2 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 1 }                                                                   => MatchdayBadgeType.Francotirador,
                 { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
-                _                                                                                      => MatchdayBadgeType.Francotirador,
+                _                                                                                      => MatchdayBadgeType.Tibio,
             };
 
             var existing = await db.MatchdayBadges
@@ -117,6 +119,7 @@ public class BadgeService(ProdeaDbContext db)
             }
             else
             {
+                anyNewBadge = true;
                 db.MatchdayBadges.Add(new MatchdayBadge
                 {
                     UserId = userId,
@@ -131,10 +134,69 @@ public class BadgeService(ProdeaDbContext db)
 
         await db.SaveChangesAsync();
         await UpdateAccumulativeBadgesAsync(tournamentId);
+
+        if (push != null && anyNewBadge)
+            await SendCardNotificationsAsync(tournamentId, phase, matchday, participants, push);
     }
+
+    public Task SendCardNotificationsPublicAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
+        => SendCardNotificationsAsync(tournamentId, phase, matchday, participants, push);
 
     public async Task RecalculateAccumulativeBadgesAsync(int tournamentId) =>
         await UpdateAccumulativeBadgesAsync(tournamentId);
+
+    private static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
+    {
+        MatchPhase.Group => $"Fecha {matchday}",
+        MatchPhase.R32 => "Dieciseisavos",
+        MatchPhase.R16 => "Octavos",
+        MatchPhase.QF => "Cuartos",
+        MatchPhase.SF => "Semis",
+        MatchPhase.ThirdPlace => "3er Puesto",
+        MatchPhase.Final => "Final",
+        _ => phase.ToString(),
+    };
+
+    private async Task SendCardNotificationsAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
+    {
+        var jornada = JornadaLabel(phase, matchday);
+        var termino = phase switch
+        {
+            MatchPhase.Group      => $"Terminó la Fecha {matchday}.",
+            MatchPhase.R32        => "Terminaron los Dieciseisavos.",
+            MatchPhase.R16        => "Terminaron los Octavos.",
+            MatchPhase.QF         => "Terminaron los Cuartos.",
+            MatchPhase.SF         => "Terminaron las Semis.",
+            MatchPhase.ThirdPlace => "Terminó el 3er Puesto.",
+            MatchPhase.Final      => "Terminó la Final.",
+            _                     => $"Terminó {jornada}.",
+        };
+        var subscriptions = await db.PushSubscriptions
+            .Where(s => participants.Contains(s.UserId))
+            .ToListAsync();
+
+        var expired = new List<UserPushSubscription>();
+        foreach (var sub in subscriptions)
+        {
+            try
+            {
+                await push.SendToUserAsync(
+                    sub,
+                    "🃏 ¡Llegó tu Carta!",
+                    $"{termino} Fijate cómo te fue y compartila.",
+                    $"/torneos/{tournamentId}/perfil/{sub.UserId}"
+                );
+            }
+            catch (ExpiredSubscriptionException) { expired.Add(sub); }
+            catch { /* error de red — no interrumpe el flujo */ }
+        }
+
+        if (expired.Count > 0)
+        {
+            db.PushSubscriptions.RemoveRange(expired);
+            await db.SaveChangesAsync();
+        }
+    }
 
     private async Task UpdateAccumulativeBadgesAsync(int tournamentId)
     {
@@ -167,7 +229,7 @@ public class BadgeService(ProdeaDbContext db)
             bool enCaidaLibre = userBadges.Count >= 3 &&
                 userBadges[^3].PointsInMatchday > userBadges[^2].PointsInMatchday &&
                 userBadges[^2].PointsInMatchday > userBadges[^1].PointsInMatchday;
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.EnCaidaLibre, enCaidaLibre);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.PecheadaTotal, enCaidaLibre);
 
             bool tripleMufa = userBadges.Count >= 3 &&
                 userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Mufa);

@@ -2,7 +2,7 @@ namespace Prodea.Api.Models;
 
 public enum AccumulativeBadgeType
 {
-    EnCaidaLibre,
+    PecheadaTotal,
     RachaInfernal,
     ElMuro,
     ElFantasma,

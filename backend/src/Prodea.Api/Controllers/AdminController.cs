@@ -275,7 +275,7 @@ public class AdminController(
             await db.SaveChangesAsync();
         }
 
-        // Asignar resultados a los partidos (sin tocar MatchDate — siempre usamos las fechas reales de la API)
+        // Asignar resultados a los partidos de la DB de staging
         foreach (var match in matches)
         {
             match.HomeScore = rng.Next(0, 5);
@@ -295,9 +295,6 @@ public class AdminController(
         for (int i = 0; i < participants.Count; i++)
         {
             int userId = participants[i];
-            // Primer usuario: mayoría de aciertos (Crack candidate)
-            // Último usuario: todo 0-0 (Payaso candidate)
-            // Resto: mixto
             foreach (var match in matches)
             {
                 if (existingKeys.Contains((userId, match.Id))) continue;
@@ -305,14 +302,11 @@ public class AdminController(
                 int ph, pa;
                 if (i == 0)
                 {
-                    // Casi exacto — replica el resultado real con pequeña variación
-                    ph = match.HomeScore!.Value + rng.Next(-1, 2);
-                    pa = match.AwayScore!.Value + rng.Next(-1, 2);
-                    ph = Math.Max(0, ph); pa = Math.Max(0, pa);
+                    ph = Math.Max(0, match.HomeScore!.Value + rng.Next(-1, 2));
+                    pa = Math.Max(0, match.AwayScore!.Value + rng.Next(-1, 2));
                 }
                 else if (i == participants.Count - 1)
                 {
-                    // Pésimo — siempre falla
                     ph = (match.HomeScore!.Value + 2 + rng.Next(1, 3)) % 6;
                     pa = (match.AwayScore!.Value + 2 + rng.Next(1, 3)) % 6;
                 }
@@ -603,6 +597,31 @@ public class AdminController(
         return Ok(new { message = $"Enviado a {sent} suscriptor(es). {expired.Count} expirados eliminados." });
     }
 
+    [HttpPost("push/test-card")]
+    public async Task<IActionResult> TestCardPush(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromBody] TestCardPushRequest request)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var phase = Enum.Parse<MatchPhase>(request.Phase);
+        var participants = await db.TournamentParticipants
+            .Where(tp => tp.TournamentId == request.TournamentId)
+            .Select(tp => tp.UserId)
+            .ToListAsync();
+
+        if (participants.Count == 0)
+            return BadRequest(new { message = "El torneo no tiene participantes." });
+
+        var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
+        var badgeService = new BadgeService(db);
+        await badgeService.SendCardNotificationsPublicAsync(request.TournamentId, phase, request.Matchday, participants, pushService);
+
+        return Ok(new { message = $"Notificación de card enviada a {participants.Count} participante(s)." });
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -612,6 +631,7 @@ public class AdminController(
     public record FinalizeMatchRequest(int HomeScore, int AwayScore, string? Winner = null); // Winner: "home" | "away" para penales
     public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null, bool Force = false);
     public record TestPushRequest(string? Title, string? Body, string? Url);
+    public record TestCardPushRequest(int TournamentId, string Phase, int Matchday);
 
     private record BackupPrediction(
         int UserId, int MatchId,

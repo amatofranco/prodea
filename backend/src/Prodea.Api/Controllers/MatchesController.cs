@@ -123,13 +123,14 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         await db.SaveChangesAsync();
 
+        var push = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
         var badgeService = new BadgeService(db);
         var allTournamentIds = await db.TournamentParticipants
             .Select(tp => tp.TournamentId)
             .Distinct()
             .ToListAsync();
         foreach (var tid in allTournamentIds)
-            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
+            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0, push);
 
         if (match.Phase == MatchPhase.Final)
         {

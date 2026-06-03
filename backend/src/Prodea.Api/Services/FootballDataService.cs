@@ -59,6 +59,7 @@ public class FootballDataService(
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
+        var push = scope.ServiceProvider.GetRequiredService<PushNotificationService>();
 
         var inProgressMatches = await db.Matches
             .Where(m => m.Status == MatchStatus.InProgress && m.ExternalId != null)
@@ -147,7 +148,7 @@ public class FootballDataService(
 
                     if (matchData?.Status is "FINISHED" or "AWARDED")
                     {
-                        await FinalizeMatchAsync(db, match, matchData.Score, ct);
+                        await FinalizeMatchAsync(db, push, match, matchData.Score, ct);
                     }
                     // PAUSED, SCHEDULED, etc. → dejamos en InProgress
                 }
@@ -164,7 +165,7 @@ public class FootballDataService(
         }
     }
 
-    private async Task FinalizeMatchAsync(ProdeaDbContext db, Match match, FootballDataScore? apiScore, CancellationToken ct)
+    private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
     {
         match.Status = MatchStatus.Finished;
 
@@ -214,7 +215,7 @@ public class FootballDataService(
             .ToListAsync(ct);
 
         foreach (var tid in tournamentIds)
-            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
+            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0, push);
 
         if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue)
             await AwardChampionPickPointsAsync(db, match, ct);
