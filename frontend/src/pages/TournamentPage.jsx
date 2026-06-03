@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, Copy, Check } from 'lucide-react'
+import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown } from 'lucide-react'
+import QRCode from 'qrcode'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
 import { useAuthStore } from '../store/authStore'
@@ -235,7 +236,6 @@ export default function TournamentPage() {
   const [editingDesc, setEditingDesc] = useState(false)
   const [descDraft, setDescDraft] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
-  const [copied, setCopied] = useState(false)
   const phaseBarRef = useRef(null)
 
   async function saveDescription() {
@@ -301,20 +301,91 @@ export default function TournamentPage() {
     return `${window.location.origin}/join/${tournament?.inviteLink}`
   }
 
-  function shareWhatsApp() {
+  function shareText() {
     const link = getInviteLink()
-    const text = encodeURIComponent(`¡Te invito al torneo *${tournament?.name}* en Prodea! Uníte acá: ${link}`)
-    window.open(`https://wa.me/?text=${text}`, '_blank')
+    navigator.share({
+      title: 'Prodea',
+      text: `¡Te invito al torneo *${tournament?.name}* en Prodea!`,
+      url: link,
+    }).catch(() => {})
     setShowShareMenu(false)
   }
 
-  function copyLink() {
-    const link = getInviteLink()
-    navigator.clipboard.writeText(link).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => {})
+  async function shareImage() {
     setShowShareMenu(false)
+    const link = getInviteLink()
+    const W = 800, H = 800
+    const canvas = document.createElement('canvas')
+    canvas.width = W
+    canvas.height = H
+    const ctx = canvas.getContext('2d')
+
+    // Fondo
+    ctx.fillStyle = '#0D0D0D'
+    ctx.fillRect(0, 0, W, H)
+
+    // Borde verde
+    ctx.strokeStyle = '#00FF87'
+    ctx.lineWidth = 6
+    ctx.roundRect(20, 20, W - 40, H - 40, 24)
+    ctx.stroke()
+
+    // "Unite al torneo"
+    ctx.fillStyle = '#8A8A9A'
+    ctx.font = '500 28px Arial'
+    ctx.textAlign = 'center'
+    ctx.fillText('¡Unite al torneo!', W / 2, 100)
+
+    // Nombre del torneo
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = 'bold 60px Arial Black, Arial'
+    ctx.textAlign = 'center'
+    const name = tournament?.name ?? ''
+    ctx.fillText(name.length > 20 ? name.slice(0, 20) + '…' : name, W / 2, 175)
+
+    // QR
+    const qrDataUrl = await QRCode.toDataURL(link, {
+      width: 320, margin: 2,
+      color: { dark: '#FFFFFF', light: '#111111' },
+    })
+    const qrImg = new Image()
+    qrImg.src = qrDataUrl
+    await new Promise((r) => { qrImg.onload = r })
+    const qrSize = 320
+    ctx.drawImage(qrImg, (W - qrSize) / 2, 230, qrSize, qrSize)
+
+    // Instrucción
+    ctx.fillStyle = '#8A8A9A'
+    ctx.font = '24px Arial'
+    ctx.fillText('Escaneá para unirte', W / 2, 590)
+
+    // Divider
+    ctx.strokeStyle = '#2A2A3E'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(60, 620)
+    ctx.lineTo(W - 60, 620)
+    ctx.stroke()
+
+    // Branding
+    ctx.fillStyle = '#00FF87'
+    ctx.font = 'bold 52px Arial Black, Arial'
+    ctx.fillText('PRODEA', W / 2, 700)
+    ctx.fillStyle = '#8A8A9A'
+    ctx.font = '24px Arial'
+    ctx.fillText('prodea.app', W / 2, 740)
+
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'torneo-prodea.png', { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: tournament?.name })
+      } else {
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = 'torneo-prodea.png'
+        a.click()
+      }
+    }, 'image/png')
   }
 
   if (loading) {
@@ -358,18 +429,17 @@ export default function TournamentPage() {
                 <div className="fixed inset-0 z-40" onClick={() => setShowShareMenu(false)} />
                 <div className="absolute right-0 top-9 z-50 bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
                   <button
-                    onClick={shareWhatsApp}
+                    onClick={shareText}
                     className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
-                    <span className="text-base">💬</span> WhatsApp
+                    <Share2 size={16} className="text-[#00FF87]" /> Compartir invitación
                   </button>
                   <div className="h-px bg-[#2A2A3E]" />
                   <button
-                    onClick={copyLink}
+                    onClick={shareImage}
                     className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
-                    {copied ? <Check size={16} className="text-[#00FF87]" /> : <Copy size={16} />}
-                    {copied ? 'Link copiado' : 'Copiar link'}
+                    <ImageDown size={16} className="text-[#00FF87]" /> Compartir imagen
                   </button>
                 </div>
               </>
