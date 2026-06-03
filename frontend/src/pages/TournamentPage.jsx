@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Share2, ChevronLeft, Wifi, Lock, X, Pencil } from 'lucide-react'
+import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, Copy, Check } from 'lucide-react'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
 import { useAuthStore } from '../store/authStore'
@@ -234,6 +234,8 @@ export default function TournamentPage() {
   const [predSheet, setPredSheet] = useState(null) // { match, predictions, loading }
   const [editingDesc, setEditingDesc] = useState(false)
   const [descDraft, setDescDraft] = useState('')
+  const [showShareMenu, setShowShareMenu] = useState(false)
+  const [copied, setCopied] = useState(false)
   const phaseBarRef = useRef(null)
 
   async function saveDescription() {
@@ -295,18 +297,24 @@ export default function TournamentPage() {
     }
   }
 
-  function copyInvite() {
-    const link = `${window.location.origin}/join/${tournament?.inviteLink}`
-    if (navigator.share) {
-      navigator.share({
-        title: 'Prodea',
-        text: `¡Te invito al torneo *${tournament?.name}* en Prodea!`,
-        url: link,
-      }).catch(() => {})
-    } else {
-      const text = `¡Te invito al torneo *${tournament?.name}* en Prodea! Uníte acá: ${link}`
-      navigator.clipboard.writeText(text).catch(() => {})
-    }
+  function getInviteLink() {
+    return `${window.location.origin}/join/${tournament?.inviteLink}`
+  }
+
+  function shareWhatsApp() {
+    const link = getInviteLink()
+    const text = encodeURIComponent(`¡Te invito al torneo *${tournament?.name}* en Prodea! Uníte acá: ${link}`)
+    window.open(`https://wa.me/?text=${text}`, '_blank')
+    setShowShareMenu(false)
+  }
+
+  function copyLink() {
+    const link = getInviteLink()
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+    setShowShareMenu(false)
   }
 
   if (loading) {
@@ -338,12 +346,35 @@ export default function TournamentPage() {
             <h1 className="text-xl font-bold text-white truncate">{tournament?.name}</h1>
             <p className="text-[#8A8A9A] text-xs">{leaderboard.length} participantes</p>
           </div>
-          <button
-            onClick={copyInvite}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
-          >
-            <Share2 size={14} /> Invitar
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowShareMenu((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
+            >
+              <Share2 size={14} /> Invitar
+            </button>
+            {showShareMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowShareMenu(false)} />
+                <div className="absolute right-0 top-9 z-50 bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
+                  <button
+                    onClick={shareWhatsApp}
+                    className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
+                  >
+                    <span className="text-base">💬</span> WhatsApp
+                  </button>
+                  <div className="h-px bg-[#2A2A3E]" />
+                  <button
+                    onClick={copyLink}
+                    className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
+                  >
+                    {copied ? <Check size={16} className="text-[#00FF87]" /> : <Copy size={16} />}
+                    {copied ? 'Link copiado' : 'Copiar link'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {editingDesc ? (
