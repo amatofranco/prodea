@@ -435,14 +435,14 @@ export default function TournamentPage() {
                 <div className="absolute right-0 top-9 z-50 bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
                   <button
                     onClick={shareText}
-                    className="flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
+                    className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
                     <Share2 size={16} className="text-[#00FF87]" /> Compartir invitación
                   </button>
                   <div className="h-px bg-[#2A2A3E]" />
                   <button
                     onClick={shareImage}
-                    className="flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
+                    className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
                     <ImageDown size={16} className="text-[#00FF87]" />
                     <span className="leading-tight">Compartir<br />QR</span>
