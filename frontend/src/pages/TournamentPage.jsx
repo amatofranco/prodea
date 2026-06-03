@@ -371,9 +371,14 @@ export default function TournamentPage() {
     const wordmark = new Image()
     wordmark.src = '/logo-wordmark.png'
     await new Promise((r) => { wordmark.onload = r; wordmark.onerror = r })
-    const wmH = 80
+    const wmH = 70
     const wmW = wordmark.naturalWidth * (wmH / wordmark.naturalHeight)
-    ctx.drawImage(wordmark, (W - wmW) / 2, 650, wmW, wmH)
+    ctx.drawImage(wordmark, (W - wmW) / 2, 648, wmW, wmH)
+
+    // URL
+    ctx.fillStyle = '#8A8A9A'
+    ctx.font = '22px Arial'
+    ctx.fillText('prodea.app', W / 2, 738)
 
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'torneo-prodea.png', { type: 'image/png' })
