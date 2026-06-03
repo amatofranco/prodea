@@ -208,14 +208,14 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
         await BroadcastMatchUpdateAsync(db, match, ct);
 
-        var badgeService = new BadgeService(db, push);
+        var badgeService = new BadgeService(db);
         var tournamentIds = await db.TournamentParticipants
             .Select(tp => tp.TournamentId)
             .Distinct()
             .ToListAsync(ct);
 
         foreach (var tid in tournamentIds)
-            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
+            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0, push);
 
         if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue)
             await AwardChampionPickPointsAsync(db, match, ct);

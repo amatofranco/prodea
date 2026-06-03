@@ -4,7 +4,7 @@ using Prodea.Api.Models;
 
 namespace Prodea.Api.Services;
 
-public class BadgeService(ProdeaDbContext db, PushNotificationService? pushService = null)
+public class BadgeService(ProdeaDbContext db)
 {
     private static readonly Dictionary<MatchdayBadgeType, string[]> Phrases = new()
     {
@@ -41,7 +41,6 @@ public class BadgeService(ProdeaDbContext db, PushNotificationService? pushServi
     public static string GetPhrase(MatchdayBadgeType type, int userId, int occurrenceIndex)
     {
         var options = Phrases[type];
-        // Stable shuffle per user+type so the first N occurrences each get a unique phrase
         var indices = Enumerable.Range(0, options.Length).ToArray();
         var rng = new Random(HashCode.Combine(userId, (int)type));
         for (int i = indices.Length - 1; i > 0; i--)
@@ -53,7 +52,7 @@ public class BadgeService(ProdeaDbContext db, PushNotificationService? pushServi
     }
 
     // matchday: 1/2/3 para grupos; 0 para fases eliminatorias
-    public async Task AssignMatchdayBadgesAsync(int tournamentId, MatchPhase phase, int matchday)
+    public async Task AssignMatchdayBadgesAsync(int tournamentId, MatchPhase phase, int matchday, PushNotificationService? push = null)
     {
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == tournamentId)
@@ -134,12 +133,57 @@ public class BadgeService(ProdeaDbContext db, PushNotificationService? pushServi
         await db.SaveChangesAsync();
         await UpdateAccumulativeBadgesAsync(tournamentId);
 
-        if (pushService != null && anyNewBadge)
-            await SendCardNotificationsAsync(tournamentId, phase, matchday, participants);
+        if (push != null && anyNewBadge)
+            await SendCardNotificationsAsync(tournamentId, phase, matchday, participants, push);
     }
+
+    public Task SendCardNotificationsPublicAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
+        => SendCardNotificationsAsync(tournamentId, phase, matchday, participants, push);
 
     public async Task RecalculateAccumulativeBadgesAsync(int tournamentId) =>
         await UpdateAccumulativeBadgesAsync(tournamentId);
+
+    private static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
+    {
+        MatchPhase.Group => $"Fecha {matchday}",
+        MatchPhase.R32 => "Dieciseisavos",
+        MatchPhase.R16 => "Octavos",
+        MatchPhase.QF => "Cuartos",
+        MatchPhase.SF => "Semis",
+        MatchPhase.ThirdPlace => "3er Puesto",
+        MatchPhase.Final => "Final",
+        _ => phase.ToString(),
+    };
+
+    private async Task SendCardNotificationsAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
+    {
+        var jornada = JornadaLabel(phase, matchday);
+        var subscriptions = await db.PushSubscriptions
+            .Where(s => participants.Contains(s.UserId))
+            .ToListAsync();
+
+        var expired = new List<UserPushSubscription>();
+        foreach (var sub in subscriptions)
+        {
+            try
+            {
+                await push.SendToUserAsync(
+                    sub,
+                    $"🃏 Tu card de {jornada} está lista",
+                    "Fijate cómo te fue y compartila con tus amigos.",
+                    $"/torneos/{tournamentId}/perfil/{sub.UserId}"
+                );
+            }
+            catch (ExpiredSubscriptionException) { expired.Add(sub); }
+            catch { /* error de red — no interrumpe el flujo */ }
+        }
+
+        if (expired.Count > 0)
+        {
+            db.PushSubscriptions.RemoveRange(expired);
+            await db.SaveChangesAsync();
+        }
+    }
 
     private async Task UpdateAccumulativeBadgesAsync(int tournamentId)
     {
@@ -180,51 +224,6 @@ public class BadgeService(ProdeaDbContext db, PushNotificationService? pushServi
         }
 
         await db.SaveChangesAsync();
-    }
-
-    private static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
-    {
-        MatchPhase.Group => $"Fecha {matchday}",
-        MatchPhase.R32 => "Dieciseisavos",
-        MatchPhase.R16 => "Octavos",
-        MatchPhase.QF => "Cuartos",
-        MatchPhase.SF => "Semis",
-        MatchPhase.ThirdPlace => "3er Puesto",
-        MatchPhase.Final => "Final",
-        _ => phase.ToString(),
-    };
-
-    public Task SendCardNotificationsPublicAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants)
-        => SendCardNotificationsAsync(tournamentId, phase, matchday, participants);
-
-    private async Task SendCardNotificationsAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants)
-    {
-        var jornada = JornadaLabel(phase, matchday);
-        var subscriptions = await db.PushSubscriptions
-            .Where(s => participants.Contains(s.UserId))
-            .ToListAsync();
-
-        var expired = new List<UserPushSubscription>();
-        foreach (var sub in subscriptions)
-        {
-            try
-            {
-                await pushService!.SendToUserAsync(
-                    sub,
-                    $"🃏 Tu card de {jornada} está lista",
-                    "Fijate cómo te fue y compartila con tus amigos.",
-                    $"/torneos/{tournamentId}/perfil/{sub.UserId}"
-                );
-            }
-            catch (ExpiredSubscriptionException) { expired.Add(sub); }
-            catch { /* error de red — no interrumpe el flujo */ }
-        }
-
-        if (expired.Count > 0)
-        {
-            db.PushSubscriptions.RemoveRange(expired);
-            await db.SaveChangesAsync();
-        }
     }
 
     private async Task UpsertAccumulativeBadge(int tournamentId, int userId, AccumulativeBadgeType type, bool condition)

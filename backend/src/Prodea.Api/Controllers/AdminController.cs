@@ -622,8 +622,8 @@ public class AdminController(
             return BadRequest(new { message = "El torneo no tiene participantes." });
 
         var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
-        var badgeService = new BadgeService(db, pushService);
-        await badgeService.SendCardNotificationsPublicAsync(request.TournamentId, phase, request.Matchday, participants);
+        var badgeService = new BadgeService(db);
+        await badgeService.SendCardNotificationsPublicAsync(request.TournamentId, phase, request.Matchday, participants, pushService);
 
         return Ok(new { message = $"Notificación de card enviada a {participants.Count} participante(s)." });
     }
