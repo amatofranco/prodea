@@ -238,8 +238,7 @@ function UpcomingCard({ match, navigate }) {
 
 function PushBanner() {
   const { supported, permission, subscribed, subscribe, unsubscribe } = usePushNotifications()
-  if (!supported || permission === 'denied') return null
-  if (subscribed) return null
+  if (!supported || permission === 'denied' || permission === 'granted' || subscribed) return null
 
   return (
     <div className="mx-4 mb-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] px-3 py-2.5 flex items-center gap-2">
