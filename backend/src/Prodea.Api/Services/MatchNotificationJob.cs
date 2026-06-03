@@ -22,40 +22,52 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
         var pushService = scope.ServiceProvider.GetRequiredService<PushNotificationService>();
 
+        // Usar hora de Argentina (UTC-3)
         var now = DateTime.UtcNow;
+        var todayUtc = now.Date;
+        var tomorrowUtc = todayUtc.AddDays(1);
 
-        // Recordatorio: partidos que arrancan entre 55 y 65 minutos
-        var upcoming = await db.Matches
-            .Where(m => m.Status == MatchStatus.Scheduled
-                && !m.ReminderSent
-                && m.MatchDate > now.AddMinutes(55)
-                && m.MatchDate <= now.AddMinutes(65))
+        var todayMatches = await db.Matches
+            .Where(m => m.MatchDate >= todayUtc && m.MatchDate < tomorrowUtc)
+            .OrderBy(m => m.MatchDate)
             .ToListAsync();
 
-        foreach (var match in upcoming)
+        if (!todayMatches.Any()) return;
+
+        var changed = false;
+
+        // Notificación de inicio: 20-40 min antes del primer partido del día
+        var firstMatch = todayMatches.First();
+        if (!firstMatch.ReminderSent
+            && firstMatch.Status == MatchStatus.Scheduled
+            && firstMatch.MatchDate > now.AddMinutes(20)
+            && firstMatch.MatchDate <= now.AddMinutes(40))
         {
-            var title = "⚽ ¡Cargá tu predicción!";
-            var body = $"{match.HomeTeam} vs {match.AwayTeam} arranca en ~1 hora";
+            var count = todayMatches.Count;
+            var title = "⚽ ¡Arrancan los partidos!";
+            var body = count == 1
+                ? $"Hoy juega {firstMatch.HomeTeam} vs {firstMatch.AwayTeam}. ¿Tenés tu predicción cargada?"
+                : $"Hoy hay {count} partidos. ¿Tenés tus predicciones cargadas?";
             await SendToAllAsync(db, pushService, title, body, "/predicciones");
-            match.ReminderSent = true;
-            logger.LogInformation("Recordatorio enviado para partido {MatchId}", match.Id);
+            firstMatch.ReminderSent = true;
+            changed = true;
+            logger.LogInformation("Notificación de inicio de jornada enviada");
         }
 
-        // Resultado: partidos que acaban de terminar
-        var finished = await db.Matches
-            .Where(m => m.Status == MatchStatus.Finished && !m.ResultNotificationSent)
-            .ToListAsync();
-
-        foreach (var match in finished)
+        // Notificación de cierre: cuando termina el último partido del día
+        var lastMatch = todayMatches.Last();
+        if (!lastMatch.ResultNotificationSent
+            && todayMatches.All(m => m.Status == MatchStatus.Finished))
         {
-            var title = "🏁 Resultado final";
-            var body = $"{match.HomeTeam} {match.HomeScore} - {match.AwayScore} {match.AwayTeam}";
-            await SendToAllAsync(db, pushService, title, body, "/predicciones");
-            match.ResultNotificationSent = true;
-            logger.LogInformation("Notificación de resultado enviada para partido {MatchId}", match.Id);
+            var title = "🏁 Se terminó la jornada";
+            var body = "Entrá a ver cómo quedó la tabla de posiciones.";
+            await SendToAllAsync(db, pushService, title, body, "/torneos");
+            lastMatch.ResultNotificationSent = true;
+            changed = true;
+            logger.LogInformation("Notificación de cierre de jornada enviada");
         }
 
-        if (upcoming.Any() || finished.Any())
+        if (changed)
             await db.SaveChangesAsync();
     }
 
