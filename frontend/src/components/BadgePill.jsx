@@ -5,11 +5,12 @@ const BADGE_STYLES = {
   Francotirador: { bg: 'badge-franco',  label: 'El Francotirador' },
   Payaso:        { bg: 'badge-payaso',  label: 'El Payaso' },
   Dormido:       { bg: 'badge-dormido', label: 'El Dormido' },
+  Tibio:         { bg: 'badge-tibio',   label: 'El Tibio' },
 }
 
 const EMOJIS = {
   Crack: '🏆', Mufa: '💀', Adivino: '🔮',
-  Francotirador: '🎯', Payaso: '🤡', Dormido: '😴',
+  Francotirador: '🎯', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
   EnCaidaLibre: '📉', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
 }
 

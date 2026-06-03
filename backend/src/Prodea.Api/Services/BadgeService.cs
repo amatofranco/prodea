@@ -14,6 +14,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Dos exactos. Brujo confirmado.", "Doble clarividencia", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
         [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
+        [MatchdayBadgeType.Tibio] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
     };
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
@@ -24,6 +25,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Francotirador] = "🎯",
         [MatchdayBadgeType.Payaso] = "🤡",
         [MatchdayBadgeType.Dormido] = "😴",
+        [MatchdayBadgeType.Tibio] = "🌡️",
     };
 
     private static readonly Dictionary<AccumulativeBadgeType, string> AccumulativeEmojis = new()
@@ -102,7 +104,7 @@ public class BadgeService(ProdeaDbContext db)
                 { ExactCount: >= 2 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 1 }                                                                   => MatchdayBadgeType.Francotirador,
                 { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
-                _                                                                                      => MatchdayBadgeType.Francotirador,
+                _                                                                                      => MatchdayBadgeType.Tibio,
             };
 
             var existing = await db.MatchdayBadges

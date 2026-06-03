@@ -9,6 +9,7 @@ const BADGE_GRADIENTS = {
   Francotirador: ['#22D3EE', '#CFFAFE', '#0284C7', '#0C4A6E'],
   Payaso:        ['#F472B6', '#FCE7F3', '#E11D48', '#4C0519'],
   Dormido:       ['#94A3B8', '#F1F5F9', '#475569', '#0F172A'],
+  Tibio:         ['#38BDF8', '#E0F2FE', '#0284C7', '#0C4A6E'],
 }
 
 const BADGE_ACCENT = {
@@ -18,6 +19,7 @@ const BADGE_ACCENT = {
   Francotirador: '#06B6D4',
   Payaso:        '#EC4899',
   Dormido:       '#64748B',
+  Tibio:         '#38BDF8',
 }
 
 const BADGE_LABELS = {
@@ -27,6 +29,7 @@ const BADGE_LABELS = {
   Francotirador: 'El Francotirador',
   Payaso:        'El Payaso',
   Dormido:       'El Dormido',
+  Tibio:         'El Tibio',
 }
 
 function jornadaLabel(phase, matchday) {
