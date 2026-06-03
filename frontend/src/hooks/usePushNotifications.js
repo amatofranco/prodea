@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api } from '../services/api'
 
+const DISMISSED_KEY = 'push_modal_dismissed_at'
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
@@ -11,6 +14,10 @@ function urlBase64ToUint8Array(base64String) {
 export function usePushNotifications() {
   const [permission, setPermission] = useState(Notification.permission)
   const [subscribed, setSubscribed] = useState(false)
+  const [dismissed, setDismissed] = useState(() => {
+    const ts = localStorage.getItem(DISMISSED_KEY)
+    return ts ? Date.now() - parseInt(ts) < ONE_DAY_MS : false
+  })
 
   useEffect(() => {
     checkSubscription()
@@ -69,7 +76,13 @@ export function usePushNotifications() {
     setSubscribed(false)
   }
 
-  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+  function dismiss() {
+    localStorage.setItem(DISMISSED_KEY, Date.now().toString())
+    setDismissed(true)
+  }
 
-  return { supported, permission, subscribed, subscribe, unsubscribe }
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+  const showModal = supported && !subscribed && !dismissed && permission !== 'denied' && permission !== 'granted'
+
+  return { supported, permission, subscribed, subscribe, unsubscribe, dismiss, showModal }
 }
