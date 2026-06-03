@@ -561,6 +561,48 @@ public class AdminController(
         return Ok(new { message = $"Simulación reseteada: fixture re-importado desde {source} ({matchCount} partidos), predicciones a 0 pts, badges eliminados." });
     }
 
+    [HttpPost("push/test")]
+    public async Task<IActionResult> TestPush(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromBody] TestPushRequest? request = null)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
+        var subscriptions = await db.PushSubscriptions.ToListAsync();
+
+        if (!subscriptions.Any())
+            return Ok(new { message = "No hay suscriptores registrados." });
+
+        var title = request?.Title ?? "🔔 Notificación de prueba";
+        var body = request?.Body ?? "El sistema de push notifications está funcionando.";
+        var url = request?.Url ?? "/";
+
+        var sent = 0;
+        var expired = new List<UserPushSubscription>();
+
+        foreach (var sub in subscriptions)
+        {
+            try
+            {
+                await pushService.SendToUserAsync(sub, title, body, url);
+                sent++;
+            }
+            catch (ExpiredSubscriptionException) { expired.Add(sub); }
+            catch { }
+        }
+
+        if (expired.Any())
+        {
+            db.PushSubscriptions.RemoveRange(expired);
+            await db.SaveChangesAsync();
+        }
+
+        return Ok(new { message = $"Enviado a {sent} suscriptor(es). {expired.Count} expirados eliminados." });
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -569,6 +611,7 @@ public class AdminController(
     public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore, int? Minute = null, DateTime? MatchDate = null, string? HomeTeam = null, string? AwayTeam = null);
     public record FinalizeMatchRequest(int HomeScore, int AwayScore, string? Winner = null); // Winner: "home" | "away" para penales
     public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null, bool Force = false);
+    public record TestPushRequest(string? Title, string? Body, string? Url);
 
     private record BackupPrediction(
         int UserId, int MatchId,
