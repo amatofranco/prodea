@@ -603,6 +603,31 @@ public class AdminController(
         return Ok(new { message = $"Enviado a {sent} suscriptor(es). {expired.Count} expirados eliminados." });
     }
 
+    [HttpPost("push/test-card")]
+    public async Task<IActionResult> TestCardPush(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromBody] TestCardPushRequest request)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var phase = Enum.Parse<MatchPhase>(request.Phase);
+        var participants = await db.TournamentParticipants
+            .Where(tp => tp.TournamentId == request.TournamentId)
+            .Select(tp => tp.UserId)
+            .ToListAsync();
+
+        if (participants.Count == 0)
+            return BadRequest(new { message = "El torneo no tiene participantes." });
+
+        var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
+        var badgeService = new BadgeService(db, pushService);
+        await badgeService.SendCardNotificationsPublicAsync(request.TournamentId, phase, request.Matchday, participants);
+
+        return Ok(new { message = $"Notificación de card enviada a {participants.Count} participante(s)." });
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -612,6 +637,7 @@ public class AdminController(
     public record FinalizeMatchRequest(int HomeScore, int AwayScore, string? Winner = null); // Winner: "home" | "away" para penales
     public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null, bool Force = false);
     public record TestPushRequest(string? Title, string? Body, string? Url);
+    public record TestCardPushRequest(int TournamentId, string Phase, int Matchday);
 
     private record BackupPrediction(
         int UserId, int MatchId,

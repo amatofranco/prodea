@@ -194,6 +194,9 @@ public class BadgeService(ProdeaDbContext db, PushNotificationService? pushServi
         _ => phase.ToString(),
     };
 
+    public Task SendCardNotificationsPublicAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants)
+        => SendCardNotificationsAsync(tournamentId, phase, matchday, participants);
+
     private async Task SendCardNotificationsAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants)
     {
         var jornada = JornadaLabel(phase, matchday);
