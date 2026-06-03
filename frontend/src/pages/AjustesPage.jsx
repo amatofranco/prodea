@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, BellOff, LogOut } from 'lucide-react'
+import { Bell, BellOff, LogOut, MessageSquare, Send } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import { api } from '../services/api'
+
+const MAX_MSG = 500
 
 export default function AjustesPage() {
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
   const { supported, isStandalone, subscribed, subscribe, unsubscribe } = usePushNotifications()
   const [optimistic, setOptimistic] = useState(subscribed)
+  const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
 
   useEffect(() => { setOptimistic(subscribed) }, [subscribed])
 
@@ -24,6 +30,20 @@ export default function AjustesPage() {
       await subscribe()
     } else {
       await unsubscribe()
+    }
+  }
+
+  async function handleSendContact() {
+    if (!message.trim()) return
+    setSending(true)
+    try {
+      await api.sendContact(message.trim())
+      setSent(true)
+      setMessage('')
+      setTimeout(() => setSent(false), 4000)
+    } catch {
+    } finally {
+      setSending(false)
     }
   }
 
@@ -54,6 +74,36 @@ export default function AjustesPage() {
             </button>
           </div>
         )}
+
+        {/* Contacto */}
+        <div className="bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E] flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <MessageSquare size={20} className="text-[#00FF87]" />
+            <p className="text-white text-sm font-semibold">Contacto</p>
+          </div>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value.slice(0, MAX_MSG))}
+            placeholder="Sugerencias, bugs, consultas..."
+            rows={3}
+            className="w-full px-3 py-2.5 rounded-xl bg-[#0D0D0D] border border-[#2A2A3E] text-white text-sm placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87]/40 resize-none"
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-[#8A8A9A] text-xs">{message.length}/{MAX_MSG}</span>
+            <button
+              onClick={handleSendContact}
+              disabled={!message.trim() || sending}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+                sent
+                  ? 'bg-[#00FF87]/20 text-[#00FF87]'
+                  : 'bg-[#00FF87] text-black disabled:opacity-40'
+              }`}
+            >
+              <Send size={14} />
+              {sent ? '¡Enviado!' : sending ? 'Enviando...' : 'Enviar'}
+            </button>
+          </div>
+        </div>
 
         <button
           onClick={handleLogout}

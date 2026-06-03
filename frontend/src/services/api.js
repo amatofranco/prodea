@@ -68,4 +68,6 @@ export const api = {
     request(`/tournaments/${tournamentId}/matches/${matchId}/predictions`),
 
   getPollingStatus: () => request('/admin/polling-status'),
+
+  sendContact: (message) => request('/contact', { method: 'POST', body: JSON.stringify({ message }) }),
 }
