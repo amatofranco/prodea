@@ -444,11 +444,8 @@ export default function TournamentPage() {
                     onClick={shareImage}
                     className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
-                    <ImageDown size={16} className="text-[#00FF87] shrink-0" />
-                    <span className="flex flex-col leading-tight">
-                      <span>Compartir</span>
-                      <span>QR</span>
-                    </span>
+                    <ImageDown size={16} className="text-[#00FF87]" />
+                    <span className="leading-tight">Compartir<br />QR</span>
                   </button>
                 </div>
               </>
