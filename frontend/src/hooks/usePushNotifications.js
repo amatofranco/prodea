@@ -82,7 +82,7 @@ export function usePushNotifications() {
   }
 
   const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
-  const showModal = supported && !subscribed && !dismissed && permission !== 'denied' && permission !== 'granted'
+  const showModal = supported && !subscribed && !dismissed && permission !== 'denied'
 
   return { supported, permission, subscribed, subscribe, unsubscribe, dismiss, showModal }
 }
