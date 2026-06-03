@@ -2,9 +2,9 @@ import { Bell, X } from 'lucide-react'
 
 export default function PushPermissionModal({ onActivate, onDismiss }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onDismiss} />
-      <div className="relative w-full sm:max-w-sm mx-4 mb-6 sm:mb-0 bg-[#1A1A2E] rounded-2xl border border-[#2A2A3E] p-6 shadow-xl">
+      <div className="relative w-full max-w-sm bg-[#1A1A2E] rounded-2xl border border-[#2A2A3E] p-6 shadow-xl">
         <button
           onClick={onDismiss}
           className="absolute top-4 right-4 text-[#8A8A9A] hover:text-white transition-colors"
