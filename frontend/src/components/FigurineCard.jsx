@@ -135,11 +135,9 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
 
   // Header: wordmark + jornada
   if (wordmarkImg) {
-    const logoH = 13
+    const logoH = 16
     const logoW = logoH * (wordmarkImg.width / wordmarkImg.height)
-    ctx.globalAlpha = 0.45
     ctx.drawImage(wordmarkImg, 20, y, logoW, logoH)
-    ctx.globalAlpha = 1
   } else {
     ctx.font = '700 10px "DM Sans", system-ui, sans-serif'
     ctx.fillStyle = 'rgba(255,255,255,0.4)'
@@ -291,7 +289,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
 
             {/* Header */}
             <div className="w-full flex justify-between items-center">
-              <img src="/logo-wordmark.png" alt="Prodea" style={{ height: '11px', opacity: 0.45, objectFit: 'contain' }} />
+              <img src="/logo-wordmark.png" alt="Prodea" style={{ height: '15px', objectFit: 'contain' }} />
               <span className="text-[9px] text-white/40 uppercase tracking-wider">{jornada}</span>
             </div>
 
