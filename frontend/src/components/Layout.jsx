@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Trophy, Target } from 'lucide-react'
+import { Home, Trophy, Target, Settings } from 'lucide-react'
 
 export default function Layout() {
   return (
@@ -23,6 +23,11 @@ export default function Layout() {
           <NavLink to="/torneos" className={({ isActive }) => `flex flex-col items-center gap-0.5 px-5 py-1 text-xs transition-colors ${isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
             <Trophy size={20} />
             <span>Torneos</span>
+          </NavLink>
+
+          <NavLink to="/ajustes" className={({ isActive }) => `flex flex-col items-center gap-0.5 px-5 py-1 text-xs transition-colors ${isActive ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+            <Settings size={20} />
+            <span>Ajustes</span>
           </NavLink>
 
         </div>

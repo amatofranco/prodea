@@ -13,6 +13,7 @@ import PredictionsPage from './pages/PredictionsPage'
 import PredictionPage from './pages/PredictionPage'
 import ProfilePage from './pages/ProfilePage'
 import ChampionPickPage from './pages/ChampionPickPage'
+import AjustesPage from './pages/AjustesPage'
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/predicciones/campeon" element={<ChampionPickPage />} />
             <Route path="/torneos/:id" element={<TournamentPage />} />
             <Route path="/torneos/:tournamentId/perfil/:userId" element={<ProfilePage />} />
+            <Route path="/ajustes" element={<AjustesPage />} />
           </Route>
         </Route>
 
