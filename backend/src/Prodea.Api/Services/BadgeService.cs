@@ -160,10 +160,17 @@ public class BadgeService(ProdeaDbContext db)
     private async Task SendCardNotificationsAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
     {
         var jornada = JornadaLabel(phase, matchday);
-        var jornadaPrep = phase == MatchPhase.Group ? $"la Fecha {matchday}"
-            : phase == MatchPhase.Final ? "la Final"
-            : phase == MatchPhase.ThirdPlace ? "el 3er Puesto"
-            : jornada;
+        var termino = phase switch
+        {
+            MatchPhase.Group      => $"Terminó la Fecha {matchday}.",
+            MatchPhase.R32        => "Terminaron los Dieciseisavos.",
+            MatchPhase.R16        => "Terminaron los Octavos.",
+            MatchPhase.QF         => "Terminaron los Cuartos.",
+            MatchPhase.SF         => "Terminaron las Semis.",
+            MatchPhase.ThirdPlace => "Terminó el 3er Puesto.",
+            MatchPhase.Final      => "Terminó la Final.",
+            _                     => $"Terminó {jornada}.",
+        };
         var subscriptions = await db.PushSubscriptions
             .Where(s => participants.Contains(s.UserId))
             .ToListAsync();
@@ -176,7 +183,7 @@ public class BadgeService(ProdeaDbContext db)
                 await push.SendToUserAsync(
                     sub,
                     "🃏 ¡Llegó tu Carta!",
-                    $"Terminó {jornada}. Fijate cómo te fue y compartila.",
+                    $"{termino} Fijate cómo te fue y compartila.",
                     $"/torneos/{tournamentId}/perfil/{sub.UserId}"
                 );
             }
