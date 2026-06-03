@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, Award, X } from 'lucide-react'
+import { ChevronLeft, Award, X, Share2 } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
@@ -145,8 +145,9 @@ export default function ProfilePage() {
               </div>
               <button
                 onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
-                className="shrink-0 px-2 py-1 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
+                className="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
               >
+                <Share2 size={11} />
                 Card
               </button>
             </div>
