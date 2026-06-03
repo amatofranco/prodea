@@ -314,11 +314,29 @@ export default function TournamentPage() {
   async function shareImage() {
     setShowShareMenu(false)
     const link = getInviteLink()
-    const W = 800, H = 800
+    const W = 800, H = 900
     const canvas = document.createElement('canvas')
     canvas.width = W
     canvas.height = H
     const ctx = canvas.getContext('2d')
+
+    function wrapText(text, maxWidth, font) {
+      ctx.font = font
+      const words = text.split(' ')
+      const lines = []
+      let line = ''
+      for (const word of words) {
+        const test = line ? `${line} ${word}` : word
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line)
+          line = word
+        } else {
+          line = test
+        }
+      }
+      if (line) lines.push(line)
+      return lines
+    }
 
     // Fondo
     ctx.fillStyle = '#0D0D0D'
@@ -332,48 +350,74 @@ export default function TournamentPage() {
 
     // "Unite al torneo"
     ctx.fillStyle = '#8A8A9A'
-    ctx.font = '500 28px Arial'
+    ctx.font = '28px Arial'
     ctx.textAlign = 'center'
-    ctx.fillText('¡Unite al torneo!', W / 2, 100)
+    ctx.fillText('¡Unite al torneo!', W / 2, 90)
 
     // Nombre del torneo
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = 'bold 60px Arial Black, Arial'
-    ctx.textAlign = 'center'
+    const nameFont = 'bold 58px Arial Black, Arial'
     const name = tournament?.name ?? ''
-    ctx.fillText(name.length > 20 ? name.slice(0, 20) + '…' : name, W / 2, 175)
+    const nameLines = wrapText(name, W - 100, nameFont)
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = nameFont
+    nameLines.slice(0, 2).forEach((line, i) => ctx.fillText(line, W / 2, 150 + i * 68))
+
+    let y = 150 + Math.min(nameLines.length, 2) * 68
+
+    // Descripción
+    const desc = tournament?.description?.trim()
+    if (desc) {
+      const descFont = '26px Arial'
+      const descLines = wrapText(desc, W - 120, descFont)
+      ctx.fillStyle = '#8A8A9A'
+      ctx.font = descFont
+      descLines.slice(0, 2).forEach((line, i) => {
+        ctx.fillText(line, W / 2, y + 10 + i * 36)
+      })
+      y += 10 + Math.min(descLines.length, 2) * 36 + 10
+    }
 
     // QR
     const qrDataUrl = await QRCode.toDataURL(link, {
-      width: 320, margin: 2,
+      width: 300, margin: 2,
       color: { dark: '#FFFFFF', light: '#111111' },
     })
     const qrImg = new Image()
     qrImg.src = qrDataUrl
     await new Promise((r) => { qrImg.onload = r })
-    const qrSize = 320
-    ctx.drawImage(qrImg, (W - qrSize) / 2, 230, qrSize, qrSize)
+    const qrSize = 300
+    const qrY = y + 20
+    ctx.drawImage(qrImg, (W - qrSize) / 2, qrY, qrSize, qrSize)
 
     // Instrucción
     ctx.fillStyle = '#8A8A9A'
     ctx.font = '24px Arial'
-    ctx.fillText('Escaneá para unirte', W / 2, 590)
+    ctx.fillText('Escaneá para unirte', W / 2, qrY + qrSize + 36)
 
     // Divider
+    const divY = qrY + qrSize + 64
     ctx.strokeStyle = '#2A2A3E'
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(60, 620)
-    ctx.lineTo(W - 60, 620)
+    ctx.moveTo(60, divY)
+    ctx.lineTo(W - 60, divY)
     ctx.stroke()
+
+    // Logo icon
+    const icon = new Image()
+    icon.src = '/logo-icon.png'
+    await new Promise((r) => { icon.onload = r; icon.onerror = r })
+    const iconH = 52
+    const iconW = icon.naturalWidth * (iconH / icon.naturalHeight)
+    ctx.drawImage(icon, (W - iconW) / 2, divY + 18, iconW, iconH)
 
     // Wordmark
     const wordmark = new Image()
     wordmark.src = '/logo-wordmark.png'
     await new Promise((r) => { wordmark.onload = r; wordmark.onerror = r })
-    const wmH = 80
+    const wmH = 52
     const wmW = wordmark.naturalWidth * (wmH / wordmark.naturalHeight)
-    ctx.drawImage(wordmark, (W - wmW) / 2, 650, wmW, wmH)
+    ctx.drawImage(wordmark, (W - wmW) / 2, divY + 18 + iconH + 8, wmW, wmH)
 
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'torneo-prodea.png', { type: 'image/png' })
