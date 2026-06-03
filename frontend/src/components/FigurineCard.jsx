@@ -354,7 +354,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
           ? <span className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
           : <Share2 size={16} />
         }
-        {sharing ? 'Generando...' : 'Compartir card'}
+        {sharing ? 'Generando...' : 'Compartir carta'}
       </button>
 
       {error && <p className="text-red-400 text-xs text-center px-4">{error}</p>}

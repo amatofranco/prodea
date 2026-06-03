@@ -148,7 +148,7 @@ export default function ProfilePage() {
                 className="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
               >
                 <Share2 size={11} />
-                Card
+                Carta
               </button>
             </div>
           ))
