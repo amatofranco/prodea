@@ -367,13 +367,13 @@ export default function TournamentPage() {
     ctx.lineTo(W - 60, 620)
     ctx.stroke()
 
-    // Branding
-    ctx.fillStyle = '#00FF87'
-    ctx.font = 'bold 52px Arial Black, Arial'
-    ctx.fillText('PRODEA', W / 2, 700)
-    ctx.fillStyle = '#8A8A9A'
-    ctx.font = '24px Arial'
-    ctx.fillText('prodea.app', W / 2, 740)
+    // Wordmark
+    const wordmark = new Image()
+    wordmark.src = '/logo-wordmark.png'
+    await new Promise((r) => { wordmark.onload = r; wordmark.onerror = r })
+    const wmH = 80
+    const wmW = wordmark.naturalWidth * (wmH / wordmark.naturalHeight)
+    ctx.drawImage(wordmark, (W - wmW) / 2, 650, wmW, wmH)
 
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'torneo-prodea.png', { type: 'image/png' })
