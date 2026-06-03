@@ -22,7 +22,7 @@ export default function PushPermissionModal({ onActivate, onDismiss }) {
               Activá las notificaciones
             </h2>
             <p className="text-[#8A8A9A] text-sm leading-relaxed">
-              Te avisamos cuando arrancan los partidos del día y cuando termina la jornada. Dos notificaciones por día, nada más.
+              Te avisamos al inicio y al final de cada jornada para que no te pierdas nada.
             </p>
           </div>
 
