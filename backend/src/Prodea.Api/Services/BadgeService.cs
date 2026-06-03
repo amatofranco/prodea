@@ -175,8 +175,8 @@ public class BadgeService(ProdeaDbContext db)
             {
                 await push.SendToUserAsync(
                     sub,
-                    $"🃏 Llegó tu Carta de {jornadaPrep}!",
-                    "Fijate cómo te fue y compartila con tus amigos.",
+                    "🃏 ¡Llegó tu Carta!",
+                    $"{jornada} · Fijate cómo te fue y compartila.",
                     $"/torneos/{tournamentId}/perfil/{sub.UserId}"
                 );
             }
