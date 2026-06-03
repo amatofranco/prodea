@@ -283,9 +283,9 @@ export default function HomePage() {
 
   const avatar = user?.username?.[0]?.toUpperCase() || '?'
 
-  async function handlePushActivate() {
-    await subscribe()
+  function handlePushActivate() {
     dismiss()
+    subscribe()
   }
 
   return (
