@@ -14,7 +14,7 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/tournaments/{tournamentId}/matches")]
 [Authorize]
-public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hub) : ControllerBase
+public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hub, PushNotificationService pushService) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -123,7 +123,7 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         await db.SaveChangesAsync();
 
-        var badgeService = new BadgeService(db);
+        var badgeService = new BadgeService(db, pushService);
         var allTournamentIds = await db.TournamentParticipants
             .Select(tp => tp.TournamentId)
             .Distinct()
