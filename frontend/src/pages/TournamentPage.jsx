@@ -444,7 +444,7 @@ export default function TournamentPage() {
                     onClick={shareImage}
                     className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
-                    <ImageDown size={16} className="text-[#00FF87]" /> Compartir imagen
+                    <ImageDown size={16} className="text-[#00FF87]" /> Compartir QR
                   </button>
                 </div>
               </>
