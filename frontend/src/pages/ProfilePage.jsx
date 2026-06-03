@@ -12,7 +12,7 @@ function jornadaLabel(phase, matchday) {
 }
 
 const ACCUMULATIVE_LABELS = {
-  EnCaidaLibre: 'En caída libre',
+  PecheadaTotal: 'Pecheada Total',
   RachaInfernal: 'Racha infernal',
   ElMuro: 'El Muro',
   ElFantasma: 'El Fantasma',
@@ -20,7 +20,7 @@ const ACCUMULATIVE_LABELS = {
 }
 
 const ACCUMULATIVE_DESCRIPTIONS = {
-  EnCaidaLibre: '3 jornadas consecutivas bajando puntos',
+  PecheadaTotal: '3 fechas consecutivas bajando puntos',
   RachaInfernal: '3 jornadas consecutivas siendo El Crack',
   ElMuro: 'Nunca fue último en toda la competencia',
   ElFantasma: 'Olvidó cargar predicciones más de 3 veces',

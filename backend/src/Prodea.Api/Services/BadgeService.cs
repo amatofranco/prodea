@@ -30,7 +30,7 @@ public class BadgeService(ProdeaDbContext db)
 
     private static readonly Dictionary<AccumulativeBadgeType, string> AccumulativeEmojis = new()
     {
-        [AccumulativeBadgeType.EnCaidaLibre] = "📉",
+        [AccumulativeBadgeType.PecheadaTotal] = "🥶",
         [AccumulativeBadgeType.RachaInfernal] = "🔥",
         [AccumulativeBadgeType.ElMuro] = "🧱",
         [AccumulativeBadgeType.ElFantasma] = "👻",
@@ -229,7 +229,7 @@ public class BadgeService(ProdeaDbContext db)
             bool enCaidaLibre = userBadges.Count >= 3 &&
                 userBadges[^3].PointsInMatchday > userBadges[^2].PointsInMatchday &&
                 userBadges[^2].PointsInMatchday > userBadges[^1].PointsInMatchday;
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.EnCaidaLibre, enCaidaLibre);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.PecheadaTotal, enCaidaLibre);
 
             bool tripleMufa = userBadges.Count >= 3 &&
                 userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Mufa);
