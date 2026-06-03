@@ -10,8 +10,6 @@ import { BadgePill } from '../components/BadgePill'
 import ApiStatusBanner from '../components/ApiStatusBanner'
 import ChampionPickBanner from '../components/ChampionPickBanner'
 import { getTeam, getFlagUrl } from '../data/teamsData'
-import AdInterstitial from '../components/AdInterstitial'
-import { useAdInterstitial } from '../hooks/useAdInterstitial'
 import InstallBanner from '../components/InstallBanner'
 
 const MAX_DESC = 150
@@ -234,11 +232,9 @@ export default function TournamentPage() {
   const [activeTab, setActiveTab] = useState('tabla')
   const [phaseTab, setPhaseTab] = useState(null)
   const [predSheet, setPredSheet] = useState(null) // { match, predictions, loading }
-  const [showAd, setShowAd] = useState(false)
   const [editingDesc, setEditingDesc] = useState(false)
   const [descDraft, setDescDraft] = useState('')
   const phaseBarRef = useRef(null)
-  const { canShow, markShown, checkFixtureTab, checkTablaTab } = useAdInterstitial(liveCount > 0)
 
   async function saveDescription() {
     const updated = await api.updateTournament(id, { description: descDraft.trim() || null })
@@ -401,14 +397,7 @@ export default function TournamentPage() {
           {['tabla', 'fixture'].map((tab) => (
             <button
               key={tab}
-              onClick={() => {
-                setActiveTab(tab)
-                if (tab === 'tabla' && checkTablaTab()) {
-                  markShown(); setShowAd(true)
-                } else if (tab === 'fixture' && checkFixtureTab()) {
-                  markShown(); setShowAd(true)
-                }
-              }}
+              onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-colors ${
                 activeTab === tab
                   ? 'bg-[#00FF87] text-black'
@@ -505,7 +494,6 @@ export default function TournamentPage() {
         )}
       </AnimatePresence>
 
-      {showAd && <AdInterstitial onClose={() => setShowAd(false)} />}
     </div>
   )
 }

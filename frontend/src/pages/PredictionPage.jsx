@@ -5,8 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { api } from '../services/api'
 import GoalPicker from '../components/GoalPicker'
 import { getTeam, getFlagUrl } from '../data/teamsData'
-import AdInterstitial from '../components/AdInterstitial'
-import { useAdInterstitial } from '../hooks/useAdInterstitial'
 
 const PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
 const TURBO_COUNTDOWN_SECS = 5
@@ -179,8 +177,6 @@ export default function PredictionPage() {
   const [justSaved, setJustSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [showAd, setShowAd] = useState(false)
-  const { canShow, markShown } = useAdInterstitial()
   const [error, setError] = useState('')
   const [triedSubmit, setTriedSubmit] = useState(false)
   const [turboMode, setTurboMode] = useState(false)
@@ -316,7 +312,6 @@ export default function PredictionPage() {
         (m) => m.phase === match.phase && (m.matchday ?? 0) === (match.matchday ?? 0) && m.status === 'Scheduled'
       )
       const allPredicted = sameJornada.length > 0 && sameJornada.every((m) => m.userPrediction)
-      if (allPredicted && canShow()) { markShown(); setShowAd(true) }
 
       if (turboModeRef.current) {
         // Usa refs: siempre tienen los valores actuales, sin closures stale
@@ -605,7 +600,6 @@ export default function PredictionPage() {
         )}
       </AnimatePresence>
 
-      {showAd && <AdInterstitial onClose={() => setShowAd(false)} />}
     </div>
   )
 }
