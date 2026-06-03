@@ -82,7 +82,8 @@ export function usePushNotifications() {
   }
 
   const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
-  const showModal = supported && !subscribed && !dismissed && permission !== 'denied'
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  const showModal = supported && isStandalone && !subscribed && !dismissed && permission !== 'denied'
 
-  return { supported, permission, subscribed, subscribe, unsubscribe, dismiss, showModal }
+  return { supported, isStandalone, permission, subscribed, subscribe, unsubscribe, dismiss, showModal }
 }

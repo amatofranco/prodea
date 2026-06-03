@@ -7,7 +7,7 @@ import { usePushNotifications } from '../hooks/usePushNotifications'
 export default function AjustesPage() {
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
-  const { supported, subscribed, subscribe, unsubscribe } = usePushNotifications()
+  const { supported, isStandalone, subscribed, subscribe, unsubscribe } = usePushNotifications()
   const [optimistic, setOptimistic] = useState(subscribed)
 
   useEffect(() => { setOptimistic(subscribed) }, [subscribed])
@@ -32,7 +32,7 @@ export default function AjustesPage() {
       <h1 className="text-white text-2xl font-bold mb-8">Ajustes</h1>
 
       <div className="flex flex-col gap-3">
-        {supported && (
+        {supported && isStandalone && (
           <div className="flex items-center justify-between bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E]">
             <div className="flex items-center gap-3">
               {optimistic
