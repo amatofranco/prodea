@@ -44,8 +44,8 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
             && firstMatch.MatchDate <= now.AddMinutes(40))
         {
             var minutesUntil = (int)(firstMatch.MatchDate - now).TotalMinutes;
-            var title = $"⚽ {firstMatch.HomeTeam} vs {firstMatch.AwayTeam} en {minutesUntil} min";
-            var body = "¿Tenés tu predicción cargada?";
+            var title = $"⚽ {firstMatch.HomeTeam} vs {firstMatch.AwayTeam}";
+            var body = $"Arranca en {minutesUntil} min. ¿Tenés tu predicción cargada?";
             await SendToAllAsync(db, pushService, title, body, "/predicciones");
             firstMatch.ReminderSent = true;
             changed = true;
@@ -58,7 +58,7 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
             && todayMatches.All(m => m.Status == MatchStatus.Finished))
         {
             var title = "🏁 Se terminó la jornada";
-            var body = $"{lastMatch.HomeTeam} {lastMatch.HomeScore} - {lastMatch.AwayScore} {lastMatch.AwayTeam}";
+            var body = $"Último resultado: {lastMatch.HomeTeam} {lastMatch.HomeScore}-{lastMatch.AwayScore} {lastMatch.AwayTeam}. Mirá cómo quedó la tabla.";
             await SendToAllAsync(db, pushService, title, body, "/torneos");
             lastMatch.ResultNotificationSent = true;
             changed = true;
