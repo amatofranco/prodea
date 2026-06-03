@@ -42,9 +42,9 @@ export default function AjustesPage() {
             </div>
             <button
               onClick={handleTogglePush}
-              className={`relative w-12 h-6 rounded-full transition-colors ${subscribed ? 'bg-[#00FF87]' : 'bg-[#2A2A3E]'}`}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${subscribed ? 'bg-[#00FF87]' : 'bg-[#2A2A3E]'}`}
             >
-              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${subscribed ? 'translate-x-7' : 'translate-x-1'}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${subscribed ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
           </div>
         )}
