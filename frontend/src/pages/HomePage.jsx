@@ -295,7 +295,7 @@ export default function HomePage() {
       )}
 
       {/* Header — full width con degradé */}
-      <div className="w-full bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D] px-5 md:px-12 pt-12 md:pt-8 pb-6">
+      <div className="w-full bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D] px-5 md:px-16 pt-12 md:pt-8 pb-6">
         {/* Mobile: logo + avatar */}
         <div className="flex items-center justify-between mb-3 md:hidden">
           <div className="flex flex-col gap-1">
@@ -314,7 +314,7 @@ export default function HomePage() {
         <div className="md:flex md:items-end md:justify-between">
           <div>
             <p className="text-[#8A8A9A] text-sm md:text-base md:tracking-widest md:uppercase md:mb-1">Hola,</p>
-            <h2 className="text-2xl md:text-6xl font-black text-white tracking-tight md:leading-none" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif', letterSpacing: '0.04em' }}>
+            <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight md:leading-none" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif', letterSpacing: '0.06em' }}>
               {user?.firstName ?? user?.username}
             </h2>
           </div>
@@ -327,7 +327,7 @@ export default function HomePage() {
       </div>
 
       {/* Contenido */}
-      <div className="md:px-12 w-full">
+      <div className="md:px-16 md:max-w-5xl w-full">
         <InstallBanner />
 
         {/* Banner fin del mundial */}
