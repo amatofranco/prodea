@@ -14,6 +14,7 @@ import PredictionPage from './pages/PredictionPage'
 import ProfilePage from './pages/ProfilePage'
 import ChampionPickPage from './pages/ChampionPickPage'
 import AjustesPage from './pages/AjustesPage'
+import PrivacyPage from './pages/PrivacyPage'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/join/:code" element={<JoinPage />} />
+        <Route path="/privacidad" element={<PrivacyPage />} />
 
         {/* Protected */}
         <Route element={<PrivateRoute />}>

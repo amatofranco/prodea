@@ -106,6 +106,12 @@ export default function LoginPage() {
             Registrate
           </Link>
         </p>
+
+        <p className="text-center text-[#8A8A9A] text-xs mt-2">
+          <Link to="/privacidad" className="hover:text-white transition-colors">
+            Política de Privacidad
+          </Link>
+        </p>
       </div>
     </div>
   )
