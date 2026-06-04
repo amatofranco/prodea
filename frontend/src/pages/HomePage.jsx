@@ -327,7 +327,7 @@ export default function HomePage() {
       </div>
 
       {/* Contenido */}
-      <div className="md:px-16 md:max-w-5xl w-full">
+      <div className="md:px-16 w-full">
         <InstallBanner />
 
         {/* Banner fin del mundial */}
