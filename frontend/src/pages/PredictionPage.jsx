@@ -358,7 +358,7 @@ export default function PredictionPage() {
       {/* Barra de navegación — botones sobre la línea divisoria */}
       {allMatches.length > 0 && (
         <div className="flex items-center justify-center px-4 md:px-16 py-2 bg-[#0D0D0D] border-b border-[#1A1A2E]">
-          <div className="w-full md:max-w-2xl flex items-center justify-center gap-3">
+          <div className="w-full md:max-w-2xl flex items-center justify-center gap-3 md:justify-between">
           <button
             onClick={() => prevMatch && navTo(prevMatch.id, -1)}
             disabled={!prevMatch}
