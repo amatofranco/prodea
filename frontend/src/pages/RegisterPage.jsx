@@ -58,8 +58,8 @@ export default function RegisterPage() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-6 py-6 bg-[#0D0D0D]">
       <div className="mb-5 flex flex-col items-center gap-0">
-        <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] object-contain" />
-        <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] object-contain -mt-3" />
+        <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] md:w-[200px] md:h-[200px] object-contain" />
+        <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] md:h-[62px] object-contain -mt-3" />
         <p className="text-[#8A8A9A] text-sm font-semibold tracking-widest uppercase -mt-1.5" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
       </div>
 
