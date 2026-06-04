@@ -52,9 +52,7 @@ export default function Layout() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
-        <div className="w-full md:max-w-4xl md:mx-auto md:px-8">
-          <Outlet />
-        </div>
+        <Outlet />
       </main>
 
       {/* Bottom nav — mobile only */}
