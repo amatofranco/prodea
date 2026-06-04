@@ -313,8 +313,8 @@ export default function HomePage() {
         {/* Desktop: saludo más grande */}
         <div className="md:flex md:items-end md:justify-between">
           <div>
-            <p className="text-[#8A8A9A] text-sm md:text-base">Hola,</p>
-            <h2 className="text-2xl md:text-4xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+            <p className="text-[#8A8A9A] text-sm md:text-base md:tracking-widest md:uppercase md:mb-1">Hola,</p>
+            <h2 className="text-2xl md:text-6xl font-black text-white tracking-tight md:leading-none" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif', letterSpacing: '0.04em' }}>
               {user?.firstName ?? user?.username}
             </h2>
           </div>
@@ -326,8 +326,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Contenido centrado */}
-      <div className="md:max-w-5xl md:mx-auto md:px-12 w-full">
+      {/* Contenido */}
+      <div className="md:px-12 w-full">
         <InstallBanner />
 
         {/* Banner fin del mundial */}
