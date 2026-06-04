@@ -56,7 +56,7 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
-      <div className="px-4 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
+      <div className="px-4 pt-12 md:pt-6 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <div className="flex items-center gap-3 mb-5">
           <button onClick={() => navigate(-1)} className="text-[#8A8A9A]">
             <ChevronLeft size={24} />

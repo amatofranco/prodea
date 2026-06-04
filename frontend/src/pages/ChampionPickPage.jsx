@@ -85,7 +85,7 @@ export default function ChampionPickPage() {
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 bg-[#1A1A2E]">
+      <div className="px-4 pt-12 md:pt-6 pb-4 bg-[#1A1A2E]">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-[#8A8A9A] active:text-white">
             <ChevronLeft size={24} />

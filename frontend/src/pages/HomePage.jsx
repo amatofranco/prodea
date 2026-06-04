@@ -293,8 +293,8 @@ export default function HomePage() {
       {showModal && (
         <PushPermissionModal onActivate={handlePushActivate} onDismiss={dismiss} />
       )}
-      <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-5 pt-12 md:pt-6 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
+        <div className="flex items-center justify-between mb-3 md:hidden">
           <div className="flex flex-col gap-1">
             <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain object-left -ml-[23px]" />
             {IS_TESTING && (
