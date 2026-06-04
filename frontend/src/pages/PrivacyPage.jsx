@@ -94,10 +94,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-white font-bold text-base mb-2">7. Contacto</h2>
           <p>
-            Para solicitar la eliminación de tu cuenta o cualquier consulta sobre privacidad, escribinos a{' '}
-            <a href="mailto:francoamato92@gmail.com" className="text-[#00FF87] underline">
-              francoamato92@gmail.com
-            </a>.
+            Para solicitar la eliminación de tu cuenta o cualquier consulta sobre privacidad, escribinos a través del formulario de contacto disponible en la sección <strong className="text-white">Ajustes</strong> de la app.
           </p>
         </section>
 
