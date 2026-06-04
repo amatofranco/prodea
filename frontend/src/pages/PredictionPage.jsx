@@ -332,14 +332,14 @@ export default function PredictionPage() {
     away > home ? `Gana ${match.awayTeam}` : 'Empate'
 
   return (
-    <div className="flex flex-col min-h-full bg-[#0D0D0D] md:max-w-lg md:mx-auto">
+    <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
-      <div className="px-4 pt-8 pb-2 bg-[#1A1A2E]">
+      <div className="px-4 md:px-16 pt-8 pb-2 bg-[#1A1A2E]">
         <div className="relative flex items-center justify-center">
           <button onClick={() => navigate(-1)} className="absolute left-0 text-[#8A8A9A]">
             <ChevronLeft size={24} />
           </button>
-          <div className="flex items-center gap-2 px-10 w-full min-w-0">
+          <div className="flex items-center gap-2 px-10 w-full min-w-0 md:max-w-2xl md:mx-auto">
             <p className="flex-1 text-center text-base font-bold text-white leading-tight">
               {match.homeTeam !== 'TBD'
                 ? match.homeTeam
@@ -357,7 +357,7 @@ export default function PredictionPage() {
 
       {/* Barra de navegación — botones sobre la línea divisoria */}
       {allMatches.length > 0 && (
-        <div className="flex items-center justify-center gap-3 px-4 py-2 bg-[#0D0D0D] border-b border-[#1A1A2E]">
+        <div className="flex items-center justify-center gap-3 px-4 md:px-16 py-2 bg-[#0D0D0D] border-b border-[#1A1A2E]">
           <button
             onClick={() => prevMatch && navTo(prevMatch.id, -1)}
             disabled={!prevMatch}
@@ -427,6 +427,7 @@ export default function PredictionPage() {
           }}
           initial="enter" animate="center" exit="exit"
           transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="md:max-w-lg md:mx-auto md:w-full"
           className="flex-1 flex flex-col items-center justify-center gap-3 px-6 overflow-y-auto py-2"
         >
           {turboComplete ? (
