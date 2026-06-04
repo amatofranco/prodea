@@ -49,7 +49,7 @@ export default function TorneosPage() {
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D] pb-4">
       {/* Header */}
-      <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
+      <div className="px-5 pt-12 md:pt-6 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <h2 className="text-2xl font-bold text-white mb-5">Mis torneos</h2>
 
         <div className="flex gap-3">

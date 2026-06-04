@@ -244,7 +244,7 @@ export default function PredictionsPage() {
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 bg-[#1A1A2E]">
+      <div className="px-4 pt-12 md:pt-6 pb-4 bg-[#1A1A2E]">
         <div className="flex items-center gap-2 mb-1">
           <Target size={22} className="text-[#00FF87]" />
           <h1 className="text-xl font-bold text-white">Predicciones</h1>

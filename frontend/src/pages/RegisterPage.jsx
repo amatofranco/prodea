@@ -58,12 +58,12 @@ export default function RegisterPage() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-6 py-6 bg-[#0D0D0D]">
       <div className="mb-5 flex flex-col items-center gap-0">
-        <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] object-contain" />
-        <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] object-contain -mt-3" />
-        <p className="text-[#8A8A9A] text-sm font-semibold tracking-widest uppercase -mt-1.5" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
+        <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] md:w-[240px] md:h-[240px] object-contain" />
+        <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] md:h-[72px] object-contain -mt-3" />
+        <p className="text-[#8A8A9A] text-base font-semibold tracking-widest uppercase -mt-2" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
       </div>
 
-      <div className="w-full max-w-sm flex flex-col gap-3">
+      <div className="w-full max-w-sm md:max-w-[400px] flex flex-col gap-3">
         <GoogleButton onCredential={handleGoogleCredential} text="Registrarse con Google" />
 
         <div className="flex items-center gap-3">

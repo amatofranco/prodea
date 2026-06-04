@@ -293,8 +293,11 @@ export default function HomePage() {
       {showModal && (
         <PushPermissionModal onActivate={handlePushActivate} onDismiss={dismiss} />
       )}
-      <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
-        <div className="flex items-center justify-between mb-3">
+
+      {/* Header — full width con degradé */}
+      <div className="w-full bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D] px-5 md:px-16 pt-12 md:pt-8 pb-6">
+        {/* Mobile: logo + avatar */}
+        <div className="flex items-center justify-between mb-3 md:hidden">
           <div className="flex flex-col gap-1">
             <img src="/logo-wordmark.png" alt="Prodea" className="h-12 object-contain object-left -ml-[23px]" />
             {IS_TESTING && (
@@ -307,90 +310,109 @@ export default function HomePage() {
             {avatar}
           </div>
         </div>
-        <div>
-          <p className="text-[#8A8A9A] text-sm">Hola,</p>
-          <h2 className="text-2xl font-bold text-white">{user?.firstName ?? user?.username}</h2>
+        {/* Desktop: saludo más grande */}
+        <div className="md:flex md:items-end md:justify-between">
+          <div>
+            <p className="text-[#8A8A9A] text-sm md:text-base md:tracking-widest md:uppercase md:mb-1">Hola,</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-white">
+              {user?.firstName ?? user?.username}
+            </h2>
+          </div>
+          {IS_TESTING && (
+            <span className="hidden md:inline px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase bg-[#FF6B35]/20 text-[#FF6B35] border border-[#FF6B35]/40">
+              Testing
+            </span>
+          )}
         </div>
       </div>
 
-      <InstallBanner />
+      {/* Contenido */}
+      <div className="md:px-16 w-full">
+        <InstallBanner />
 
-      {/* Banner fin del mundial */}
-      {isFinalFinished && tournaments.length > 0 && (
-        <div className="px-5 mb-4">
-          <div
-            onClick={() => navigate(tournaments.length === 1 ? `/torneos/${tournaments[0].id}` : '/torneos')}
-            className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/40 cursor-pointer active:opacity-80"
-          >
-            <span className="text-3xl shrink-0">🏆</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡El mundial terminó!</p>
-              <p className="text-white font-semibold text-sm">Ver quién ganó el prode →</p>
+        {/* Banner fin del mundial */}
+        {isFinalFinished && tournaments.length > 0 && (
+          <div className="px-5 md:px-0 mb-4">
+            <div
+              onClick={() => navigate(tournaments.length === 1 ? `/torneos/${tournaments[0].id}` : '/torneos')}
+              className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/40 cursor-pointer active:opacity-80"
+            >
+              <span className="text-3xl shrink-0">🏆</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡El mundial terminó!</p>
+                <p className="text-white font-semibold text-sm">Ver quién ganó el prode →</p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {isEmpty && (
-        <div className="flex flex-col items-center justify-center gap-3 py-24 px-5 text-center">
-          <Zap size={40} className="text-[#2A2A3E]" />
-          <p className="text-[#8A8A9A] text-sm">No hay partidos activos por ahora.</p>
-        </div>
-      )}
-
-      {/* Partidos en curso — siempre visible */}
-      <div className="px-5 mb-5">
-        <h3 className="text-[#FF6B35] text-xs uppercase tracking-widest mb-2 font-semibold flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full bg-[#FF6B35] ${liveMatches.length > 0 ? 'animate-pulse' : 'opacity-30'}`} />
-          En vivo
-        </h3>
-        {liveMatches.length === 0 ? (
-          <div className="p-4 rounded-2xl border border-[#FF6B35]/20 border-dashed flex items-center gap-3">
-            <span className="text-xl">📡</span>
-            <p className="text-sm font-semibold text-[#8A8A9A]">Sin partidos en vivo ahora</p>
+        {isEmpty && (
+          <div className="flex flex-col items-center justify-center gap-3 py-24 px-5 text-center">
+            <Zap size={40} className="text-[#2A2A3E]" />
+            <p className="text-[#8A8A9A] text-sm">No hay partidos activos por ahora.</p>
           </div>
-        ) : liveMatches.length === 1
-          ? liveMatches.map((m) => <LiveCard key={m.id} match={m} />)
-          : (
-            <div className="grid grid-cols-2 gap-2">
-              {liveMatches.map((m) => <LiveCard key={m.id} match={m} compact />)}
-            </div>
-          )
-        }
-      </div>
+        )}
 
-      {/* Últimos resultados */}
-      <div className="mb-5 px-5">
-        <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
-        <div
-          className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
-        >
-          {recentFinished.length > 0
-            ? recentFinished.map((m) => (
-                <div key={m.id} className="flex-shrink-0 w-[44%] snap-start">
-                  <FinishedCard match={m} />
-                </div>
-              ))
-            : allUpcoming.slice(0, 4).map((m) => (
-                <div key={m.id} className="flex-shrink-0 w-[44%] snap-start">
-                  <PlaceholderCard match={m} />
-                </div>
-              ))
+        {/* Partidos en curso */}
+        <div className="px-5 md:px-0 mb-5">
+          <h3 className="text-[#FF6B35] text-xs uppercase tracking-widest mb-2 font-semibold flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full bg-[#FF6B35] ${liveMatches.length > 0 ? 'animate-pulse' : 'opacity-30'}`} />
+            En vivo
+          </h3>
+          {liveMatches.length === 0 ? (
+            <div className="p-4 rounded-2xl border border-[#FF6B35]/20 border-dashed flex items-center gap-3">
+              <span className="text-xl">📡</span>
+              <p className="text-sm font-semibold text-[#8A8A9A]">Sin partidos en vivo ahora</p>
+            </div>
+          ) : liveMatches.length === 1
+            ? liveMatches.map((m) => <LiveCard key={m.id} match={m} />)
+            : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {liveMatches.map((m) => <LiveCard key={m.id} match={m} compact />)}
+              </div>
+            )
           }
         </div>
-      </div>
 
-      {/* Próximos partidos */}
-      {upcomingMatches.length > 0 && (
-        <div className="px-5">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Próximos partidos</h3>
-          <div className="flex flex-col gap-2">
-            {upcomingMatches.map((m) => <UpcomingCard key={m.id} match={m} navigate={navigate} />)}
+        {/* Últimos resultados */}
+        <div className="mb-5 px-5 md:px-0">
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
+          <div
+            className="md:hidden flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
+          >
+            {recentFinished.length > 0
+              ? recentFinished.map((m) => (
+                  <div key={m.id} className="flex-shrink-0 w-[44%] snap-start">
+                    <FinishedCard match={m} />
+                  </div>
+                ))
+              : allUpcoming.slice(0, 4).map((m) => (
+                  <div key={m.id} className="flex-shrink-0 w-[44%] snap-start">
+                    <PlaceholderCard match={m} />
+                  </div>
+                ))
+            }
+          </div>
+          <div className="hidden md:grid grid-cols-4 gap-3">
+            {recentFinished.length > 0
+              ? recentFinished.map((m) => <FinishedCard key={m.id} match={m} />)
+              : allUpcoming.slice(0, 4).map((m) => <PlaceholderCard key={m.id} match={m} />)
+            }
           </div>
         </div>
-      )}
+
+        {/* Próximos partidos */}
+        {upcomingMatches.length > 0 && (
+          <div className="px-5 md:px-0">
+            <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Próximos partidos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {upcomingMatches.map((m) => <UpcomingCard key={m.id} match={m} navigate={navigate} />)}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -19,7 +19,7 @@ export default function RankingPage() {
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
       {/* Header */}
-      <div className="px-5 pt-12 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
+      <div className="px-5 pt-12 md:pt-6 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <div className="flex items-center gap-3 mb-1">
           <Trophy size={22} className="text-[#F59E0B]" />
           <h2 className="text-2xl font-bold text-white">Ranking Prodea</h2>

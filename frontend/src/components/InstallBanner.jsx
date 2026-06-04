@@ -10,6 +10,10 @@ function isIOS() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent)
 }
 
+function isMobile() {
+  return window.matchMedia('(pointer: coarse)').matches
+}
+
 export default function InstallBanner({ className = '' }) {
   const [show, setShow] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -17,6 +21,7 @@ export default function InstallBanner({ className = '' }) {
 
   useEffect(() => {
     if (isStandalone()) return
+    if (!isMobile()) return
 
     if (isIOS()) {
       setIos(true)
