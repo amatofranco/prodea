@@ -236,6 +236,7 @@ export default function TournamentPage() {
   const [editingDesc, setEditingDesc] = useState(false)
   const [descDraft, setDescDraft] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
+  const [matchdayWinners, setMatchdayWinners] = useState([])
   const phaseBarRef = useRef(null)
 
   async function saveDescription() {
@@ -255,6 +256,7 @@ export default function TournamentPage() {
     Promise.all([
       api.getTournament(id).then(setTournament),
       api.getLeaderboard(id).then(setLeaderboard),
+      api.getMatchdayWinners(id).then(setMatchdayWinners),
     ]).finally(() => setLoading(false))
 
     fetchMatches()
@@ -540,6 +542,34 @@ export default function TournamentPage() {
                 />
               ))}
             </div>
+
+            {matchdayWinners.length > 0 && (
+              <div className="px-4 mt-5">
+                <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-3">
+                  Ganadores por fecha
+                </p>
+                <div className="flex flex-col gap-2">
+                  {matchdayWinners.map((w) => (
+                    <div
+                      key={`${w.phase}-${w.matchday}`}
+                      onClick={() => navigate(`/torneos/${id}/perfil/${w.userId}`)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] cursor-pointer active:border-[#00FF87] transition-colors"
+                    >
+                      <span className="text-lg">🏆</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">
+                          {w.fullName ?? w.username}
+                        </p>
+                        <p className="text-[#8A8A9A] text-xs">{w.label}</p>
+                      </div>
+                      <span className="text-lg font-bold text-[#F59E0B]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                        {w.points}<span className="text-xs text-[#8A8A9A] ml-0.5">pts</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col min-h-full">

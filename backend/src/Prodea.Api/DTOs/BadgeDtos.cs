@@ -29,6 +29,16 @@ public record PlayerProfileDto(
     List<AccumulativeBadgeDto> AccumulativeBadges
 );
 
+public record JornadaWinnerDto(
+    string Phase,
+    int Matchday,
+    string Label,
+    int UserId,
+    string Username,
+    string? FullName,
+    int Points
+);
+
 public record LeaderboardEntryDto(
     int Rank,
     int UserId,
