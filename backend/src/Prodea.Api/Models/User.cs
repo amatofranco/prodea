@@ -10,6 +10,7 @@ public class User
     public string? PasswordHash { get; set; }
     public string? GoogleId { get; set; }
     public string? AvatarUrl { get; set; }
+    public bool IsPwa { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<TournamentParticipant> TournamentParticipants { get; set; } = [];

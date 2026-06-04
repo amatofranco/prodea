@@ -187,6 +187,17 @@ public class AuthController(
         return Ok(new UserDto(user.Id, user.Username, user.Email, user.AvatarUrl, user.FirstName, user.LastName));
     }
 
+    [HttpPost("pwa")]
+    [Authorize]
+    public async Task<IActionResult> MarkAsPwa()
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await db.Users
+            .Where(u => u.Id == userId && !u.IsPwa)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsPwa, true));
+        return NoContent();
+    }
+
     private async Task<string> GenerateUniqueUsernameAsync(string email)
     {
         var base_ = email.Split('@')[0]

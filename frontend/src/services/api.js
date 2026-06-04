@@ -68,6 +68,8 @@ export const api = {
   getMatchPredictions: (tournamentId, matchId) =>
     request(`/tournaments/${tournamentId}/matches/${matchId}/predictions`),
 
+  markAsPwa: () => request('/auth/pwa', { method: 'POST' }),
+
   getPollingStatus: () => request('/admin/polling-status'),
 
   sendContact: (message) => request('/contact', { method: 'POST', body: JSON.stringify({ message }) }),
