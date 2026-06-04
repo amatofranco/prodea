@@ -427,7 +427,7 @@ export default function PredictionPage() {
           }}
           initial="enter" animate="center" exit="exit"
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="flex-1 flex flex-col items-center justify-center gap-3 px-6 overflow-y-auto py-2 md:max-w-lg md:mx-auto md:w-full"
+          className="flex-1 flex flex-col items-center justify-center gap-3 px-6 overflow-y-auto py-2 w-full"
         >
           {turboComplete ? (
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
@@ -472,7 +472,7 @@ export default function PredictionPage() {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2 w-full">
+              <div className="flex items-center gap-2 w-full md:max-w-2xl">
                 <div className="flex-1 flex flex-col items-center gap-2">
                   <FlagCard name={match.homeTeam} />
                   <GoalPicker value={home} onChange={setHome} disabled={isLocked} />
@@ -492,7 +492,7 @@ export default function PredictionPage() {
 
               {/* Selector de penales — solo eliminatoria con empate */}
               {isKnockout && isDraw && (
-                <div className={`w-full rounded-2xl bg-[#1A1A2E] overflow-hidden border ${triedSubmit && needsPenaltyWinner ? 'border-[#FF6B35]' : 'border-[#F59E0B]/40'}`}>
+                <div className={`w-full md:max-w-lg rounded-2xl bg-[#1A1A2E] overflow-hidden border ${triedSubmit && needsPenaltyWinner ? 'border-[#FF6B35]' : 'border-[#F59E0B]/40'}`}>
                   <p className="text-center text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] pt-2 pb-1">
                     ¿Quién pasa de ronda? {triedSubmit && needsPenaltyWinner && <span className="text-[#FF6B35]">· Obligatorio</span>}
                   </p>
@@ -522,7 +522,7 @@ export default function PredictionPage() {
                 </div>
               )}
 
-              <div className="w-full p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] text-center">
+              <div className="w-full md:max-w-lg md:mx-auto p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] text-center">
                 <p className="text-white font-bold text-base">
                   {match.homeTeam} <span className="text-[#00FF87]">{home}</span>
                   {' – '}
@@ -555,7 +555,7 @@ export default function PredictionPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={saving || isLocked}
-                  className={`w-full py-3 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                  className={`w-full md:max-w-lg md:mx-auto py-3 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${
                     saved ? 'bg-[#1A1A2E] border border-[#00FF87] text-[#00FF87]' : 'bg-[#00FF87] text-black'
                   } disabled:opacity-50`}
                 >
