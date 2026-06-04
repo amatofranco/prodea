@@ -622,23 +622,6 @@ public class AdminController(
         return Ok(new { message = $"Notificación de card enviada a {participants.Count} participante(s)." });
     }
 
-    [HttpGet("stats")]
-    public async Task<IActionResult> GetStats(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
-    {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
-        var totalUsers        = await db.Users.CountAsync();
-        var activeUsers       = await db.Predictions.Select(p => p.UserId).Distinct().CountAsync();
-        var totalTournaments  = await db.Tournaments.CountAsync();
-        var totalPredictions  = await db.Predictions.CountAsync();
-        var pushSubscriptions = await db.PushSubscriptions.CountAsync();
-
-        return Ok(new { totalUsers, activeUsers, totalTournaments, totalPredictions, pushSubscriptions });
-    }
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
