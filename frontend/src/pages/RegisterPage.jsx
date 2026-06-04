@@ -60,7 +60,7 @@ export default function RegisterPage() {
       <div className="mb-5 flex flex-col items-center gap-0">
         <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] md:w-[240px] md:h-[240px] object-contain" />
         <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] md:h-[72px] object-contain -mt-3" />
-        <p className="text-[#8A8A9A] text-sm font-semibold tracking-widest uppercase -mt-1.5" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
+        <p className="text-[#8A8A9A] text-base font-semibold tracking-widest uppercase -mt-2" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
       </div>
 
       <div className="w-full max-w-sm md:max-w-[400px] flex flex-col gap-3">
