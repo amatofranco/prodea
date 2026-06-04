@@ -63,7 +63,7 @@ export default function RegisterPage() {
         <p className="text-[#8A8A9A] text-sm font-semibold tracking-widest uppercase -mt-1.5" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
       </div>
 
-      <div className="w-full max-w-sm flex flex-col gap-3">
+      <div className="w-full max-w-sm md:max-w-md flex flex-col gap-3">
         <GoogleButton onCredential={handleGoogleCredential} text="Registrarse con Google" />
 
         <div className="flex items-center gap-3">
