@@ -363,7 +363,7 @@ export default function HomePage() {
       <div className="mb-5 px-5">
         <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
         <div
-          className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory"
+          className="md:hidden flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY }}
         >
@@ -380,13 +380,19 @@ export default function HomePage() {
               ))
           }
         </div>
+        <div className="hidden md:grid grid-cols-4 gap-2">
+          {recentFinished.length > 0
+            ? recentFinished.map((m) => <FinishedCard key={m.id} match={m} />)
+            : allUpcoming.slice(0, 4).map((m) => <PlaceholderCard key={m.id} match={m} />)
+          }
+        </div>
       </div>
 
       {/* Próximos partidos */}
       {upcomingMatches.length > 0 && (
         <div className="px-5">
           <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Próximos partidos</h3>
-          <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {upcomingMatches.map((m) => <UpcomingCard key={m.id} match={m} navigate={navigate} />)}
           </div>
         </div>
