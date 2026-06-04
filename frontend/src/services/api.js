@@ -47,7 +47,6 @@ export const api = {
   joinTournament: (body) => request('/tournaments/join', { method: 'POST', body: JSON.stringify(body) }),
   updateTournament: (id, body) => request(`/tournaments/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getLeaderboard: (id) => request(`/tournaments/${id}/leaderboard`),
-  getMatchdayWinners: (id) => request(`/tournaments/${id}/matchday-winners`),
 
   getMatches: (tournamentId) => request(`/tournaments/${tournamentId}/matches`),
   updateResult: (tournamentId, matchId, body) =>

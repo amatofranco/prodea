@@ -248,44 +248,6 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
       }
     }
 
-    [HttpGet("{id}/matchday-winners")]
-    public async Task<ActionResult<List<JornadaWinnerDto>>> GetMatchdayWinners(int id)
-    {
-        var userId = CurrentUserId;
-        var isMember = await db.TournamentParticipants.AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
-        if (!isMember) return Forbid();
-
-        var crackBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == id && mb.BadgeType == MatchdayBadgeType.Crack)
-            .Include(mb => mb.User)
-            .ToListAsync();
-
-        return Ok(crackBadges
-            .GroupBy(mb => new { mb.Phase, mb.Matchday })
-            .Select(g =>
-            {
-                var winner = g.OrderByDescending(mb => mb.PointsInMatchday).First();
-                var phase = Enum.Parse<MatchPhase>(winner.Phase);
-                var label = phase switch
-                {
-                    MatchPhase.Group      => $"Fecha {winner.Matchday}",
-                    MatchPhase.R32        => "Dieciseisavos",
-                    MatchPhase.R16        => "Octavos",
-                    MatchPhase.QF         => "Cuartos",
-                    MatchPhase.SF         => "Semis",
-                    MatchPhase.ThirdPlace => "3er Puesto",
-                    MatchPhase.Final      => "Final",
-                    _                     => winner.Phase,
-                };
-                var fullName = (winner.User.FirstName != null || winner.User.LastName != null)
-                    ? $"{winner.User.FirstName} {winner.User.LastName}".Trim() : null;
-                return new JornadaWinnerDto(winner.Phase, winner.Matchday, label, winner.UserId, winner.User.Username, fullName, winner.PointsInMatchday);
-            })
-            .OrderBy(w => w.Phase)
-            .ThenBy(w => w.Matchday)
-            .ToList());
-    }
-
     [HttpGet("{id}/champion-pick")]
     public async Task<ActionResult<ChampionPickStatusDto>> GetTournamentChampionPick(int id)
     {
