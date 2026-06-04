@@ -17,7 +17,7 @@ export default function Layout() {
     <div className="flex min-h-dvh bg-[#0D0D0D]">
 
       {/* Sidebar — desktop only */}
-      <aside className="hidden md:flex flex-col w-56 fixed top-0 left-0 h-full bg-[#1A1A2E] border-r border-[#2A2A3E] z-50">
+      <aside className="hidden md:flex flex-col w-56 shrink-0 sticky top-0 h-dvh bg-[#1A1A2E] border-r border-[#2A2A3E] z-50">
         <div className="px-5 pt-6 pb-4">
           <img src="/logo-wordmark.png" alt="Prodea" className="h-10 object-contain object-left -ml-4" />
         </div>
@@ -51,7 +51,7 @@ export default function Layout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-56 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <main className="flex-1 min-w-0 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
         <Outlet />
       </main>
 
