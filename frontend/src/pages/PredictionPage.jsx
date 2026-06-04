@@ -332,7 +332,7 @@ export default function PredictionPage() {
     away > home ? `Gana ${match.awayTeam}` : 'Empate'
 
   return (
-    <div className="flex flex-col min-h-full bg-[#0D0D0D]">
+    <div className="flex flex-col min-h-full bg-[#0D0D0D] md:max-w-lg md:mx-auto">
       {/* Header */}
       <div className="px-4 pt-8 pb-2 bg-[#1A1A2E]">
         <div className="relative flex items-center justify-center">
