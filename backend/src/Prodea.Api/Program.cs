@@ -138,6 +138,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Predictions" ADD COLUMN IF NOT EXISTS "PredictedPenaltyWinner" varchar(10);
             ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "FirstName" varchar(100);
             ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "LastName" varchar(100);
+            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "IsPwa" boolean NOT NULL DEFAULT false;
             CREATE TABLE IF NOT EXISTS "PredictionBackups" (
                 "Id"        serial PRIMARY KEY,
                 "CreatedAt" timestamptz NOT NULL,

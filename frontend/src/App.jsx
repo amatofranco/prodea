@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import PrivateRoute from './components/PrivateRoute'
@@ -15,8 +16,19 @@ import ProfilePage from './pages/ProfilePage'
 import ChampionPickPage from './pages/ChampionPickPage'
 import AjustesPage from './pages/AjustesPage'
 import PrivacyPage from './pages/PrivacyPage'
+import { useAuthStore } from './store/authStore'
+import { api } from './services/api'
 
 export default function App() {
+  const token = useAuthStore((s) => s.token)
+
+  useEffect(() => {
+    if (!token) return
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true
+    if (isStandalone) api.markAsPwa().catch(() => {})
+  }, [token])
+
   return (
     <BrowserRouter>
       <Routes>

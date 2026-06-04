@@ -632,11 +632,12 @@ public class AdminController(
 
         var totalUsers        = await db.Users.CountAsync();
         var activeUsers       = await db.Predictions.Select(p => p.UserId).Distinct().CountAsync();
+        var pwaUsers          = await db.Users.CountAsync(u => u.IsPwa);
         var totalTournaments  = await db.Tournaments.CountAsync();
         var totalPredictions  = await db.Predictions.CountAsync();
         var pushSubscriptions = await db.PushSubscriptions.CountAsync();
 
-        return Ok(new { totalUsers, activeUsers, totalTournaments, totalPredictions, pushSubscriptions });
+        return Ok(new { totalUsers, activeUsers, pwaUsers, totalTournaments, totalPredictions, pushSubscriptions });
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
