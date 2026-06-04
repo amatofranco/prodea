@@ -622,6 +622,34 @@ public class AdminController(
         return Ok(new { message = $"Notificación de card enviada a {participants.Count} participante(s)." });
     }
 
+    [HttpGet("users")]
+    public async Task<IActionResult> ListUsers(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var users = await db.Users
+            .OrderByDescending(u => u.CreatedAt)
+            .Select(u => new
+            {
+                u.Id,
+                u.Username,
+                u.Email,
+                u.FirstName,
+                u.LastName,
+                u.IsPwa,
+                isGoogle = u.GoogleId != null,
+                u.CreatedAt,
+                predictionCount = u.Predictions.Count,
+                tournamentCount = u.TournamentParticipants.Count,
+            })
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey)
