@@ -314,7 +314,7 @@ export default function HomePage() {
         <div className="md:flex md:items-end md:justify-between">
           <div>
             <p className="text-[#8A8A9A] text-sm md:text-base md:tracking-widest md:uppercase md:mb-1">Hola,</p>
-            <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight md:leading-none" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif', letterSpacing: '0.06em' }}>
+            <h2 className="text-2xl md:text-4xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
               {user?.firstName ?? user?.username}
             </h2>
           </div>
