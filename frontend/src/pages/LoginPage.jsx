@@ -54,7 +54,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      <div className="w-full max-w-sm md:max-w-md flex flex-col gap-4">
+      <div className="w-full max-w-sm md:max-w-[400px] flex flex-col gap-4">
         <GoogleButton onCredential={handleGoogleCredential} text="Iniciar sesión con Google" />
 
         <div className="flex items-center gap-3">
