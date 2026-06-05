@@ -650,6 +650,30 @@ public class AdminController(
         return Ok(users);
     }
 
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var user = await db.Users.FindAsync(id);
+        if (user == null) return NotFound(new { message = "Usuario no encontrado" });
+
+        await db.Predictions.Where(p => p.UserId == id).ExecuteDeleteAsync();
+        await db.TournamentParticipants.Where(tp => tp.UserId == id).ExecuteDeleteAsync();
+        await db.MatchdayBadges.Where(mb => mb.UserId == id).ExecuteDeleteAsync();
+        await db.AccumulativeBadges.Where(ab => ab.UserId == id).ExecuteDeleteAsync();
+        await db.PushSubscriptions.Where(ps => ps.UserId == id).ExecuteDeleteAsync();
+        await db.ChampionPicks.Where(cp => cp.UserId == id).ExecuteDeleteAsync();
+        db.Users.Remove(user);
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = $"Usuario {user.Username} ({user.FirstName} {user.LastName}) eliminado." });
+    }
+
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey)
