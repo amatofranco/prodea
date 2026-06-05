@@ -12,7 +12,9 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export function usePushNotifications() {
-  const [permission, setPermission] = useState(Notification.permission)
+  const [permission, setPermission] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+  )
   const [subscribed, setSubscribed] = useState(false)
   const [dismissed, setDismissed] = useState(() => {
     const ts = localStorage.getItem(DISMISSED_KEY)
