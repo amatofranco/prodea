@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import GoogleButton from '../components/GoogleButton'
@@ -9,7 +9,6 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
 
@@ -18,7 +17,7 @@ export default function RegisterPage() {
     try {
       const data = await api.googleLogin(credential)
       setAuth(data.token, data.user)
-      navigate(redirect, { replace: true })
+      window.location.replace(redirect)
     } catch (err) {
       setError(err.message)
     }
@@ -36,7 +35,7 @@ export default function RegisterPage() {
     try {
       const data = await api.register(form)
       setAuth(data.token, data.user)
-      navigate(redirect, { replace: true })
+      window.location.replace(redirect)
     } catch (err) {
       setError(err.message)
     } finally {
