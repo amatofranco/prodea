@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import GoogleButton from '../components/GoogleButton'
+import InAppBrowserBanner from '../components/InAppBrowserBanner'
 
 const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
 
@@ -41,7 +42,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 py-6 bg-[#0D0D0D]">
+    <div className="min-h-dvh flex flex-col bg-[#0D0D0D]">
+      <InAppBrowserBanner />
+      <div className="flex flex-col flex-1 items-center justify-center px-6 py-6">
       <div className="mb-6 flex flex-col items-center gap-0">
         <img src="/logo-icon.png" alt="Prodea" className="w-[180px] h-[180px] md:w-[240px] md:h-[240px] object-contain" />
         <img src="/logo-wordmark.png" alt="Prodea" className="h-[54px] md:h-[72px] object-contain -mt-4" />
@@ -111,6 +114,7 @@ export default function LoginPage() {
             Política de Privacidad
           </Link>
         </p>
+      </div>
       </div>
     </div>
   )
