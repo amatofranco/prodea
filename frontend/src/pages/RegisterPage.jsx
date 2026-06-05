@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import GoogleButton from '../components/GoogleButton'
+import InAppBrowserBanner from '../components/InAppBrowserBanner'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '' })
@@ -55,7 +56,9 @@ export default function RegisterPage() {
   )
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 py-6 bg-[#0D0D0D]">
+    <div className="min-h-dvh flex flex-col bg-[#0D0D0D]">
+      <InAppBrowserBanner />
+      <div className="flex flex-col flex-1 items-center justify-center px-6 py-6">
       <div className="mb-5 flex flex-col items-center gap-0">
         <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] md:w-[240px] md:h-[240px] object-contain" />
         <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] md:h-[72px] object-contain -mt-3" />
@@ -99,7 +102,7 @@ export default function RegisterPage() {
           <Link to="/login" className="text-[#00FF87] font-semibold">Iniciá sesión</Link>
         </p>
       </div>
-
+      </div>
     </div>
   )
 }

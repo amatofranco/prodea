@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const isInAppBrowser = /Instagram|FBAN|FBAV|FB_IAB|WhatsApp|TikTok|Twitter|LinkedIn/.test(navigator.userAgent)
 
 export default function GoogleButton({ onCredential, text = 'Iniciar sesión con Google' }) {
+  if (isInAppBrowser) return null
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
