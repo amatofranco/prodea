@@ -16,6 +16,7 @@ import ProfilePage from './pages/ProfilePage'
 import ChampionPickPage from './pages/ChampionPickPage'
 import AjustesPage from './pages/AjustesPage'
 import PrivacyPage from './pages/PrivacyPage'
+import LandingPage from './pages/LandingPage'
 import { useAuthStore } from './store/authStore'
 import { api } from './services/api'
 
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/join/:code" element={<JoinPage />} />
         <Route path="/privacidad" element={<PrivacyPage />} />
+        <Route path="/como-se-juega" element={<LandingPage />} />
 
         {/* Protected */}
         <Route element={<PrivateRoute />}>
