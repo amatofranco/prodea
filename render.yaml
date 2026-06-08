@@ -35,4 +35,4 @@ databases:
   - name: prodea-db
     databaseName: prodea
     user: prodea_user
-    plan: free
+    plan: basic-256mb
