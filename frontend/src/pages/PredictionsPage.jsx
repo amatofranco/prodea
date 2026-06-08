@@ -45,7 +45,7 @@ function TeamFlag({ name, label }) {
     <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
       <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-[#2A2A3E]">
         {flagUrl ? (
-          <img src={flagUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover opacity-85" />
+          <img src={flagUrl} alt={displayName} loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-85" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-[#8A8A9A] text-lg">?</div>
         )}

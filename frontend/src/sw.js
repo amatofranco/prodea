@@ -35,6 +35,30 @@ registerRoute(
   })
 )
 
+// Mis predicciones (Home y pantalla de Predicciones)
+registerRoute(
+  /\/api\/predictions$/,
+  new StaleWhileRevalidate({
+    cacheName: 'predictions-cache',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 60 * 10 }),
+      new CacheableResponsePlugin({ statuses: [200] }),
+    ],
+  })
+)
+
+// Banderas de equipos
+registerRoute(
+  /^https:\/\/flagcdn\.com\/.*/i,
+  new CacheFirst({
+    cacheName: 'flags-cache',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 250, maxAgeSeconds: 60 * 60 * 24 * 30 }),
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+    ],
+  })
+)
+
 // Tabla de posiciones
 registerRoute(
   /\/api\/tournaments\/\d+\/leaderboard/,
