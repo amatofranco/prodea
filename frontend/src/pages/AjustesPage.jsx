@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, BellOff, LogOut, MessageSquare, Send } from 'lucide-react'
+import { Bell, BellOff, LogOut, MessageSquare, Send, HelpCircle, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import { api } from '../services/api'
@@ -104,6 +104,15 @@ export default function AjustesPage() {
             </button>
           </div>
         </div>
+
+        <button
+          onClick={() => navigate('/como-se-juega')}
+          className="flex items-center gap-3 bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E] text-left w-full hover:border-[#00FF87]/40 transition-colors"
+        >
+          <HelpCircle size={20} className="text-[#00FF87]" />
+          <span className="text-white text-sm font-semibold flex-1">¿Cómo se juega?</span>
+          <ChevronRight size={18} className="text-[#8A8A9A]" />
+        </button>
 
         <button
           onClick={handleLogout}
