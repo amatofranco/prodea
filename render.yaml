@@ -3,7 +3,7 @@ services:
     name: prodea-api
     env: docker
     dockerfilePath: ./Dockerfile
-    plan: free
+    plan: basic
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
