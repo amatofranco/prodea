@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import AdSlot from '../components/AdSlot'
+import { useAuthStore } from '../store/authStore'
 
 const STEPS = [
   {
@@ -78,6 +79,8 @@ function SectionTitle({ children }) {
 }
 
 export default function LandingPage() {
+  const isLoggedIn = Boolean(useAuthStore((s) => s.token))
+
   return (
     <div className="min-h-dvh bg-[#0D0D0D] text-white">
 
@@ -101,20 +104,22 @@ export default function LandingPage() {
           Gratis, sin vueltas, y con la cuota justa de cargada.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Link
-            to="/register"
-            className="px-6 py-3 rounded-xl bg-[#00FF87] text-[#0D0D0D] font-bold text-center active:scale-95 transition-transform"
-          >
-            Crear mi torneo gratis
-          </Link>
-          <Link
-            to="/login"
-            className="px-6 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white font-semibold text-center active:scale-95 transition-transform"
-          >
-            Ya tengo una cuenta
-          </Link>
-        </div>
+        {!isLoggedIn && (
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Link
+              to="/register"
+              className="px-6 py-3 rounded-xl bg-[#00FF87] text-[#0D0D0D] font-bold text-center active:scale-95 transition-transform"
+            >
+              Crear mi torneo gratis
+            </Link>
+            <Link
+              to="/login"
+              className="px-6 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white font-semibold text-center active:scale-95 transition-transform"
+            >
+              Ya tengo una cuenta
+            </Link>
+          </div>
+        )}
       </header>
 
       <main className="max-w-2xl mx-auto px-6 flex flex-col gap-14 pb-16">
@@ -212,18 +217,20 @@ export default function LandingPage() {
         </section>
 
         {/* CTA final */}
-        <section className="text-center bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl p-8">
-          <h2 className="text-xl font-bold mb-2">¿Listo para descubrir tu mote?</h2>
-          <p className="text-[#8A8A9A] text-sm mb-5">
-            Armá tu torneo, invitá a tus amigos, y que empiece la cargada.
-          </p>
-          <Link
-            to="/register"
-            className="inline-block px-6 py-3 rounded-xl bg-[#00FF87] text-[#0D0D0D] font-bold active:scale-95 transition-transform"
-          >
-            Crear mi torneo gratis
-          </Link>
-        </section>
+        {!isLoggedIn && (
+          <section className="text-center bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl p-8">
+            <h2 className="text-xl font-bold mb-2">¿Listo para descubrir tu mote?</h2>
+            <p className="text-[#8A8A9A] text-sm mb-5">
+              Armá tu torneo, invitá a tus amigos, y que empiece la cargada.
+            </p>
+            <Link
+              to="/register"
+              className="inline-block px-6 py-3 rounded-xl bg-[#00FF87] text-[#0D0D0D] font-bold active:scale-95 transition-transform"
+            >
+              Crear mi torneo gratis
+            </Link>
+          </section>
+        )}
       </main>
 
       {/* Footer */}
@@ -235,10 +242,14 @@ export default function LandingPage() {
           <Link to="/privacidad" className="text-[#8A8A9A] hover:text-white transition-colors">
             Política de privacidad
           </Link>
-          <span className="text-[#2A2A3E]">·</span>
-          <Link to="/login" className="text-[#8A8A9A] hover:text-white transition-colors">
-            Iniciar sesión
-          </Link>
+          {!isLoggedIn && (
+            <>
+              <span className="text-[#2A2A3E]">·</span>
+              <Link to="/login" className="text-[#8A8A9A] hover:text-white transition-colors">
+                Iniciar sesión
+              </Link>
+            </>
+          )}
         </div>
       </footer>
     </div>
