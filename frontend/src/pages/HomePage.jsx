@@ -16,7 +16,7 @@ function FlagOnly({ name, label }) {
   const flagUrl = getFlagUrl(flag)
   return (
     <div className="w-9 h-10 rounded-md overflow-hidden bg-[#2A2A3E] flex-shrink-0">
-      {flagUrl && <img src={flagUrl} alt={label ?? name} className="w-full h-full object-cover opacity-85" />}
+      {flagUrl && <img src={flagUrl} alt={label ?? name} loading="lazy" className="w-full h-full object-cover opacity-85" />}
     </div>
   )
 }
