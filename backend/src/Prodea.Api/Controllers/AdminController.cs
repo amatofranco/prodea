@@ -674,6 +674,31 @@ public class AdminController(
         return Ok(new { message = $"Usuario {user.Username} ({user.FirstName} {user.LastName}) eliminado." });
     }
 
+    [HttpGet("tournaments")]
+    public async Task<IActionResult> ListTournaments(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var tournaments = await db.Tournaments
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => new
+            {
+                t.Id,
+                t.Name,
+                t.Code,
+                adminUsername = db.Users.Where(u => u.Id == t.AdminUserId).Select(u => u.Username).FirstOrDefault(),
+                participantCount = t.Participants.Count,
+                participants = t.Participants.Select(tp => tp.User.Username).ToList(),
+                t.CreatedAt,
+            })
+            .ToListAsync();
+
+        return Ok(tournaments);
+    }
+
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey)
