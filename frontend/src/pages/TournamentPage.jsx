@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown, LogOut } from 'lucide-react'
+import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown, LogOut, MoreVertical } from 'lucide-react'
 import QRCode from 'qrcode'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
@@ -236,6 +236,7 @@ export default function TournamentPage() {
   const [editingDesc, setEditingDesc] = useState(false)
   const [descDraft, setDescDraft] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false)
   const [matchdayWinners, setMatchdayWinners] = useState([])
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [leaving, setLeaving] = useState(false)
@@ -463,9 +464,23 @@ export default function TournamentPage() {
                     <ImageDown size={16} className="text-[#00FF87] shrink-0" />
                     <span className="flex-1 text-center leading-tight">Compartir<br />QR</span>
                   </button>
-                  <div className="h-px bg-[#2A2A3E]" />
+                </div>
+              </>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowOptionsMenu((v) => !v)}
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#2A2A3E] text-[#8A8A9A]"
+            >
+              <MoreVertical size={16} />
+            </button>
+            {showOptionsMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowOptionsMenu(false)} />
+                <div className="absolute right-0 top-9 z-50 bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
                   <button
-                    onClick={() => { setShowShareMenu(false); setShowLeaveConfirm(true) }}
+                    onClick={() => { setShowOptionsMenu(false); setShowLeaveConfirm(true) }}
                     className="flex items-center w-full px-4 py-3 text-sm text-[#FF6B35] font-semibold active:bg-[#2A2A3E]"
                   >
                     <LogOut size={16} className="shrink-0" />
