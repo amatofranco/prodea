@@ -193,6 +193,39 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         ));
     }
 
+    [HttpDelete("{id}/leave")]
+    public async Task<IActionResult> LeaveTournament(int id)
+    {
+        var userId = CurrentUserId;
+
+        var tournament = await db.Tournaments
+            .Include(t => t.Participants)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        if (tournament == null) return NotFound();
+
+        var participant = tournament.Participants.FirstOrDefault(p => p.UserId == userId);
+        if (participant == null) return NotFound(new { message = "No sos participante de este torneo" });
+
+        if (tournament.AdminUserId == userId)
+        {
+            var others = tournament.Participants.Where(p => p.UserId != userId).OrderBy(p => p.JoinedAt).ToList();
+            if (others.Count == 0)
+            {
+                db.Tournaments.Remove(tournament);
+                await db.SaveChangesAsync();
+                return Ok(new { message = "Saliste del torneo y, al ser el único participante, el torneo fue eliminado" });
+            }
+            tournament.AdminUserId = others[0].UserId;
+        }
+
+        db.TournamentParticipants.Remove(participant);
+        await db.MatchdayBadges.Where(mb => mb.UserId == userId && mb.TournamentId == id).ExecuteDeleteAsync();
+        await db.AccumulativeBadges.Where(ab => ab.UserId == userId && ab.TournamentId == id).ExecuteDeleteAsync();
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Saliste del torneo" });
+    }
+
     [HttpGet("{id}/leaderboard")]
     public async Task<ActionResult<List<LeaderboardEntryDto>>> GetLeaderboard(int id)
     {

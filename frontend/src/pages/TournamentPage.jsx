@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown } from 'lucide-react'
+import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown, LogOut } from 'lucide-react'
 import QRCode from 'qrcode'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
@@ -237,12 +237,25 @@ export default function TournamentPage() {
   const [descDraft, setDescDraft] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
   const [matchdayWinners, setMatchdayWinners] = useState([])
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [leaving, setLeaving] = useState(false)
   const phaseBarRef = useRef(null)
 
   async function saveDescription() {
     const updated = await api.updateTournament(id, { description: descDraft.trim() || null })
     setTournament(t => ({ ...t, description: updated.description }))
     setEditingDesc(false)
+  }
+
+  async function handleLeaveTournament() {
+    setLeaving(true)
+    try {
+      await api.leaveTournament(id)
+      navigate('/')
+    } catch (err) {
+      setLeaving(false)
+      setShowLeaveConfirm(false)
+    }
   }
 
   function fetchMatches() {
@@ -450,6 +463,14 @@ export default function TournamentPage() {
                     <ImageDown size={16} className="text-[#00FF87] shrink-0" />
                     <span className="flex-1 text-center leading-tight">Compartir<br />QR</span>
                   </button>
+                  <div className="h-px bg-[#2A2A3E]" />
+                  <button
+                    onClick={() => { setShowShareMenu(false); setShowLeaveConfirm(true) }}
+                    className="flex items-center w-full px-4 py-3 text-sm text-[#FF6B35] font-semibold active:bg-[#2A2A3E]"
+                  >
+                    <LogOut size={16} className="shrink-0" />
+                    <span className="flex-1 text-center">Salir del torneo</span>
+                  </button>
                 </div>
               </>
             )}
@@ -629,6 +650,47 @@ export default function TournamentPage() {
             loading={predSheet.loading}
             onClose={() => setPredSheet(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Leave tournament confirmation */}
+      <AnimatePresence>
+        {showLeaveConfirm && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6"
+            onClick={() => !leaving && setShowLeaveConfirm(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl p-5"
+            >
+              <h3 className="text-white font-bold text-lg mb-2">¿Salir del torneo?</h3>
+              <p className="text-[#8A8A9A] text-sm mb-5">
+                Vas a dejar de participar en "{tournament?.name}". Tus predicciones y motes en este torneo se van a perder y no vas a poder volver a entrar salvo que te inviten de nuevo.
+                {tournament?.adminUserId === user?.id && ' Como sos el admin, el rol pasará a otro participante (o el torneo se eliminará si sos el único).'}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowLeaveConfirm(false)}
+                  disabled={leaving}
+                  className="flex-1 py-2.5 rounded-xl bg-[#2A2A3E] text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleLeaveTournament}
+                  disabled={leaving}
+                  className="flex-1 py-2.5 rounded-xl bg-[#FF6B35] text-white text-sm font-bold disabled:opacity-50"
+                >
+                  {leaving ? 'Saliendo...' : 'Salir'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
