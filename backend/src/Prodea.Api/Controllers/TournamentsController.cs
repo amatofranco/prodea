@@ -14,6 +14,8 @@ namespace Prodea.Api.Controllers;
 [Authorize]
 public class TournamentsController(ProdeaDbContext db) : ControllerBase
 {
+    private const int MaxTournamentsPerUser = 10;
+
     private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
@@ -120,8 +122,8 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var userId = CurrentUserId;
 
         var tournamentCount = await db.TournamentParticipants.CountAsync(tp => tp.UserId == userId);
-        if (tournamentCount >= 5)
-            return BadRequest(new { message = "Límite alcanzado: podés estar en hasta 5 torneos." });
+        if (tournamentCount >= MaxTournamentsPerUser)
+            return BadRequest(new { message = $"Límite alcanzado: podés estar en hasta {MaxTournamentsPerUser} torneos." });
 
         var code = GenerateCode();
         var inviteLink = Guid.NewGuid().ToString("N")[..12];
@@ -173,8 +175,8 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             return BadRequest(new { message = "Este torneo ya alcanzó el límite de 100 participantes." });
 
         var tournamentCount = await db.TournamentParticipants.CountAsync(tp => tp.UserId == userId);
-        if (tournamentCount >= 5)
-            return BadRequest(new { message = "Límite alcanzado: podés estar en hasta 5 torneos." });
+        if (tournamentCount >= MaxTournamentsPerUser)
+            return BadRequest(new { message = $"Límite alcanzado: podés estar en hasta {MaxTournamentsPerUser} torneos." });
 
         db.TournamentParticipants.Add(new TournamentParticipant
         {
