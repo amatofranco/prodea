@@ -113,10 +113,14 @@ public class FootballDataService(
                     if (current == null) continue;
 
                     anySuccess = true;
-                    apiMatch = current;
 
-                    if (current.Status is "IN_PLAY" or "PAUSED" or "FINISHED" or "AWARDED")
-                        break;
+                    // Nos quedamos con la respuesta "en vivo" más reciente (mayor lastUpdated):
+                    // una réplica desincronizada puede devolver FINISHED con un marcador viejo.
+                    if (current.Status is "IN_PLAY" or "PAUSED" or "FINISHED" or "AWARDED"
+                        && (apiMatch == null || current.LastUpdated > apiMatch.LastUpdated))
+                    {
+                        apiMatch = current;
+                    }
                 }
                 catch (HttpRequestException ex)
                 {
@@ -273,7 +277,7 @@ public class FootballDataService(
         [property: JsonPropertyName("extraTime")] FootballDataFullTime? ExtraTime
     );
     private record FootballDataFullTime(int? Home, int? Away);
-    private record FootballDataSingleMatch(string Status, FootballDataScore? Score, int? Minute);
+    private record FootballDataSingleMatch(string Status, FootballDataScore? Score, int? Minute, DateTime LastUpdated);
 
     // Score definitivo antes de penales:
     //   regularTime + extraTime  (cuando hubo alargue; extraTime tiene solo los goles del alargue, no acumulativo)
