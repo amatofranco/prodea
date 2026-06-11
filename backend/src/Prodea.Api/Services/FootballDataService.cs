@@ -19,6 +19,8 @@ public class FootballDataService(
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan KnockoutSyncInterval = TimeSpan.FromHours(6);
+    private const int MaxLiveStatusAttempts = 5;
+    private static readonly TimeSpan LiveStatusRetryDelay = TimeSpan.FromMilliseconds(600);
     private DateTime _lastKnockoutSync = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -84,64 +86,87 @@ public class FootballDataService(
 
         foreach (var match in matchesToCheck)
         {
-            try
+            FootballDataSingleMatch? apiMatch = null;
+            var rateLimited = false;
+
+            // football-data.org sirve respuestas de réplicas desincronizadas: una misma consulta
+            // puede devolver el estado viejo (TIMED) o el real (IN_PLAY/FINISHED) según a qué
+            // réplica pegue. Reintentamos unas veces hasta encontrar una respuesta "en vivo".
+            for (var attempt = 1; attempt <= MaxLiveStatusAttempts; attempt++)
             {
-                var response = await client.GetAsync($"/v4/matches/{match.ExternalId}", ct);
-                if (!response.IsSuccessStatusCode)
+                try
                 {
-                    logger.LogWarning("FootballData API returned {Status} para partido {ExternalId}", response.StatusCode, match.ExternalId);
-                    if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests) break;
-                    continue;
+                    var response = await client.GetAsync($"/v4/matches/{match.ExternalId}", ct);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        logger.LogWarning("FootballData API returned {Status} para partido {ExternalId}", response.StatusCode, match.ExternalId);
+                        if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        {
+                            rateLimited = true;
+                            break;
+                        }
+                        continue;
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync(ct);
+                    var current = JsonSerializer.Deserialize<FootballDataSingleMatch>(json, JsonOptions);
+                    if (current == null) continue;
+
+                    anySuccess = true;
+                    apiMatch = current;
+
+                    if (current.Status is "IN_PLAY" or "PAUSED" or "FINISHED" or "AWARDED")
+                        break;
+                }
+                catch (HttpRequestException ex)
+                {
+                    logger.LogError(ex, "HTTP error consultando partido {ExternalId}", match.ExternalId);
                 }
 
-                var json = await response.Content.ReadAsStringAsync(ct);
-                var apiMatch = JsonSerializer.Deserialize<FootballDataSingleMatch>(json, JsonOptions);
-                if (apiMatch == null) continue;
-
-                anySuccess = true;
-
-                if (apiMatch.Status is "FINISHED" or "AWARDED")
-                {
-                    await FinalizeMatchAsync(db, push, match, apiMatch.Score, ct);
-                    continue;
-                }
-
-                if (apiMatch.Status is "IN_PLAY" or "PAUSED")
-                {
-                    bool changed = false;
-
-                    if (match.Status != MatchStatus.InProgress)
-                    {
-                        match.Status = MatchStatus.InProgress;
-                        changed = true;
-                    }
-
-                    var (liveHome, liveAway) = FinalScore(apiMatch.Score);
-                    if (liveHome != null && (match.HomeScore != liveHome || match.AwayScore != liveAway))
-                    {
-                        match.HomeScore = liveHome;
-                        match.AwayScore = liveAway;
-                        changed = true;
-                    }
-
-                    if (apiMatch.Minute != null && match.Minute != apiMatch.Minute)
-                    {
-                        match.Minute = apiMatch.Minute;
-                        changed = true;
-                    }
-
-                    if (changed)
-                    {
-                        await db.SaveChangesAsync(ct);
-                        await BroadcastMatchUpdateAsync(db, match, ct);
-                    }
-                }
-                // SCHEDULED / TIMED → el partido todavía no arrancó según la API
+                if (attempt < MaxLiveStatusAttempts)
+                    await Task.Delay(LiveStatusRetryDelay, ct);
             }
-            catch (HttpRequestException ex)
+
+            if (rateLimited) break;
+            if (apiMatch == null) continue;
+
+            if (apiMatch.Status is "FINISHED" or "AWARDED")
             {
-                logger.LogError(ex, "HTTP error consultando partido {ExternalId}", match.ExternalId);
+                await FinalizeMatchAsync(db, push, match, apiMatch.Score, ct);
+                continue;
             }
+
+            if (apiMatch.Status is "IN_PLAY" or "PAUSED")
+            {
+                bool changed = false;
+
+                if (match.Status != MatchStatus.InProgress)
+                {
+                    match.Status = MatchStatus.InProgress;
+                    changed = true;
+                }
+
+                var (liveHome, liveAway) = FinalScore(apiMatch.Score);
+                if (liveHome != null && (match.HomeScore != liveHome || match.AwayScore != liveAway))
+                {
+                    match.HomeScore = liveHome;
+                    match.AwayScore = liveAway;
+                    changed = true;
+                }
+
+                if (apiMatch.Minute != null && match.Minute != apiMatch.Minute)
+                {
+                    match.Minute = apiMatch.Minute;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    await db.SaveChangesAsync(ct);
+                    await BroadcastMatchUpdateAsync(db, match, ct);
+                }
+            }
+            // SCHEDULED / TIMED → el partido todavía no arrancó según la API
         }
 
         pollingStatus.ApiAvailable = anySuccess;
