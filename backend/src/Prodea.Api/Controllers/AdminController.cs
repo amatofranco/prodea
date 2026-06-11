@@ -156,6 +156,24 @@ public class AdminController(
         });
     }
 
+    [HttpDelete("matches/{id}")]
+    public async Task<IActionResult> DeleteMatch(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var match = await db.Matches.FindAsync(id);
+        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+
+        db.Matches.Remove(match);
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = $"Partido {id} eliminado" });
+    }
+
     [HttpPost("matches/{id}/finalize")]
     public async Task<IActionResult> FinalizeMatch(
         int id,
