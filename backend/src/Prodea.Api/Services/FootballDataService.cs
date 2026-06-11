@@ -19,6 +19,8 @@ public class FootballDataService(
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan KnockoutSyncInterval = TimeSpan.FromHours(6);
+    private const int MaxLiveStatusAttempts = 5;
+    private static readonly TimeSpan LiveStatusRetryDelay = TimeSpan.FromMilliseconds(600);
     private DateTime _lastKnockoutSync = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -61,15 +63,16 @@ public class FootballDataService(
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
         var push = scope.ServiceProvider.GetRequiredService<PushNotificationService>();
 
-        var inProgressMatches = await db.Matches
-            .Where(m => m.Status == MatchStatus.InProgress && m.ExternalId != null)
+        // El endpoint de competición (/v4/competitions/WC/matches?status=IN_PLAY) devuelve
+        // datos cacheados/desactualizados durante el Mundial, así que consultamos cada
+        // partido individualmente vía /v4/matches/{id}, que sí refleja el estado en vivo.
+        var matchesToCheck = await db.Matches
+            .Where(m => m.ExternalId != null &&
+                (m.Status == MatchStatus.InProgress ||
+                 (m.Status == MatchStatus.Scheduled && m.MatchDate <= DateTime.UtcNow.AddMinutes(5))))
             .ToListAsync(ct);
 
-        var scheduledToStart = await db.Matches
-            .Where(m => m.Status == MatchStatus.Scheduled && m.MatchDate <= DateTime.UtcNow.AddMinutes(5))
-            .ToListAsync(ct);
-
-        if (inProgressMatches.Count == 0 && scheduledToStart.Count == 0) return;
+        if (matchesToCheck.Count == 0) return;
 
         var client = httpClientFactory.CreateClient("FootballData");
         var apiKey = configuration["FootballData:ApiKey"];
@@ -79,28 +82,62 @@ public class FootballDataService(
             return;
         }
 
-        try
+        var anySuccess = false;
+
+        foreach (var match in matchesToCheck)
         {
-            var response = await client.GetAsync("/v4/competitions/WC/matches?status=IN_PLAY", ct);
-            if (!response.IsSuccessStatusCode)
+            FootballDataSingleMatch? apiMatch = null;
+            var rateLimited = false;
+
+            // football-data.org sirve respuestas de réplicas desincronizadas: una misma consulta
+            // puede devolver el estado viejo (TIMED) o el real (IN_PLAY/FINISHED) según a qué
+            // réplica pegue. Reintentamos unas veces hasta encontrar una respuesta "en vivo".
+            for (var attempt = 1; attempt <= MaxLiveStatusAttempts; attempt++)
             {
-                logger.LogWarning("FootballData API returned {Status}", response.StatusCode);
-                pollingStatus.ApiAvailable = false;
-                return;
+                try
+                {
+                    var response = await client.GetAsync($"/v4/matches/{match.ExternalId}", ct);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        logger.LogWarning("FootballData API returned {Status} para partido {ExternalId}", response.StatusCode, match.ExternalId);
+                        if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        {
+                            rateLimited = true;
+                            break;
+                        }
+                        continue;
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync(ct);
+                    var current = JsonSerializer.Deserialize<FootballDataSingleMatch>(json, JsonOptions);
+                    if (current == null) continue;
+
+                    anySuccess = true;
+                    apiMatch = current;
+
+                    if (current.Status is "IN_PLAY" or "PAUSED" or "FINISHED" or "AWARDED")
+                        break;
+                }
+                catch (HttpRequestException ex)
+                {
+                    logger.LogError(ex, "HTTP error consultando partido {ExternalId}", match.ExternalId);
+                }
+
+                if (attempt < MaxLiveStatusAttempts)
+                    await Task.Delay(LiveStatusRetryDelay, ct);
             }
 
-            var json = await response.Content.ReadAsStringAsync(ct);
-            var result = JsonSerializer.Deserialize<FootballDataMatchesResponse>(json, JsonOptions);
-            if (result?.Matches == null) return;
+            if (rateLimited) break;
+            if (apiMatch == null) continue;
 
-            pollingStatus.LastSuccessfulPoll = DateTime.UtcNow;
-            pollingStatus.ApiAvailable = true;
-
-            foreach (var apiMatch in result.Matches)
+            if (apiMatch.Status is "FINISHED" or "AWARDED")
             {
-                var match = await db.Matches.FirstOrDefaultAsync(m => m.ExternalId == apiMatch.Id, ct);
-                if (match == null) continue;
+                await FinalizeMatchAsync(db, push, match, apiMatch.Score, ct);
+                continue;
+            }
 
+            if (apiMatch.Status is "IN_PLAY" or "PAUSED")
+            {
                 bool changed = false;
 
                 if (match.Status != MatchStatus.InProgress)
@@ -110,7 +147,7 @@ public class FootballDataService(
                 }
 
                 var (liveHome, liveAway) = FinalScore(apiMatch.Score);
-                if (liveHome != null)
+                if (liveHome != null && (match.HomeScore != liveHome || match.AwayScore != liveAway))
                 {
                     match.HomeScore = liveHome;
                     match.AwayScore = liveAway;
@@ -129,40 +166,11 @@ public class FootballDataService(
                     await BroadcastMatchUpdateAsync(db, match, ct);
                 }
             }
-
-            var activeExternalIds = result.Matches.Select(m => m.Id).ToHashSet();
-            foreach (var match in inProgressMatches)
-            {
-                if (!match.ExternalId.HasValue || activeExternalIds.Contains(match.ExternalId.Value))
-                    continue;
-
-                // No está en IN_PLAY — consultamos su estado real antes de finalizar.
-                // Puede estar en PAUSED (entretiempo) o aún en alargue; solo finalizamos si la API confirma FINISHED.
-                try
-                {
-                    var matchResp = await client.GetAsync($"/v4/matches/{match.ExternalId.Value}", ct);
-                    if (!matchResp.IsSuccessStatusCode) continue;
-
-                    var matchJson = await matchResp.Content.ReadAsStringAsync(ct);
-                    var matchData = JsonSerializer.Deserialize<FootballDataSingleMatch>(matchJson, JsonOptions);
-
-                    if (matchData?.Status is "FINISHED" or "AWARDED")
-                    {
-                        await FinalizeMatchAsync(db, push, match, matchData.Score, ct);
-                    }
-                    // PAUSED, SCHEDULED, etc. → dejamos en InProgress
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Error verificando estado del partido {ExternalId}", match.ExternalId);
-                }
-            }
+            // SCHEDULED / TIMED → el partido todavía no arrancó según la API
         }
-        catch (HttpRequestException ex)
-        {
-            logger.LogError(ex, "HTTP error polling football-data.org");
-            pollingStatus.ApiAvailable = false;
-        }
+
+        pollingStatus.ApiAvailable = anySuccess;
+        if (anySuccess) pollingStatus.LastSuccessfulPoll = DateTime.UtcNow;
     }
 
     private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
@@ -258,8 +266,6 @@ public class FootballDataService(
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    private record FootballDataMatchesResponse([property: JsonPropertyName("matches")] List<FootballDataMatch> Matches);
-    private record FootballDataMatch(int Id, int? Minute, FootballDataScore? Score);
     private record FootballDataScore(
         [property: JsonPropertyName("winner")] string? Winner,
         [property: JsonPropertyName("fullTime")] FootballDataFullTime? FullTime,
@@ -267,7 +273,7 @@ public class FootballDataService(
         [property: JsonPropertyName("extraTime")] FootballDataFullTime? ExtraTime
     );
     private record FootballDataFullTime(int? Home, int? Away);
-    private record FootballDataSingleMatch(string Status, FootballDataScore? Score);
+    private record FootballDataSingleMatch(string Status, FootballDataScore? Score, int? Minute);
 
     // Score definitivo antes de penales:
     //   regularTime + extraTime  (cuando hubo alargue; extraTime tiene solo los goles del alargue, no acumulativo)

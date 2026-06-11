@@ -8,6 +8,7 @@ App mobile-first de prode futbolero entre amigos para el Mundial 2026, con motes
 - **Base de datos:** PostgreSQL (EF Core + Npgsql)
 - **Frontend:** React + Tailwind CSS (PWA)
 - **Hosting:** Render (backend + DB) / Vercel (frontend)
+- **Dominio:** `prodea.app` registrado en [Porkbun](https://porkbun.com/)
 
 ---
 
