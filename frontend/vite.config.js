@@ -46,7 +46,9 @@ export default defineConfig(({ mode }) => {
 
       injectManifest: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+        // index.html no se precachea: se sirve siempre con NetworkFirst (ver sw.js)
+        // para evitar que quede referenciando assets hasheados de un deploy anterior.
+        globPatterns: ['**/*.{js,css,svg,png,ico,woff,woff2}'],
       },
     }),
   ],

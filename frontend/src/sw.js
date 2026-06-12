@@ -10,6 +10,19 @@ precacheAndRoute(self.__WB_MANIFEST)
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
+// index.html siempre se pide a la red primero (no se precachea) para evitar
+// que quede referenciando assets hasheados de un deploy anterior que ya no existen.
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new NetworkFirst({
+    cacheName: 'html-cache',
+    networkTimeoutSeconds: 3,
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+    ],
+  })
+)
+
 // Fuentes de Google
 registerRoute(
   /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
