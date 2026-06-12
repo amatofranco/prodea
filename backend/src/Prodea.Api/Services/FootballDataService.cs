@@ -158,6 +158,7 @@ public class FootballDataService(
                 if (match.Status != MatchStatus.InProgress)
                 {
                     match.Status = MatchStatus.InProgress;
+                    match.StartedAt = DateTime.UtcNow;
                     changed = true;
                 }
 
