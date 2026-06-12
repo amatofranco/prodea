@@ -177,6 +177,7 @@ public class FootballDataService(
 
                 if (changed)
                 {
+                    match.LastUpdatedAt = DateTime.UtcNow;
                     await db.SaveChangesAsync(ct);
                     await BroadcastMatchUpdateAsync(db, match, ct);
                 }
@@ -202,6 +203,8 @@ public class FootballDataService(
     private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
     {
         match.Status = MatchStatus.Finished;
+        match.FinishedAt = DateTime.UtcNow;
+        match.LastUpdatedAt = DateTime.UtcNow;
 
         // apiWinner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW"
         string? apiWinner = apiScore?.Winner;

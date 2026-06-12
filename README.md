@@ -19,7 +19,9 @@ App mobile-first de prode futbolero entre amigos para el Mundial 2026, con motes
 | Branch | Propósito |
 |--------|-----------|
 | `main` | Producción — código deployado en Render/Vercel. **Nunca commitear directo.** |
-| `dev` | Desarrollo — branch base para todo el trabajo nuevo. |
+| `dev` | Desarrollo/staging — branch base para todo el trabajo nuevo. |
+
+> **DB de dev/testing:** el ambiente de `dev` corre en un servicio de staging separado en Render (se redeploya automáticamente con cada push a `dev`) y apunta a una base PostgreSQL en [Neon](https://neon.tech/), distinta de la DB de producción. Al redeployar, las migraciones automáticas de `Program.cs` (bloque `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`) se aplican solas contra Neon — no debería hacer falta correr scripts a mano.
 
 ### Cómo trabajar
 

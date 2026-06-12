@@ -135,6 +135,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "AwayTeamLabel" varchar(200);
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "Minute" int;
             ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "Winner" varchar(100);
+            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "FinishedAt" timestamptz;
+            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "LastUpdatedAt" timestamptz;
             ALTER TABLE "Predictions" ADD COLUMN IF NOT EXISTS "PredictedPenaltyWinner" varchar(10);
             ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "FirstName" varchar(100);
             ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "LastName" varchar(100);

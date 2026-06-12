@@ -36,6 +36,8 @@ public class Match
     public int? ExternalId { get; set; }
     public int? Minute { get; set; }
     public string? Winner { get; set; }
+    public DateTime? FinishedAt { get; set; }
+    public DateTime? LastUpdatedAt { get; set; }
     public bool ReminderSent { get; set; } = false;
     public bool ResultNotificationSent { get; set; } = false;
 

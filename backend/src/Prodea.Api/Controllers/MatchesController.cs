@@ -101,6 +101,8 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         match.HomeScore = request.HomeScore;
         match.AwayScore = request.AwayScore;
         match.Status = MatchStatus.Finished;
+        match.FinishedAt = DateTime.UtcNow;
+        match.LastUpdatedAt = DateTime.UtcNow;
 
         // For penalty matches: admin passes winner = "home" | "away"
         if (request.HomeScore == request.AwayScore && request.Winner != null)
