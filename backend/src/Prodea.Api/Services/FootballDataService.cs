@@ -18,6 +18,8 @@ public class FootballDataService(
     : BackgroundService
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan LivePollingInterval = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan FastPollingInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan KnockoutSyncInterval = TimeSpan.FromHours(6);
     private const int MaxLiveStatusAttempts = 5;
     private static readonly TimeSpan LiveStatusRetryDelay = TimeSpan.FromMilliseconds(600);
@@ -29,9 +31,10 @@ public class FootballDataService(
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            var nextDelay = PollingInterval;
             try
             {
-                await PollInProgressMatchesAsync(stoppingToken);
+                nextDelay = await PollInProgressMatchesAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -53,11 +56,11 @@ public class FootballDataService(
                 }
             }
 
-            await Task.Delay(PollingInterval, stoppingToken);
+            await Task.Delay(nextDelay, stoppingToken);
         }
     }
 
-    private async Task PollInProgressMatchesAsync(CancellationToken ct)
+    private async Task<TimeSpan> PollInProgressMatchesAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
@@ -72,17 +75,19 @@ public class FootballDataService(
                  (m.Status == MatchStatus.Scheduled && m.MatchDate <= DateTime.UtcNow.AddMinutes(5))))
             .ToListAsync(ct);
 
-        if (matchesToCheck.Count == 0) return;
+        if (matchesToCheck.Count == 0) return PollingInterval;
 
         var client = httpClientFactory.CreateClient("FootballData");
         var apiKey = configuration["FootballData:ApiKey"];
         if (string.IsNullOrEmpty(apiKey))
         {
             logger.LogWarning("FootballData API key not configured — skipping poll");
-            return;
+            return PollingInterval;
         }
 
         var anySuccess = false;
+        var pendingKickoff = false;
+        var wasRateLimited = false;
 
         foreach (var match in matchesToCheck)
         {
@@ -131,8 +136,14 @@ public class FootballDataService(
                     await Task.Delay(LiveStatusRetryDelay, ct);
             }
 
-            if (rateLimited) break;
-            if (apiMatch == null) continue;
+            if (rateLimited) { wasRateLimited = true; break; }
+            if (apiMatch == null)
+            {
+                // El partido todavía no fue marcado IN_PLAY por football-data.org pese a
+                // que ya debería haber arrancado (o está a punto). Volvemos a chequear pronto.
+                if (match.Status == MatchStatus.Scheduled) pendingKickoff = true;
+                continue;
+            }
 
             if (apiMatch.Status is "FINISHED" or "AWARDED")
             {
@@ -175,6 +186,17 @@ public class FootballDataService(
 
         pollingStatus.ApiAvailable = anySuccess;
         if (anySuccess) pollingStatus.LastSuccessfulPoll = DateTime.UtcNow;
+
+        // Si nos limitaron la tasa, hacemos backoff al intervalo normal.
+        if (wasRateLimited) return PollingInterval;
+
+        // Partido por arrancar/confirmar todavía: reintentamos en 1 minuto.
+        if (pendingKickoff) return FastPollingInterval;
+
+        // Hay al menos un partido en curso confirmado: chequeamos cada 2 minutos.
+        if (matchesToCheck.Any(m => m.Status == MatchStatus.InProgress)) return LivePollingInterval;
+
+        return PollingInterval;
     }
 
     private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
