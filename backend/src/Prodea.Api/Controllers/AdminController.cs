@@ -31,7 +31,7 @@ public class AdminController(
 
         var matches = await query
             .OrderBy(m => m.MatchDate)
-            .Select(m => new { m.Id, m.ExternalId, m.HomeTeam, m.AwayTeam, m.Phase, m.Matchday, m.Status, m.MatchDate, m.HomeScore, m.AwayScore, m.FinishedAt, m.LastUpdatedAt })
+            .Select(m => new { m.Id, m.ExternalId, m.HomeTeam, m.AwayTeam, m.Phase, m.Matchday, m.Status, m.MatchDate, m.HomeScore, m.AwayScore, m.StartedAt, m.FinishedAt, m.LastUpdatedAt })
             .ToListAsync();
 
         return Ok(matches);
@@ -141,6 +141,7 @@ public class AdminController(
         if (request.HomeTeam != null) match.HomeTeam = request.HomeTeam;
         if (request.AwayTeam != null) match.AwayTeam = request.AwayTeam;
         match.LastUpdatedAt = DateTime.UtcNow;
+        if (request.Status == MatchStatus.InProgress) match.StartedAt = DateTime.UtcNow;
         if (request.Status == MatchStatus.Finished) match.FinishedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
