@@ -27,6 +27,7 @@ export default function JoinPage() {
     api.joinTournament({ codeOrInviteLink: code })
       .then((t) => {
         setTournaments([...tournaments, t])
+        window.fbq?.('trackCustom', 'JoinTournament')
         navigate(`/torneos/${t.id}`, { replace: true })
       })
       .catch((err) => {

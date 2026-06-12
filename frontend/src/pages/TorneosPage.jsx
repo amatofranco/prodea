@@ -30,6 +30,7 @@ export default function TorneosPage() {
       setShowCreate(false)
       setCreateName('')
       setCreateDesc('')
+      window.fbq?.('trackCustom', 'JoinTournament')
       navigate(`/torneos/${t.id}`)
     } catch (err) { setError(err.message) }
   }
@@ -42,6 +43,7 @@ export default function TorneosPage() {
       setTournaments([...tournaments, t])
       setShowJoin(false)
       setJoinCode('')
+      window.fbq?.('trackCustom', 'JoinTournament')
       navigate(`/torneos/${t.id}`)
     } catch (err) { setError(err.message) }
   }
