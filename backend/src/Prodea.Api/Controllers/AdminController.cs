@@ -31,7 +31,7 @@ public class AdminController(
 
         var matches = await query
             .OrderBy(m => m.MatchDate)
-            .Select(m => new { m.Id, m.ExternalId, m.HomeTeam, m.AwayTeam, m.Phase, m.Matchday, m.Status, m.MatchDate, m.HomeScore, m.AwayScore })
+            .Select(m => new { m.Id, m.ExternalId, m.HomeTeam, m.AwayTeam, m.Phase, m.Matchday, m.Status, m.MatchDate, m.HomeScore, m.AwayScore, m.FinishedAt, m.LastUpdatedAt })
             .ToListAsync();
 
         return Ok(matches);
@@ -140,6 +140,8 @@ public class AdminController(
             match.MatchDate = request.MatchDate.Value;
         if (request.HomeTeam != null) match.HomeTeam = request.HomeTeam;
         if (request.AwayTeam != null) match.AwayTeam = request.AwayTeam;
+        match.LastUpdatedAt = DateTime.UtcNow;
+        if (request.Status == MatchStatus.Finished) match.FinishedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
 
@@ -190,6 +192,8 @@ public class AdminController(
         match.HomeScore = request.HomeScore;
         match.AwayScore = request.AwayScore;
         match.Status = MatchStatus.Finished;
+        match.FinishedAt = DateTime.UtcNow;
+        match.LastUpdatedAt = DateTime.UtcNow;
 
         // winner: "home" | "away" — para penales cuando scores son iguales
         if (request.Winner == "home") match.Winner = match.HomeTeam;
@@ -299,6 +303,8 @@ public class AdminController(
             match.HomeScore = rng.Next(0, 5);
             match.AwayScore = rng.Next(0, 5);
             match.Status = MatchStatus.Finished;
+            match.FinishedAt = DateTime.UtcNow;
+            match.LastUpdatedAt = DateTime.UtcNow;
         }
         await db.SaveChangesAsync();
 
@@ -487,6 +493,8 @@ public class AdminController(
             m.AwayScore = rng.Next(0, 5);
             m.Status = MatchStatus.Finished;
             m.Minute = null;
+            m.FinishedAt = DateTime.UtcNow;
+            m.LastUpdatedAt = DateTime.UtcNow;
         }
         await db.SaveChangesAsync();
 
