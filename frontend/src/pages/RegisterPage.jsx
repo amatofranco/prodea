@@ -18,6 +18,7 @@ export default function RegisterPage() {
     try {
       const data = await api.googleLogin(credential)
       setAuth(data.token, data.user)
+      window.fbq?.('track', 'CompleteRegistration')
       window.location.replace(redirect)
     } catch (err) {
       setError(err.message)
@@ -36,6 +37,7 @@ export default function RegisterPage() {
     try {
       const data = await api.register(form)
       setAuth(data.token, data.user)
+      window.fbq?.('track', 'CompleteRegistration')
       window.location.replace(redirect)
     } catch (err) {
       setError(err.message)
