@@ -22,9 +22,10 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
         var pushService = scope.ServiceProvider.GetRequiredService<PushNotificationService>();
 
-        // Usar hora de Argentina (UTC-3)
+        // Usar hora de Argentina (UTC-3): el "día" va de 03:00 UTC a 03:00 UTC del día siguiente
         var now = DateTime.UtcNow;
-        var todayUtc = now.Date;
+        var argOffset = TimeSpan.FromHours(3);
+        var todayUtc = now.Subtract(argOffset).Date.Add(argOffset);
         var tomorrowUtc = todayUtc.AddDays(1);
 
         var todayMatches = await db.Matches
