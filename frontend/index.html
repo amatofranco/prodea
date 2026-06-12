@@ -44,6 +44,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Si el script principal falla (deploy nuevo: el archivo viejo ya no existe
+      // y el server devuelve index.html en su lugar), recargamos una vez para
+      // traer la versión actual de la app.
+      window.addEventListener('error', function (e) {
+        if (e.target && e.target.tagName === 'SCRIPT' && !sessionStorage.getItem('prodea-reload-once')) {
+          sessionStorage.setItem('prodea-reload-once', '1')
+          window.location.reload()
+        }
+      }, true)
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
