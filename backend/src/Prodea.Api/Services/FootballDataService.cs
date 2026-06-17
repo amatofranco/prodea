@@ -123,11 +123,13 @@ public class FootballDataService(
                 if (isFinal)
                 {
                     var (homeScore, awayScore, winner) = ExtractEspnScore(espnEvent, match);
-                    await FinalizeMatchCoreAsync(db, push, match, homeScore, awayScore, winner, ct);
+                    var goals = await FetchEspnGoalsAsync(espnEvent.Id, ct);
+                    await FinalizeMatchCoreAsync(db, push, match, homeScore, awayScore, winner, goals, ct);
                 }
                 else if (isLive)
                 {
                     var changed = false;
+                    List<GoalInfo>? goals = null;
 
                     if (match.Status != MatchStatus.InProgress)
                     {
@@ -143,6 +145,7 @@ public class FootballDataService(
                         match.HomeScore = liveHome;
                         match.AwayScore = liveAway;
                         changed = true;
+                        goals = await FetchEspnGoalsAsync(espnEvent.Id, ct);
                     }
 
                     var minute = ParseEspnMinute(espnEvent.Status.DisplayClock, espnEvent.Status.Period);
@@ -156,7 +159,7 @@ public class FootballDataService(
                     {
                         match.LastUpdatedAt = DateTime.UtcNow;
                         await db.SaveChangesAsync(ct);
-                        await BroadcastMatchUpdateAsync(db, match, ct);
+                        await BroadcastMatchUpdateAsync(db, match, goals, ct);
                     }
                 }
                 else if (statusName == "STATUS_SCHEDULED" && match.Status == MatchStatus.Scheduled)
@@ -258,7 +261,7 @@ public class FootballDataService(
                 {
                     match.LastUpdatedAt = DateTime.UtcNow;
                     await db.SaveChangesAsync(ct);
-                    await BroadcastMatchUpdateAsync(db, match, ct);
+                    await BroadcastMatchUpdateAsync(db, match, null, ct);
                 }
             }
         }
@@ -444,12 +447,40 @@ public class FootballDataService(
     private static string MapEspnTeam(string espnName) =>
         EspnToSpanish.TryGetValue(espnName, out var spanish) ? spanish : espnName;
 
+    private async Task<List<GoalInfo>> FetchEspnGoalsAsync(string eventId, CancellationToken ct)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient("Espn");
+            var response = await client.GetAsync($"/apis/site/v2/sports/soccer/fifa.world/summary?event={eventId}", ct);
+            if (!response.IsSuccessStatusCode) return [];
+
+            var json = await response.Content.ReadAsStringAsync(ct);
+            var summary = JsonSerializer.Deserialize<EspnSummaryResponse>(json, JsonOptions);
+            if (summary?.KeyEvents == null) return [];
+
+            return summary.KeyEvents
+                .Where(e => e.ScoringPlay && e.Type.TypeStr.StartsWith("goal", StringComparison.OrdinalIgnoreCase))
+                .Select(e => new GoalInfo(
+                    Scorer: e.Participants?.FirstOrDefault()?.Athlete.DisplayName ?? "?",
+                    Team: MapEspnTeam(e.Team?.DisplayName ?? ""),
+                    Minute: e.Clock?.DisplayValue ?? ""
+                ))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error obteniendo goles ESPN para evento {EventId}", eventId);
+            return [];
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Finalización
     // -------------------------------------------------------------------------
 
     // Ruta ESPN y fallback genérico: scores ya extraídos
-    private async Task FinalizeMatchCoreAsync(ProdeaDbContext db, PushNotificationService push, Match match, int homeScore, int awayScore, string? winner, CancellationToken ct)
+    private async Task FinalizeMatchCoreAsync(ProdeaDbContext db, PushNotificationService push, Match match, int homeScore, int awayScore, string? winner, List<GoalInfo>? goals, CancellationToken ct)
     {
         match.Status = MatchStatus.Finished;
         match.FinishedAt = DateTime.UtcNow;
@@ -476,7 +507,7 @@ public class FootballDataService(
         }
 
         await db.SaveChangesAsync(ct);
-        await BroadcastMatchUpdateAsync(db, match, ct);
+        await BroadcastMatchUpdateAsync(db, match, goals, ct);
 
         var badgeService = new BadgeService(db);
         var tournamentIds = await db.TournamentParticipants
@@ -502,7 +533,7 @@ public class FootballDataService(
         };
 
         var (finalHome, finalAway) = FinalScore(apiScore);
-        await FinalizeMatchCoreAsync(db, push, match, finalHome ?? match.HomeScore ?? 0, finalAway ?? match.AwayScore ?? 0, winner, ct);
+        await FinalizeMatchCoreAsync(db, push, match, finalHome ?? match.HomeScore ?? 0, finalAway ?? match.AwayScore ?? 0, winner, null, ct);
     }
 
     private static async Task AwardChampionPickPointsAsync(ProdeaDbContext db, Match match, CancellationToken ct)
@@ -521,7 +552,7 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, CancellationToken ct)
+    private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, List<GoalInfo>? goals, CancellationToken ct)
     {
         var tournamentIds = await db.TournamentParticipants
             .Select(tp => tp.TournamentId)
@@ -535,6 +566,7 @@ public class FootballDataService(
             awayScore = match.AwayScore,
             status = match.Status.ToString(),
             minute = match.Minute,
+            goals = goals?.Select(g => new { scorer = g.Scorer, team = g.Team, minute = g.Minute }).ToList(),
         };
 
         foreach (var tid in tournamentIds)
@@ -610,4 +642,32 @@ public class FootballDataService(
     private record EspnTeam(
         [property: JsonPropertyName("displayName")] string DisplayName
     );
+
+    // ESPN Summary DTOs (para goles)
+    private record EspnSummaryResponse(
+        [property: JsonPropertyName("keyEvents")] List<EspnKeyEvent>? KeyEvents
+    );
+    private record EspnKeyEvent(
+        [property: JsonPropertyName("scoringPlay")] bool ScoringPlay,
+        [property: JsonPropertyName("type")] EspnKeyEventType Type,
+        [property: JsonPropertyName("clock")] EspnKeyEventClock? Clock,
+        [property: JsonPropertyName("team")] EspnKeyEventTeam? Team,
+        [property: JsonPropertyName("participants")] List<EspnKeyEventParticipant>? Participants
+    );
+    private record EspnKeyEventType(
+        [property: JsonPropertyName("type")] string TypeStr
+    );
+    private record EspnKeyEventClock(
+        [property: JsonPropertyName("displayValue")] string? DisplayValue
+    );
+    private record EspnKeyEventTeam(
+        [property: JsonPropertyName("displayName")] string DisplayName
+    );
+    private record EspnKeyEventParticipant(
+        [property: JsonPropertyName("athlete")] EspnKeyEventAthlete Athlete
+    );
+    private record EspnKeyEventAthlete(
+        [property: JsonPropertyName("displayName")] string DisplayName
+    );
+    private record GoalInfo(string Scorer, string Team, string Minute);
 }

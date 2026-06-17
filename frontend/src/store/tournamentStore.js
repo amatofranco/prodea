@@ -15,7 +15,14 @@ export const useTournamentStore = create((set, get) => ({
     set((state) => ({
       matches: state.matches.map((m) =>
         m.id === update.matchId
-          ? { ...m, homeScore: update.homeScore, awayScore: update.awayScore, status: update.status, minute: update.minute ?? m.minute }
+          ? {
+              ...m,
+              homeScore: update.homeScore,
+              awayScore: update.awayScore,
+              status: update.status,
+              minute: update.minute ?? m.minute,
+              goals: update.goals !== undefined ? update.goals : m.goals,
+            }
           : m
       ),
     }))
