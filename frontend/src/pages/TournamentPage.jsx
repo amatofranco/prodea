@@ -45,7 +45,6 @@ function FlagImg({ name, label, size = 40 }) {
 }
 
 function TournamentMatchCard({ match, onTap }) {
-  const navigate = useNavigate()
   const isFinished = match.status === 'Finished'
   const isLive = match.status === 'InProgress'
   const pred = match.userPrediction
@@ -110,15 +109,8 @@ function TournamentMatchCard({ match, onTap }) {
         ) : (
           <span className="text-xs text-[#8A8A9A]">{isFinished ? 'Sin predicción' : 'Sin predicción cargada'}</span>
         )}
-        {isFinished ? (
+        {isFinished && (
           <span className="text-[10px] text-[#00FF87] font-semibold shrink-0 ml-2">Ver todos →</span>
-        ) : !isLive && (
-          <button
-            onClick={(e) => { e.stopPropagation(); navigate(`/predicciones/${match.id}`) }}
-            className="text-[10px] text-[#00FF87] font-semibold shrink-0 ml-2 active:opacity-60"
-          >
-            Ver →
-          </button>
         )}
       </div>
     </div>

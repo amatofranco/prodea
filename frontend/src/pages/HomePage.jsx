@@ -223,9 +223,12 @@ function UpcomingCard({ match, navigate }) {
         {!teamsConfirmed ? (
           <span className="text-xs font-semibold text-[#8A8A9A]">Equipos por confirmar</span>
         ) : hasPred ? (
-          <span className="text-sm font-bold text-[#00FF87]">
-            {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-bold text-[#00FF87]">
+              {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
+            </span>
+            {canPredict && <span className="text-[10px] text-[#00FF87] font-semibold">Ver →</span>}
+          </div>
         ) : isLocked ? (
           <Lock size={13} className="text-[#8A8A9A]" />
         ) : (
