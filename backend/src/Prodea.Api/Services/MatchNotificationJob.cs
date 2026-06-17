@@ -22,48 +22,68 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
         var pushService = scope.ServiceProvider.GetRequiredService<PushNotificationService>();
 
-        // Usar hora de Argentina (UTC-3): el "día" va de 03:00 UTC a 03:00 UTC del día siguiente
         var now = DateTime.UtcNow;
-        var argOffset = TimeSpan.FromHours(3);
-        var todayUtc = now.Subtract(argOffset).Date.Add(argOffset);
-        var tomorrowUtc = todayUtc.AddDays(1);
-
-        var todayMatches = await db.Matches
-            .Where(m => m.MatchDate >= todayUtc && m.MatchDate < tomorrowUtc)
-            .OrderBy(m => m.MatchDate)
-            .ToListAsync();
-
-        if (!todayMatches.Any()) return;
-
         var changed = false;
 
-        // Notificación de inicio: 20-40 min antes del primer partido del día
-        var firstMatch = todayMatches.First();
-        if (!firstMatch.ReminderSent
-            && firstMatch.Status == MatchStatus.Scheduled
-            && firstMatch.MatchDate > now.AddMinutes(20)
-            && firstMatch.MatchDate <= now.AddMinutes(40))
+        // --- Notificación de inicio ---
+        // Buscar cualquier partido en los próximos 20-40 min cuya jornada todavía no mandó reminder.
+        // Usar Matchday (no día calendario) para que un partido nocturno de jornada anterior
+        // no dispare un reminder de "nueva jornada".
+        var soonMatch = await db.Matches
+            .Where(m => m.Matchday != null
+                     && m.Status == MatchStatus.Scheduled
+                     && m.MatchDate > now.AddMinutes(20)
+                     && m.MatchDate <= now.AddMinutes(40))
+            .OrderBy(m => m.MatchDate)
+            .FirstOrDefaultAsync();
+
+        if (soonMatch != null)
         {
-            var minutesUntil = (int)(firstMatch.MatchDate - now).TotalMinutes;
-            var title = $"⚽ {firstMatch.HomeTeam} vs {firstMatch.AwayTeam}";
-            var body = $"Arranca en {minutesUntil} min. ¿Tenés tu predicción cargada?";
-            await SendToAllAsync(db, pushService, title, body, "/predicciones");
-            firstMatch.ReminderSent = true;
-            changed = true;
-            logger.LogInformation("Notificación de inicio de jornada enviada");
+            var reminderAlreadySent = await db.Matches
+                .AnyAsync(m => m.Matchday == soonMatch.Matchday && m.ReminderSent);
+
+            if (!reminderAlreadySent)
+            {
+                var minutesUntil = (int)(soonMatch.MatchDate - now).TotalMinutes;
+                var title = $"⚽ {soonMatch.HomeTeam} vs {soonMatch.AwayTeam}";
+                var body = $"Arranca en {minutesUntil} min. ¿Tenés tus predicciones cargadas?";
+                await SendToAllAsync(db, pushService, title, body, "/predicciones");
+                soonMatch.ReminderSent = true;
+                changed = true;
+                logger.LogInformation("Notificación de inicio de jornada {Matchday} enviada", soonMatch.Matchday);
+            }
         }
 
-        // Notificación de cierre: cuando termina el último partido del día
-        var lastMatch = todayMatches.Last();
-        if (!lastMatch.ResultNotificationSent
-            && todayMatches.All(m => m.Status == MatchStatus.Finished))
+        // --- Notificación de cierre ---
+        // Buscar jornadas donde todos los partidos terminaron y el último no mandó notificación.
+        // Al agrupar por Matchday en vez de día calendario, un partido nocturno cierra
+        // correctamente su propia jornada y no la del día siguiente.
+        var matchdaysWithUnsent = await db.Matches
+            .Where(m => m.Matchday != null
+                     && m.Status == MatchStatus.Finished
+                     && !m.ResultNotificationSent)
+            .Select(m => m.Matchday)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var matchday in matchdaysWithUnsent)
         {
+            var mdMatches = await db.Matches
+                .Where(m => m.Matchday == matchday)
+                .OrderBy(m => m.MatchDate)
+                .ToListAsync();
+
+            if (!mdMatches.All(m => m.Status == MatchStatus.Finished)) continue;
+
+            var lastMatch = mdMatches.Last();
+            if (lastMatch.ResultNotificationSent) continue;
+
             var title = "🏁 Se terminó la jornada";
             var body = $"Último resultado: {lastMatch.HomeTeam} {lastMatch.HomeScore}-{lastMatch.AwayScore} {lastMatch.AwayTeam}. Mirá cómo quedó la tabla.";
             await SendToAllAsync(db, pushService, title, body, "/torneos");
             lastMatch.ResultNotificationSent = true;
             changed = true;
-            logger.LogInformation("Notificación de cierre de jornada enviada");
+            logger.LogInformation("Notificación de cierre de jornada {Matchday} enviada", matchday);
         }
 
         if (changed)
