@@ -130,6 +130,10 @@ public class FootballDataService(
                 {
                     var changed = false;
                     List<GoalInfo>? goals = null;
+                    var livePhase = statusName switch {
+                        "STATUS_HALFTIME" => "ET",
+                        _ => (string?)null
+                    };
 
                     if (match.Status != MatchStatus.InProgress)
                     {
@@ -148,18 +152,22 @@ public class FootballDataService(
                         goals = await FetchEspnGoalsAsync(espnEvent.Id, ct);
                     }
 
-                    var minute = ParseEspnMinute(espnEvent.Status.DisplayClock, espnEvent.Status.Period);
-                    if (minute != null && match.Minute != minute)
+                    // Durante el entretiempo no actualizamos el minuto (queda en el del último gol o anterior)
+                    if (statusName != "STATUS_HALFTIME")
                     {
-                        match.Minute = minute;
-                        changed = true;
+                        var minute = ParseEspnMinute(espnEvent.Status.DisplayClock, espnEvent.Status.Period);
+                        if (minute != null && match.Minute != minute)
+                        {
+                            match.Minute = minute;
+                            changed = true;
+                        }
                     }
 
                     if (changed)
                     {
                         match.LastUpdatedAt = DateTime.UtcNow;
                         await db.SaveChangesAsync(ct);
-                        await BroadcastMatchUpdateAsync(db, match, goals, ct);
+                        await BroadcastMatchUpdateAsync(db, match, goals, livePhase, ct);
                     }
                 }
                 else if (statusName == "STATUS_SCHEDULED" && match.Status == MatchStatus.Scheduled)
@@ -261,7 +269,7 @@ public class FootballDataService(
                 {
                     match.LastUpdatedAt = DateTime.UtcNow;
                     await db.SaveChangesAsync(ct);
-                    await BroadcastMatchUpdateAsync(db, match, null, ct);
+                    await BroadcastMatchUpdateAsync(db, match, null, null, ct);
                 }
             }
         }
@@ -507,7 +515,7 @@ public class FootballDataService(
         }
 
         await db.SaveChangesAsync(ct);
-        await BroadcastMatchUpdateAsync(db, match, goals, ct);
+        await BroadcastMatchUpdateAsync(db, match, goals, null, ct);
 
         var badgeService = new BadgeService(db);
         var tournamentIds = await db.TournamentParticipants
@@ -552,7 +560,7 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, List<GoalInfo>? goals, CancellationToken ct)
+    private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, List<GoalInfo>? goals, string? livePhase, CancellationToken ct)
     {
         var tournamentIds = await db.TournamentParticipants
             .Select(tp => tp.TournamentId)
@@ -567,6 +575,7 @@ public class FootballDataService(
             status = match.Status.ToString(),
             minute = match.Minute,
             goals = goals?.Select(g => new { scorer = g.Scorer, team = g.Team, minute = g.Minute }).ToList(),
+            livePhase,
         };
 
         foreach (var tid in tournamentIds)

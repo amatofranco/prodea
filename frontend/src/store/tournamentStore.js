@@ -22,6 +22,7 @@ export const useTournamentStore = create((set, get) => ({
               status: update.status,
               minute: update.minute ?? m.minute,
               goals: update.goals !== undefined ? update.goals : m.goals,
+              livePhase: update.livePhase !== undefined ? update.livePhase : m.livePhase,
             }
           : m
       ),
