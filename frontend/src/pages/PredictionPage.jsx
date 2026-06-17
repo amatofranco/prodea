@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Check, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Zap, Bell, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { api } from '../services/api'
 import GoalPicker from '../components/GoalPicker'
 import { getTeam, getFlagUrl } from '../data/teamsData'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
 const TURBO_COUNTDOWN_SECS = 5
@@ -181,6 +182,7 @@ export default function PredictionPage() {
   const [triedSubmit, setTriedSubmit] = useState(false)
   const [turboMode, setTurboMode] = useState(false)
   const [turboComplete, setTurboComplete] = useState(false)
+  const { showModal: showPushBanner, subscribe: subscribePush, dismiss: dismissPush } = usePushNotifications()
   const [turboFlash, setTurboFlash] = useState(false)
   const prevTurboRef = useRef(false)
   const slideDir = useRef(0)
@@ -563,6 +565,29 @@ export default function PredictionPage() {
                   {saving ? 'Guardando...' : justSaved ? 'Predicción guardada' : saved ? 'Actualizar predicción' : 'Confirmar predicción'}
                 </button>
               )}
+
+              <AnimatePresence>
+                {justSaved && showPushBanner && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    className="w-full md:max-w-lg md:mx-auto flex items-center gap-3 p-3 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/20"
+                  >
+                    <Bell size={16} className="text-[#00FF87] shrink-0" />
+                    <p className="flex-1 text-[#8A8A9A] text-xs leading-snug">Avisate cuando terminen los partidos</p>
+                    <button
+                      onClick={() => { subscribePush(); dismissPush() }}
+                      className="shrink-0 px-3 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95"
+                    >
+                      Activar
+                    </button>
+                    <button onClick={dismissPush} className="text-[#8A8A9A] active:opacity-60">
+                      <X size={14} />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </>
           )}
         </motion.div>

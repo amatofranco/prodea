@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown, LogOut, MoreVertical } from 'lucide-react'
+import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown, LogOut, MoreVertical, Bell } from 'lucide-react'
 import QRCode from 'qrcode'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
@@ -12,6 +12,7 @@ import ApiStatusBanner from '../components/ApiStatusBanner'
 import ChampionPickBanner from '../components/ChampionPickBanner'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 import InstallBanner from '../components/InstallBanner'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const MAX_DESC = 150
 const PHASE_ORDER = ['group-1', 'group-2', 'group-3', 'R32', 'R16', 'QF', 'SF', 'ThirdPlace', 'Final']
@@ -240,6 +241,7 @@ export default function TournamentPage() {
   const [matchdayWinners, setMatchdayWinners] = useState([])
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const { showModal: showPushBanner, subscribe: subscribePush, dismiss: dismissPush } = usePushNotifications()
   const phaseBarRef = useRef(null)
 
   async function saveDescription() {
@@ -563,6 +565,21 @@ export default function TournamentPage() {
         {activeTab === 'tabla' ? (
           <div className="py-4 flex flex-col gap-2">
             <ChampionProdeaBanner leaderboard={leaderboard} matches={matches} currentUserId={user?.id} />
+            {showPushBanner && (
+              <div className="mx-4 flex items-center gap-3 p-3 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/20">
+                <Bell size={16} className="text-[#00FF87] shrink-0" />
+                <p className="flex-1 text-[#8A8A9A] text-xs leading-snug">Activá las notificaciones para saber cuándo termina cada jornada</p>
+                <button
+                  onClick={() => { subscribePush(); dismissPush() }}
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95"
+                >
+                  Activar
+                </button>
+                <button onClick={dismissPush} className="text-[#8A8A9A] active:opacity-60">
+                  <X size={14} />
+                </button>
+              </div>
+            )}
             <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold px-4 mb-1">
               Tabla de posiciones
             </p>
