@@ -59,16 +59,27 @@ function LiveCard({ match, compact = false }) {
           </div>
         </div>
         {match.goals && match.goals.length > 0 && (
-          <div className="mt-1.5 space-y-0.5">
+          <div className="mt-1.5 grid grid-cols-2 gap-y-1">
             {match.goals.map((g, i) => {
               const isHome = g.team === match.homeTeam
-              return (
-                <div key={i} className={`flex items-center gap-1 text-[10px] text-[#8A8A9A] ${isHome ? 'justify-start' : 'justify-end'}`}>
-                  {isHome && <span>⚽</span>}
-                  <span>{g.scorer}</span>
-                  <span className="text-[#FF6B35]/60">{g.minute}</span>
-                  {!isHome && <span>⚽</span>}
-                </div>
+              return isHome ? (
+                <>
+                  <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                    <span className="shrink-0">⚽</span>
+                    <span className="truncate">{g.scorer}</span>
+                    <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                  </div>
+                  <div />
+                </>
+              ) : (
+                <>
+                  <div />
+                  <div key={i} className="flex items-center justify-end gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                    <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                    <span className="truncate">{g.scorer}</span>
+                    <span className="shrink-0">⚽</span>
+                  </div>
+                </>
               )
             })}
           </div>
@@ -119,16 +130,27 @@ function LiveCard({ match, compact = false }) {
         </div>
       </div>
       {match.goals && match.goals.length > 0 && (
-        <div className="mt-2 space-y-0.5">
+        <div className="mt-2 grid grid-cols-2 gap-y-1">
           {match.goals.map((g, i) => {
             const isHome = g.team === match.homeTeam
-            return (
-              <div key={i} className={`flex items-center gap-1 text-[10px] text-[#8A8A9A] ${isHome ? 'justify-start' : 'justify-end'}`}>
-                {isHome && <span>⚽</span>}
-                <span>{g.scorer}</span>
-                <span className="text-[#FF6B35]/60">{g.minute}</span>
-                {!isHome && <span>⚽</span>}
-              </div>
+            return isHome ? (
+              <>
+                <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                  <span className="shrink-0">⚽</span>
+                  <span className="truncate">{g.scorer}</span>
+                  <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                </div>
+                <div />
+              </>
+            ) : (
+              <>
+                <div />
+                <div key={i} className="flex items-center justify-end gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                  <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                  <span className="truncate">{g.scorer}</span>
+                  <span className="shrink-0">⚽</span>
+                </div>
+              </>
             )
           })}
         </div>
