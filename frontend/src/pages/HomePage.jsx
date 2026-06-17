@@ -58,6 +58,21 @@ function LiveCard({ match, compact = false }) {
             <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{awayDisplay}</p>
           </div>
         </div>
+        {match.goals && match.goals.length > 0 && (
+          <div className="mt-1.5 space-y-0.5">
+            {match.goals.map((g, i) => {
+              const isHome = g.team === match.homeTeam
+              return (
+                <div key={i} className={`flex items-center gap-1 text-[10px] text-[#8A8A9A] ${isHome ? 'justify-start' : 'justify-end'}`}>
+                  {isHome && <span>⚽</span>}
+                  <span>{g.scorer}</span>
+                  <span className="text-[#FF6B35]/60">{g.minute}</span>
+                  {!isHome && <span>⚽</span>}
+                </div>
+              )
+            })}
+          </div>
+        )}
         {pred && (() => {
           const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
           return (
@@ -103,6 +118,21 @@ function LiveCard({ match, compact = false }) {
           <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{awayDisplay}</p>
         </div>
       </div>
+      {match.goals && match.goals.length > 0 && (
+        <div className="mt-2 space-y-0.5">
+          {match.goals.map((g, i) => {
+            const isHome = g.team === match.homeTeam
+            return (
+              <div key={i} className={`flex items-center gap-1 text-[10px] text-[#8A8A9A] ${isHome ? 'justify-start' : 'justify-end'}`}>
+                {isHome && <span>⚽</span>}
+                <span>{g.scorer}</span>
+                <span className="text-[#FF6B35]/60">{g.minute}</span>
+                {!isHome && <span>⚽</span>}
+              </div>
+            )
+          })}
+        </div>
+      )}
       {pred && (() => {
         const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
         return (
