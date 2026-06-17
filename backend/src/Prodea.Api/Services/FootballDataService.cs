@@ -534,6 +534,7 @@ public class FootballDataService(
             homeScore = match.HomeScore,
             awayScore = match.AwayScore,
             status = match.Status.ToString(),
+            minute = match.Minute,
         };
 
         foreach (var tid in tournamentIds)
