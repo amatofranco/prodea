@@ -253,15 +253,32 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    async function refresh() {
+      const updated = await api.getMyPredictions().catch(() => null)
+      if (updated) setMatches(updated)
+    }
+
     function scheduleNext() {
       pollRef.current = setTimeout(async () => {
-        const updated = await api.getMyPredictions().catch(() => null)
-        if (updated) setMatches(updated)
+        await refresh()
         scheduleNext()
       }, LIVE_POLL_MS)
     }
+
+    // Refresh inmediato cuando el usuario vuelve al tab (evita throttling de browser)
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        clearTimeout(pollRef.current)
+        refresh().then(scheduleNext)
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisible)
     scheduleNext()
-    return () => clearTimeout(pollRef.current)
+    return () => {
+      clearTimeout(pollRef.current)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   const today = new Date().toDateString()
