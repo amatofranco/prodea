@@ -16,6 +16,7 @@ export function usePushNotifications() {
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
   )
   const [subscribed, setSubscribed] = useState(false)
+  const [checked, setChecked] = useState(false)
   const [dismissed, setDismissed] = useState(() => {
     const ts = localStorage.getItem(DISMISSED_KEY)
     return ts ? Date.now() - parseInt(ts) < ONE_DAY_MS : false
@@ -26,10 +27,14 @@ export function usePushNotifications() {
   }, [])
 
   async function checkSubscription() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setChecked(true)
+      return
+    }
     const reg = await navigator.serviceWorker.ready
     const sub = await reg.pushManager.getSubscription()
     setSubscribed(!!sub)
+    setChecked(true)
   }
 
   async function subscribe() {
@@ -85,7 +90,7 @@ export function usePushNotifications() {
 
   const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-  const showModal = supported && isStandalone && !subscribed && !dismissed && permission !== 'denied'
+  const showModal = checked && supported && isStandalone && !subscribed && !dismissed && permission !== 'denied'
 
   return { supported, isStandalone, permission, subscribed, subscribe, unsubscribe, dismiss, showModal }
 }
