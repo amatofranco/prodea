@@ -1,8 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;
+using Prodea.Api.Hubs;
 using Prodea.Api.Models;
 using Prodea.Api.Services;
 
@@ -14,7 +16,9 @@ public class AdminController(
     ProdeaDbContext db,
     IWebHostEnvironment env,
     FixtureService fixtureService,
-    PollingStatusService pollingStatus) : ControllerBase
+    PollingStatusService pollingStatus,
+    IHttpClientFactory httpClientFactory,
+    IHubContext<TournamentHub> hub) : ControllerBase
 {
     [HttpGet("matches")]
     public async Task<IActionResult> ListMatches(
@@ -252,6 +256,99 @@ public class AdminController(
             predictionsScored = predictions.Count,
             details = predictions.Select(p => new { p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.PredictedPenaltyWinner, p.PointsEarned }),
         });
+    }
+
+    [HttpPost("matches/{id}/fetch-goals")]
+    public async Task<IActionResult> FetchGoals(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var match = await db.Matches.FindAsync(id);
+        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+
+        var espnClient = httpClientFactory.CreateClient("Espn");
+        var edtDate = match.MatchDate.AddHours(-4).Date;
+        var scoreboardJson = await espnClient.GetStringAsync($"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={edtDate:yyyyMMdd}");
+
+        string? espnEventId = null;
+        using (var doc = JsonDocument.Parse(scoreboardJson))
+        {
+            if (doc.RootElement.TryGetProperty("events", out var events))
+            {
+                foreach (var evt in events.EnumerateArray())
+                {
+                    var evtDate = evt.GetProperty("date").GetDateTime();
+                    if (Math.Abs((evtDate - match.MatchDate).TotalHours) > 4) continue;
+
+                    var comps = evt.GetProperty("competitions")[0].GetProperty("competitors");
+                    string? homeTeam = null, awayTeam = null;
+                    foreach (var c in comps.EnumerateArray())
+                    {
+                        var name = EspnTeamMapping.Map(c.GetProperty("team").GetProperty("displayName").GetString() ?? "");
+                        if (c.GetProperty("homeAway").GetString() == "home") homeTeam = name;
+                        else awayTeam = name;
+                    }
+
+                    if (string.Equals(homeTeam, match.HomeTeam, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(awayTeam, match.AwayTeam, StringComparison.OrdinalIgnoreCase))
+                    {
+                        espnEventId = evt.GetProperty("id").GetString();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (espnEventId == null)
+            return NotFound(new { message = $"Partido no encontrado en ESPN para {edtDate:yyyy-MM-dd}" });
+
+        var summaryJson = await espnClient.GetStringAsync($"/apis/site/v2/sports/soccer/fifa.world/summary?event={espnEventId}");
+
+        var goals = new List<object>();
+        using (var doc = JsonDocument.Parse(summaryJson))
+        {
+            if (doc.RootElement.TryGetProperty("keyEvents", out var keyEvents) && keyEvents.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var evt in keyEvents.EnumerateArray())
+                {
+                    if (!evt.TryGetProperty("scoringPlay", out var sp) || !sp.GetBoolean()) continue;
+                    if (!evt.TryGetProperty("type", out var typeObj)) continue;
+                    if (!typeObj.TryGetProperty("type", out var typeStr)) continue;
+                    if (!(typeStr.GetString() ?? "").StartsWith("goal", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    var scorer = "?";
+                    if (evt.TryGetProperty("participants", out var parts) && parts.GetArrayLength() > 0)
+                        scorer = parts[0].GetProperty("athlete").GetProperty("displayName").GetString() ?? "?";
+
+                    var team = "";
+                    if (evt.TryGetProperty("team", out var teamObj))
+                        team = EspnTeamMapping.Map(teamObj.GetProperty("displayName").GetString() ?? "");
+
+                    var minute = "";
+                    if (evt.TryGetProperty("clock", out var clock) && clock.TryGetProperty("displayValue", out var dv))
+                        minute = dv.GetString() ?? "";
+
+                    goals.Add(new { scorer, team, minute });
+                }
+            }
+        }
+
+        match.GoalsJson = goals.Count > 0 ? JsonSerializer.Serialize(goals) : null;
+        await db.SaveChangesAsync();
+
+        if (goals.Count > 0)
+        {
+            var payload = new { matchId = match.Id, homeScore = match.HomeScore, awayScore = match.AwayScore, status = match.Status.ToString(), minute = match.Minute, goals };
+            var tids = await db.TournamentParticipants.Select(tp => tp.TournamentId).Distinct().ToListAsync();
+            foreach (var tid in tids)
+                await hub.Clients.Group($"tournament-{tid}").SendAsync("MatchUpdated", payload);
+        }
+
+        return Ok(new { message = $"{goals.Count} goles guardados para {match.HomeTeam} vs {match.AwayTeam}", espnEventId, goals });
     }
 
     [HttpPost("simulate-jornada")]
