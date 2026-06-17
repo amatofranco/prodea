@@ -18,7 +18,7 @@ public class FootballDataService(
     : BackgroundService
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(10);
-    private static readonly TimeSpan LivePollingInterval = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan LivePollingInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan FastPollingInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan KnockoutSyncInterval = TimeSpan.FromHours(6);
     private const int MaxLiveStatusAttempts = 5;
@@ -38,7 +38,7 @@ public class FootballDataService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error polling football-data.org");
+                logger.LogError(ex, "Error polling scores");
             }
 
             if (DateTime.UtcNow - _lastKnockoutSync > KnockoutSyncInterval)
@@ -66,9 +66,6 @@ public class FootballDataService(
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
         var push = scope.ServiceProvider.GetRequiredService<PushNotificationService>();
 
-        // El endpoint de competición (/v4/competitions/WC/matches?status=IN_PLAY) devuelve
-        // datos cacheados/desactualizados durante el Mundial, así que consultamos cada
-        // partido individualmente vía /v4/matches/{id}, que sí refleja el estado en vivo.
         var matchesToCheck = await db.Matches
             .Where(m => m.ExternalId != null &&
                 (m.Status == MatchStatus.InProgress ||
@@ -77,26 +74,98 @@ public class FootballDataService(
 
         if (matchesToCheck.Count == 0) return PollingInterval;
 
-        var client = httpClientFactory.CreateClient("FootballData");
-        var apiKey = configuration["FootballData:ApiKey"];
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            logger.LogWarning("FootballData API key not configured — skipping poll");
-            return PollingInterval;
-        }
-
         var anySuccess = false;
         var pendingKickoff = false;
         var wasRateLimited = false;
 
+        // ESPN usa Eastern Time (EDT = UTC-4 durante el Mundial) para el parámetro de fecha.
+        // Un partido a las 02:00 UTC del día 18 es el día 17 en ET → consultamos con el día ET correcto.
+        var espnDates = matchesToCheck
+            .Select(m => m.MatchDate.AddHours(-4).Date) // UTC → EDT
+            .Distinct()
+            .ToList();
+
+        // ESPN: fuente primaria — 1-2 requests totales, sin rate limit ni demoras
+        var espnEvents = new List<EspnEvent>();
+        foreach (var date in espnDates)
+        {
+            var events = await FetchEspnScoreboardAsync(date, ct);
+            espnEvents.AddRange(events);
+        }
+
+        // Fallback si ESPN no devolvió nada (desfase de fecha, etc.)
+        if (espnEvents.Count == 0)
+        {
+            var todayEt = DateTime.UtcNow.AddHours(-4).Date;
+            var todayEvents = await FetchEspnScoreboardAsync(todayEt, ct);
+            espnEvents.AddRange(todayEvents);
+        }
+
+        if (espnEvents.Count > 0)
+            logger.LogInformation("ESPN: {Count} eventos encontrados para {Dates}", espnEvents.Count, string.Join(", ", espnDates.Select(d => d.ToString("yyyy-MM-dd"))));
+
         foreach (var match in matchesToCheck)
         {
+            var espnEvent = FindEspnMatch(espnEvents, match);
+
+            if (espnEvent != null)
+            {
+                anySuccess = true;
+                var statusName = espnEvent.Status.Type.Name;
+                logger.LogDebug("ESPN match {Home} vs {Away}: {Status}", match.HomeTeam, match.AwayTeam, statusName);
+
+                if (statusName is "STATUS_FINAL" or "STATUS_FULL_TIME")
+                {
+                    var (homeScore, awayScore, winner) = ExtractEspnScore(espnEvent, match);
+                    await FinalizeMatchCoreAsync(db, push, match, homeScore, awayScore, winner, ct);
+                }
+                else if (statusName is "STATUS_IN_PROGRESS" or "STATUS_HALFTIME" or "STATUS_END_PERIOD" or "STATUS_OVERTIME")
+                {
+                    var changed = false;
+
+                    if (match.Status != MatchStatus.InProgress)
+                    {
+                        match.Status = MatchStatus.InProgress;
+                        match.StartedAt = DateTime.UtcNow;
+                        changed = true;
+                        logger.LogInformation("ESPN detectó inicio: {Home} vs {Away}", match.HomeTeam, match.AwayTeam);
+                    }
+
+                    var (liveHome, liveAway, _) = ExtractEspnScore(espnEvent, match);
+                    if (match.HomeScore != liveHome || match.AwayScore != liveAway)
+                    {
+                        match.HomeScore = liveHome;
+                        match.AwayScore = liveAway;
+                        changed = true;
+                    }
+
+                    if (changed)
+                    {
+                        match.LastUpdatedAt = DateTime.UtcNow;
+                        await db.SaveChangesAsync(ct);
+                        await BroadcastMatchUpdateAsync(db, match, ct);
+                    }
+                }
+                else if (statusName == "STATUS_SCHEDULED" && match.Status == MatchStatus.Scheduled)
+                {
+                    pendingKickoff = true;
+                }
+
+                continue; // ESPN lo procesó, no ir a football-data.org
+            }
+
+            // Fallback: football-data.org para partidos que ESPN no encontró
             FootballDataSingleMatch? apiMatch = null;
             var rateLimited = false;
 
-            // football-data.org sirve respuestas de réplicas desincronizadas: una misma consulta
-            // puede devolver el estado viejo (TIMED) o el real (IN_PLAY/FINISHED) según a qué
-            // réplica pegue. Reintentamos unas veces hasta encontrar una respuesta "en vivo".
+            var client = httpClientFactory.CreateClient("FootballData");
+            var apiKey = configuration["FootballData:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                logger.LogWarning("FootballData API key not configured — skipping fallback");
+                continue;
+            }
+
             for (var attempt = 1; attempt <= MaxLiveStatusAttempts; attempt++)
             {
                 try
@@ -119,8 +188,6 @@ public class FootballDataService(
 
                     anySuccess = true;
 
-                    // Nos quedamos con la respuesta "en vivo" más reciente (mayor lastUpdated):
-                    // una réplica desincronizada puede devolver FINISHED con un marcador viejo.
                     if (current.Status is "IN_PLAY" or "PAUSED" or "FINISHED" or "AWARDED"
                         && (apiMatch == null || current.LastUpdated > apiMatch.LastUpdated))
                     {
@@ -139,8 +206,6 @@ public class FootballDataService(
             if (rateLimited) { wasRateLimited = true; break; }
             if (apiMatch == null)
             {
-                // El partido todavía no fue marcado IN_PLAY por football-data.org pese a
-                // que ya debería haber arrancado (o está a punto). Volvemos a chequear pronto.
                 if (match.Status == MatchStatus.Scheduled) pendingKickoff = true;
                 continue;
             }
@@ -183,54 +248,198 @@ public class FootballDataService(
                     await BroadcastMatchUpdateAsync(db, match, ct);
                 }
             }
-            // SCHEDULED / TIMED → el partido todavía no arrancó según la API
         }
 
         pollingStatus.ApiAvailable = anySuccess;
         if (anySuccess) pollingStatus.LastSuccessfulPoll = DateTime.UtcNow;
 
-        // Si nos limitaron la tasa, hacemos backoff al intervalo normal.
         if (wasRateLimited) return PollingInterval;
-
-        // Partido por arrancar/confirmar todavía: reintentamos en 1 minuto.
         if (pendingKickoff) return FastPollingInterval;
-
-        // Hay al menos un partido en curso confirmado: chequeamos cada 2 minutos.
         if (matchesToCheck.Any(m => m.Status == MatchStatus.InProgress)) return LivePollingInterval;
-
         return PollingInterval;
     }
 
-    private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
+    // -------------------------------------------------------------------------
+    // ESPN
+    // -------------------------------------------------------------------------
+
+    private async Task<List<EspnEvent>> FetchEspnScoreboardAsync(DateTime utcDate, CancellationToken ct)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient("Espn");
+            var dateStr = utcDate.ToString("yyyyMMdd");
+            var response = await client.GetAsync($"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={dateStr}", ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("ESPN API returned {Status} para fecha {Date}", response.StatusCode, dateStr);
+                return [];
+            }
+            var json = await response.Content.ReadAsStringAsync(ct);
+            var result = JsonSerializer.Deserialize<EspnScoreboardResponse>(json, JsonOptions);
+            return result?.Events ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error consultando ESPN scoreboard");
+            return [];
+        }
+    }
+
+    private static EspnEvent? FindEspnMatch(IList<EspnEvent> events, Match match)
+    {
+        return events.FirstOrDefault(e =>
+        {
+            var comp = e.Competitions.FirstOrDefault();
+            if (comp == null) return false;
+
+            var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+            var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
+            if (homeComp == null || awayComp == null) return false;
+
+            var espnHome = MapEspnTeam(homeComp.Team.DisplayName);
+            var espnAway = MapEspnTeam(awayComp.Team.DisplayName);
+
+            var dateDiff = Math.Abs((e.Date - match.MatchDate).TotalHours);
+            return dateDiff < 4 &&
+                   string.Equals(espnHome, match.HomeTeam, StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(espnAway, match.AwayTeam, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    private static (int Home, int Away, string? Winner) ExtractEspnScore(EspnEvent espnEvent, Match match)
+    {
+        var comp = espnEvent.Competitions.FirstOrDefault();
+        var homeComp = comp?.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+        var awayComp = comp?.Competitors.FirstOrDefault(c => c.HomeAway == "away");
+
+        int.TryParse(homeComp?.Score, out var home);
+        int.TryParse(awayComp?.Score, out var away);
+
+        string? winner = null;
+        if (homeComp?.Winner == true) winner = match.HomeTeam;
+        else if (awayComp?.Winner == true) winner = match.AwayTeam;
+
+        return (home, away, winner);
+    }
+
+    // Mapeo de nombres ESPN (inglés) → nombres en la DB (español)
+    private static readonly Dictionary<string, string> EspnToSpanish = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Algeria"] = "Argelia",
+        ["Austria"] = "Austria",
+        ["Belgium"] = "Bélgica",
+        ["Bolivia"] = "Bolivia",
+        ["Bosnia and Herzegovina"] = "Bosnia y Herzegovina",
+        ["Bosnia & Herzegovina"] = "Bosnia y Herzegovina",
+        ["Brazil"] = "Brasil",
+        ["Cameroon"] = "Camerún",
+        ["Canada"] = "Canadá",
+        ["Chile"] = "Chile",
+        ["China PR"] = "China",
+        ["China"] = "China",
+        ["Colombia"] = "Colombia",
+        ["Congo DR"] = "R. D. del Congo",
+        ["DR Congo"] = "R. D. del Congo",
+        ["Democratic Republic of the Congo"] = "R. D. del Congo",
+        ["Costa Rica"] = "Costa Rica",
+        ["Croatia"] = "Croacia",
+        ["Cuba"] = "Cuba",
+        ["Curacao"] = "Curaçao",
+        ["Czech Republic"] = "República Checa",
+        ["Czechia"] = "República Checa",
+        ["Denmark"] = "Dinamarca",
+        ["Ecuador"] = "Ecuador",
+        ["Egypt"] = "Egipto",
+        ["El Salvador"] = "El Salvador",
+        ["England"] = "Inglaterra",
+        ["France"] = "Francia",
+        ["Germany"] = "Alemania",
+        ["Ghana"] = "Ghana",
+        ["Guatemala"] = "Guatemala",
+        ["Haiti"] = "Haití",
+        ["Honduras"] = "Honduras",
+        ["Hungary"] = "Hungría",
+        ["Iran"] = "Irán",
+        ["Iraq"] = "Irak",
+        ["Ivory Coast"] = "Costa de Marfil",
+        ["Côte d'Ivoire"] = "Costa de Marfil",
+        ["Jamaica"] = "Jamaica",
+        ["Japan"] = "Japón",
+        ["Jordan"] = "Jordania",
+        ["Kuwait"] = "Kuwait",
+        ["Kyrgyzstan"] = "Kirguistán",
+        ["Mali"] = "Mali",
+        ["Mexico"] = "México",
+        ["Morocco"] = "Marruecos",
+        ["Netherlands"] = "Países Bajos",
+        ["New Zealand"] = "Nueva Zelanda",
+        ["Nigeria"] = "Nigeria",
+        ["North Macedonia"] = "Macedonia del Norte",
+        ["Oman"] = "Omán",
+        ["Palestine"] = "Palestina",
+        ["Panama"] = "Panamá",
+        ["Paraguay"] = "Paraguay",
+        ["Peru"] = "Perú",
+        ["Poland"] = "Polonia",
+        ["Portugal"] = "Portugal",
+        ["Qatar"] = "Catar",
+        ["Romania"] = "Rumania",
+        ["Russia"] = "Rusia",
+        ["Saudi Arabia"] = "Arabia Saudita",
+        ["Senegal"] = "Senegal",
+        ["Serbia"] = "Serbia",
+        ["Slovakia"] = "Eslovaquia",
+        ["Slovenia"] = "Eslovenia",
+        ["South Africa"] = "Sudáfrica",
+        ["South Korea"] = "Corea del Sur",
+        ["Korea Republic"] = "Corea del Sur",
+        ["Republic of Korea"] = "Corea del Sur",
+        ["Spain"] = "España",
+        ["Switzerland"] = "Suiza",
+        ["Tajikistan"] = "Tayikistán",
+        ["Trinidad & Tobago"] = "Trinidad y Tobago",
+        ["Trinidad and Tobago"] = "Trinidad y Tobago",
+        ["Tunisia"] = "Túnez",
+        ["Turkey"] = "Turquía",
+        ["Türkiye"] = "Turquía",
+        ["Ukraine"] = "Ucrania",
+        ["United States"] = "Estados Unidos",
+        ["USA"] = "Estados Unidos",
+        ["Uruguay"] = "Uruguay",
+        ["Uzbekistan"] = "Uzbekistán",
+        ["Venezuela"] = "Venezuela",
+        ["Vietnam"] = "Vietnam",
+        ["Argentina"] = "Argentina",
+        ["Australia"] = "Australia",
+        ["Albania"] = "Albania",
+        ["Bahrain"] = "Bahrein",
+        ["Thailand"] = "Tailandia",
+        ["Kenya"] = "Kenia",
+    };
+
+    private static string MapEspnTeam(string espnName) =>
+        EspnToSpanish.TryGetValue(espnName, out var spanish) ? spanish : espnName;
+
+    // -------------------------------------------------------------------------
+    // Finalización
+    // -------------------------------------------------------------------------
+
+    // Ruta ESPN y fallback genérico: scores ya extraídos
+    private async Task FinalizeMatchCoreAsync(ProdeaDbContext db, PushNotificationService push, Match match, int homeScore, int awayScore, string? winner, CancellationToken ct)
     {
         match.Status = MatchStatus.Finished;
         match.FinishedAt = DateTime.UtcNow;
         match.LastUpdatedAt = DateTime.UtcNow;
-
-        // apiWinner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW"
-        string? apiWinner = apiScore?.Winner;
-        if (apiWinner == "HOME_TEAM") match.Winner = match.HomeTeam;
-        else if (apiWinner == "AWAY_TEAM") match.Winner = match.AwayTeam;
-
-        // Display score: regularTime + extraTime (shows final result including ET goals)
-        var (finalHome, finalAway) = FinalScore(apiScore);
-        if (finalHome != null)
-        {
-            match.HomeScore = finalHome;
-            match.AwayScore = finalAway;
-        }
+        match.HomeScore = homeScore;
+        match.AwayScore = awayScore;
+        if (winner != null) match.Winner = winner;
 
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("Partido finalizado: {Home} {HS}-{AS} {Away}", match.HomeTeam, homeScore, awayScore, match.AwayTeam);
 
-        // Scoring se evalúa contra el score al cierre del tiempo jugado (90' o 120' si hubo alargue),
-        // antes de penales. FinalScore() ya maneja ambos casos correctamente.
-        var (scoredHome, scoredAway) = FinalScore(apiScore);
-        int homeFinal = scoredHome ?? match.HomeScore ?? 0;
-        int awayFinal = scoredAway ?? match.AwayScore ?? 0;
-
-        // winnerSide: quién pasó de ronda — aplica solo cuando el partido terminó empatado al cierre (fue a penales)
         string? winnerSide = null;
-        if (homeFinal == awayFinal && match.Winner != null)
+        if (homeScore == awayScore && match.Winner != null)
             winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
 
         var predictions = await db.Predictions
@@ -239,7 +448,7 @@ public class FootballDataService(
 
         foreach (var pred in predictions)
         {
-            pred.PointsEarned = ScoringService.CalculatePoints(pred, homeFinal, awayFinal, winnerSide);
+            pred.PointsEarned = ScoringService.CalculatePoints(pred, homeScore, awayScore, winnerSide);
             pred.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -259,12 +468,26 @@ public class FootballDataService(
             await AwardChampionPickPointsAsync(db, match, ct);
     }
 
+    // Ruta football-data.org: usa FootballDataScore para extraer scores con lógica de ET/penales
+    private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
+    {
+        string? winner = apiScore?.Winner switch
+        {
+            "HOME_TEAM" => match.HomeTeam,
+            "AWAY_TEAM" => match.AwayTeam,
+            _ => null
+        };
+
+        var (finalHome, finalAway) = FinalScore(apiScore);
+        await FinalizeMatchCoreAsync(db, push, match, finalHome ?? match.HomeScore ?? 0, finalAway ?? match.AwayScore ?? 0, winner, ct);
+    }
+
     private static async Task AwardChampionPickPointsAsync(ProdeaDbContext db, Match match, CancellationToken ct)
     {
         string? champion = null;
         if (match.HomeScore > match.AwayScore) champion = match.HomeTeam;
         else if (match.AwayScore > match.HomeScore) champion = match.AwayTeam;
-        else champion = match.Winner; // penalty: Winner already set from apiWinner
+        else champion = match.Winner;
 
         if (champion == null) return;
 
@@ -294,6 +517,10 @@ public class FootballDataService(
             await hubContext.Clients.Group($"tournament-{tid}").SendAsync("MatchUpdated", payload, ct);
     }
 
+    // -------------------------------------------------------------------------
+    // football-data.org DTOs
+    // -------------------------------------------------------------------------
+
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private record FootballDataScore(
@@ -305,11 +532,6 @@ public class FootballDataService(
     private record FootballDataFullTime(int? Home, int? Away);
     private record FootballDataSingleMatch(string Status, FootballDataScore? Score, int? Minute, DateTime LastUpdated);
 
-    // Score definitivo antes de penales:
-    //   regularTime + extraTime  (cuando hubo alargue; extraTime tiene solo los goles del alargue, no acumulativo)
-    //   regularTime              (partido definido en 90')
-    //   fullTime                 (fallback — partidos de liga o respuestas sin regularTime)
-    // NOTA: fullTime de la API incluye goles de tanda de penales, por eso no se usa en knockout.
     private static (int? Home, int? Away) FinalScore(FootballDataScore? score)
     {
         if (score == null) return (null, null);
@@ -323,4 +545,42 @@ public class FootballDataService(
 
         return (score.FullTime?.Home, score.FullTime?.Away);
     }
+
+    // -------------------------------------------------------------------------
+    // ESPN DTOs
+    // -------------------------------------------------------------------------
+
+    private record EspnScoreboardResponse(
+        [property: JsonPropertyName("events")] List<EspnEvent> Events
+    );
+
+    private record EspnEvent(
+        [property: JsonPropertyName("id")] string Id,
+        [property: JsonPropertyName("date")] DateTime Date,
+        [property: JsonPropertyName("status")] EspnStatus Status,
+        [property: JsonPropertyName("competitions")] List<EspnCompetition> Competitions
+    );
+
+    private record EspnStatus(
+        [property: JsonPropertyName("type")] EspnStatusType Type
+    );
+
+    private record EspnStatusType(
+        [property: JsonPropertyName("name")] string Name
+    );
+
+    private record EspnCompetition(
+        [property: JsonPropertyName("competitors")] List<EspnCompetitor> Competitors
+    );
+
+    private record EspnCompetitor(
+        [property: JsonPropertyName("homeAway")] string HomeAway,
+        [property: JsonPropertyName("score")] string? Score,
+        [property: JsonPropertyName("winner")] bool Winner,
+        [property: JsonPropertyName("team")] EspnTeam Team
+    );
+
+    private record EspnTeam(
+        [property: JsonPropertyName("displayName")] string DisplayName
+    );
 }

@@ -92,6 +92,13 @@ builder.Services.AddHttpClient("FootballData", client =>
     client.DefaultRequestHeaders.Add("X-Auth-Token", builder.Configuration["FootballData:ApiKey"] ?? "");
 });
 
+// HTTP client for ESPN (no auth required, fuente primaria para scores en vivo)
+builder.Services.AddHttpClient("Espn", client =>
+{
+    client.BaseAddress = new Uri("https://site.api.espn.com");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
 // App services
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<BadgeService>();
