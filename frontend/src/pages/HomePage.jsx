@@ -42,7 +42,7 @@ function LiveCard({ match, compact = false }) {
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse flex-shrink-0" />
           <span className="text-xs font-bold text-[#FF6B35]">
-            {match.livePhase ?? (match.minute != null ? `${match.minute}'` : 'En vivo')}
+            {match.livePhase ?? match.minuteDisplay ?? (match.minute != null ? `${match.minute}'` : 'En vivo')}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -82,9 +82,9 @@ function LiveCard({ match, compact = false }) {
       <div className="flex items-center justify-center gap-2 mb-3">
         <span className="w-2 h-2 rounded-full bg-[#FF6B35] animate-pulse" />
         <span className="text-sm font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
-        {(match.livePhase != null || match.minute != null) && (
+        {(match.livePhase != null || match.minuteDisplay != null || match.minute != null) && (
           <span className="text-sm font-bold text-[#FF6B35]">
-            · {match.livePhase ?? `${match.minute}'`}
+            · {match.livePhase ?? match.minuteDisplay ?? `${match.minute}'`}
           </span>
         )}
       </div>

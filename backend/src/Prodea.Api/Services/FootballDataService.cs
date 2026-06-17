@@ -134,6 +134,9 @@ public class FootballDataService(
                         "STATUS_HALFTIME" => "ET",
                         _ => (string?)null
                     };
+                    var minuteDisplay = livePhase == null
+                        ? FormatEspnDisplayClock(espnEvent.Status.DisplayClock)
+                        : null;
 
                     if (match.Status != MatchStatus.InProgress)
                     {
@@ -167,7 +170,7 @@ public class FootballDataService(
                     {
                         match.LastUpdatedAt = DateTime.UtcNow;
                         await db.SaveChangesAsync(ct);
-                        await BroadcastMatchUpdateAsync(db, match, goals, livePhase, ct);
+                        await BroadcastMatchUpdateAsync(db, match, goals, livePhase, minuteDisplay, ct);
                     }
                 }
                 else if (statusName == "STATUS_SCHEDULED" && match.Status == MatchStatus.Scheduled)
@@ -269,7 +272,7 @@ public class FootballDataService(
                 {
                     match.LastUpdatedAt = DateTime.UtcNow;
                     await db.SaveChangesAsync(ct);
-                    await BroadcastMatchUpdateAsync(db, match, null, null, ct);
+                    await BroadcastMatchUpdateAsync(db, match, null, null, null, ct);
                 }
             }
         }
@@ -347,7 +350,7 @@ public class FootballDataService(
         return (home, away, winner);
     }
 
-    // Parsea el minuto de partido desde el displayClock de ESPN.
+    // Parsea el minuto base desde el displayClock de ESPN (para guardar en DB).
     // Ejemplos: "5'" → 5, "45'+2'" → 45, "90'+14'" → 90, "0'" → null
     private static int? ParseEspnMinute(string? displayClock, int period)
     {
@@ -355,6 +358,15 @@ public class FootballDataService(
         var raw = displayClock.Split('+')[0].TrimEnd('\'').Trim();
         if (!int.TryParse(raw, out var min) || min == 0) return null;
         return min;
+    }
+
+    // Formatea el displayClock para mostrar en la UI, preservando el tiempo adicional.
+    // Ejemplos: "5'" → "5'", "45'+5'" → "45+5'", "90'+14'" → "90+14'"
+    private static string? FormatEspnDisplayClock(string? displayClock)
+    {
+        if (string.IsNullOrEmpty(displayClock)) return null;
+        var formatted = displayClock.Replace("'+", "+").TrimEnd('\'');
+        return formatted + "'";
     }
 
     // Mapeo de nombres ESPN (inglés) → nombres en la DB (español)
@@ -515,7 +527,7 @@ public class FootballDataService(
         }
 
         await db.SaveChangesAsync(ct);
-        await BroadcastMatchUpdateAsync(db, match, goals, null, ct);
+        await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
 
         var badgeService = new BadgeService(db);
         var tournamentIds = await db.TournamentParticipants
@@ -560,7 +572,7 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, List<GoalInfo>? goals, string? livePhase, CancellationToken ct)
+    private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, List<GoalInfo>? goals, string? livePhase, string? minuteDisplay, CancellationToken ct)
     {
         var tournamentIds = await db.TournamentParticipants
             .Select(tp => tp.TournamentId)
@@ -574,6 +586,7 @@ public class FootballDataService(
             awayScore = match.AwayScore,
             status = match.Status.ToString(),
             minute = match.Minute,
+            minuteDisplay,
             goals = goals?.Select(g => new { scorer = g.Scorer, team = g.Team, minute = g.Minute }).ToList(),
             livePhase,
         };
