@@ -93,23 +93,7 @@ function TournamentMatchCard({ match, onTap }) {
         <FlagImg name={match.awayTeam} label={match.awayTeamLabel} />
       </div>
 
-      {(isLive || isFinished) && match.goals && match.goals.length > 0 && (
-        <div className="mt-2 space-y-0.5">
-          {match.goals.map((g, i) => {
-            const isHome = g.team === match.homeTeam
-            return (
-              <div key={i} className={`flex items-center gap-1 text-[10px] text-[#8A8A9A] ${isHome ? 'justify-start' : 'justify-end'}`}>
-                {isHome && <span>⚽</span>}
-                <span>{g.scorer}</span>
-                <span className="text-[#3A3A4E]">{g.minute}</span>
-                {!isHome && <span>⚽</span>}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-between">
+<div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-between">
         {pred ? (
           <span className="text-xs text-[#8A8A9A]">
             Predicción: <span className="text-[#00FF87] font-bold">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>

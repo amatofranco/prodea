@@ -83,7 +83,7 @@ function MatchCard({ match, navigate }) {
       {isLive && (
         <span className="absolute top-2 right-2 flex items-center gap-1 text-[10px] text-[#FF6B35] font-bold uppercase">
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-          LIVE
+          EN VIVO
         </span>
       )}
       {pastDeadline && !isLive && !isFinished && (

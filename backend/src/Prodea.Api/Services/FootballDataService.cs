@@ -388,12 +388,18 @@ public class FootballDataService(
             if (summary?.KeyEvents == null) return [];
 
             return summary.KeyEvents
-                .Where(e => e.ScoringPlay && e.Type.TypeStr.StartsWith("goal", StringComparison.OrdinalIgnoreCase))
-                .Select(e => new GoalInfo(
-                    Scorer: e.Participants?.FirstOrDefault()?.Athlete.DisplayName ?? "?",
-                    Team: MapEspnTeam(e.Team?.DisplayName ?? ""),
-                    Minute: e.Clock?.DisplayValue ?? ""
-                ))
+                .Where(e => e.ScoringPlay && (
+                    e.Type.TypeStr.StartsWith("goal", StringComparison.OrdinalIgnoreCase) ||
+                    e.Type.TypeStr.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase)))
+                .Select(e => {
+                    var name = e.Participants?.FirstOrDefault()?.Athlete.DisplayName ?? "?";
+                    var isPen = e.Type.TypeStr.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase);
+                    return new GoalInfo(
+                        Scorer: isPen ? $"{name} (pen.)" : name,
+                        Team: MapEspnTeam(e.Team?.DisplayName ?? ""),
+                        Minute: e.Clock?.DisplayValue ?? ""
+                    );
+                })
                 .ToList();
         }
         catch (Exception ex)
