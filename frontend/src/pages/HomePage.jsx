@@ -223,7 +223,7 @@ function UpcomingCard({ match, navigate }) {
         {!teamsConfirmed ? (
           <span className="text-xs font-semibold text-[#8A8A9A]">Equipos por confirmar</span>
         ) : hasPred ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-[#00FF87]">
               {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
             </span>
