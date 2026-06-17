@@ -76,8 +76,15 @@
       // Si el script principal falla (deploy nuevo: el archivo viejo ya no existe
       // y el server devuelve index.html en su lugar), recargamos una vez para
       // traer la versión actual de la app.
+      // Solo aplica a scripts del mismo origen — no a scripts externos (AdSense, Meta Pixel, etc.)
       window.addEventListener('error', function (e) {
-        if (e.target && e.target.tagName === 'SCRIPT' && !sessionStorage.getItem('prodea-reload-once')) {
+        if (
+          e.target &&
+          e.target.tagName === 'SCRIPT' &&
+          e.target.src &&
+          e.target.src.startsWith(location.origin) &&
+          !sessionStorage.getItem('prodea-reload-once')
+        ) {
           sessionStorage.setItem('prodea-reload-once', '1')
           window.location.reload()
         }
