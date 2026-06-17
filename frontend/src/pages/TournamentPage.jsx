@@ -63,7 +63,7 @@ function TournamentMatchCard({ match, onTap }) {
       {isLive && (
         <span className="flex items-center gap-1 text-[10px] text-[#FF6B35] font-bold uppercase mb-1">
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-          {match.livePhase ?? 'LIVE'}
+          {match.livePhase ?? 'EN VIVO'}
           {!match.livePhase && (match.minuteDisplay || match.minute != null) && ` · ${match.minuteDisplay ?? `${match.minute}'`}`}
         </span>
       )}
