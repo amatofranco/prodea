@@ -19,6 +19,8 @@ public record MatchDto(
     string Status
 );
 
+public record GoalDto(string Scorer, string Team, string Minute);
+
 public record MatchWithPredictionDto(
     int Id,
     string HomeTeam,
@@ -34,7 +36,8 @@ public record MatchWithPredictionDto(
     int? AwayScore,
     string Status,
     PredictionDto? UserPrediction,
-    int? Minute
+    int? Minute,
+    List<GoalDto>? Goals = null
 );
 
 public record PredictionDto(

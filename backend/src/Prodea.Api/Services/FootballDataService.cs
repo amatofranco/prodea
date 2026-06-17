@@ -124,6 +124,8 @@ public class FootballDataService(
                 {
                     var (homeScore, awayScore, winner) = ExtractEspnScore(espnEvent, match);
                     var goals = await FetchEspnGoalsAsync(espnEvent.Id, ct);
+                    if (goals.Count > 0)
+                        match.GoalsJson = JsonSerializer.Serialize(goals);
                     await FinalizeMatchCoreAsync(db, push, match, homeScore, awayScore, winner, goals, ct);
                 }
                 else if (isLive)
@@ -153,6 +155,8 @@ public class FootballDataService(
                         match.AwayScore = liveAway;
                         changed = true;
                         goals = await FetchEspnGoalsAsync(espnEvent.Id, ct);
+                        if (goals.Count > 0)
+                            match.GoalsJson = JsonSerializer.Serialize(goals);
                     }
 
                     // Durante el entretiempo no actualizamos el minuto (queda en el del último gol o anterior)

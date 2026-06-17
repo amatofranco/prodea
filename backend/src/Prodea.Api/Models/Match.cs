@@ -41,6 +41,7 @@ public class Match
     public DateTime? LastUpdatedAt { get; set; }
     public bool ReminderSent { get; set; } = false;
     public bool ResultNotificationSent { get; set; } = false;
+    public string? GoalsJson { get; set; }
 
     public ICollection<Prediction> Predictions { get; set; } = [];
 }

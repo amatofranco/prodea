@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 using Prodea.Api.Data;
 using Prodea.Api.DTOs;
 using Prodea.Api.Hubs;
@@ -35,13 +36,17 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         return Ok(matches.Select(m =>
         {
             predMap.TryGetValue(m.Id, out var pred);
+            var goals = m.GoalsJson != null
+                ? JsonSerializer.Deserialize<List<GoalDto>>(m.GoalsJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                : null;
             return new MatchWithPredictionDto(
                 m.Id, m.HomeTeam, m.AwayTeam, m.HomeTeamLabel, m.AwayTeamLabel,
                 m.HomeTeamFlag, m.AwayTeamFlag,
                 m.MatchDate, m.Phase.ToString(), m.Matchday, m.HomeScore, m.AwayScore,
                 m.Status.ToString(),
                 pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned, pred.PredictedPenaltyWinner),
-                m.Minute
+                m.Minute,
+                goals
             );
         }));
     }
