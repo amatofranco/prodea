@@ -114,12 +114,18 @@ public class FootballDataService(
                 var statusName = espnEvent.Status.Type.Name;
                 logger.LogDebug("ESPN match {Home} vs {Away}: {Status}", match.HomeTeam, match.AwayTeam, statusName);
 
-                if (statusName is "STATUS_FINAL" or "STATUS_FULL_TIME")
+                var isFinal = statusName is "STATUS_FULL_TIME" or "STATUS_FINAL" or "STATUS_FINAL_OT"
+                                            or "STATUS_FINAL_PENALTIES" or "STATUS_AWARDED";
+                // Cualquier status que no sea pre-partido ni final = en curso
+                var isLive = !isFinal && statusName is not ("STATUS_SCHEDULED" or "STATUS_POSTPONED"
+                                            or "STATUS_CANCELED" or "STATUS_ABANDONED" or "STATUS_SUSPENDED");
+
+                if (isFinal)
                 {
                     var (homeScore, awayScore, winner) = ExtractEspnScore(espnEvent, match);
                     await FinalizeMatchCoreAsync(db, push, match, homeScore, awayScore, winner, ct);
                 }
-                else if (statusName is "STATUS_IN_PROGRESS" or "STATUS_HALFTIME" or "STATUS_END_PERIOD" or "STATUS_OVERTIME")
+                else if (isLive)
                 {
                     var changed = false;
 
@@ -128,7 +134,7 @@ public class FootballDataService(
                         match.Status = MatchStatus.InProgress;
                         match.StartedAt = DateTime.UtcNow;
                         changed = true;
-                        logger.LogInformation("ESPN detectó inicio: {Home} vs {Away}", match.HomeTeam, match.AwayTeam);
+                        logger.LogInformation("ESPN detectó inicio: {Home} vs {Away} [{Status}]", match.HomeTeam, match.AwayTeam, statusName);
                     }
 
                     var (liveHome, liveAway, _) = ExtractEspnScore(espnEvent, match);
@@ -136,6 +142,13 @@ public class FootballDataService(
                     {
                         match.HomeScore = liveHome;
                         match.AwayScore = liveAway;
+                        changed = true;
+                    }
+
+                    var minute = ParseEspnMinute(espnEvent.Status.DisplayClock, espnEvent.Status.Period);
+                    if (minute != null && match.Minute != minute)
+                    {
+                        match.Minute = minute;
                         changed = true;
                     }
 
@@ -321,6 +334,16 @@ public class FootballDataService(
         else if (awayComp?.Winner == true) winner = match.AwayTeam;
 
         return (home, away, winner);
+    }
+
+    // Parsea el minuto de partido desde el displayClock de ESPN.
+    // Ejemplos: "5'" → 5, "45'+2'" → 45, "90'+14'" → 90, "0'" → null
+    private static int? ParseEspnMinute(string? displayClock, int period)
+    {
+        if (string.IsNullOrEmpty(displayClock)) return null;
+        var raw = displayClock.Split('+')[0].TrimEnd('\'').Trim();
+        if (!int.TryParse(raw, out var min) || min == 0) return null;
+        return min;
     }
 
     // Mapeo de nombres ESPN (inglés) → nombres en la DB (español)
@@ -562,6 +585,9 @@ public class FootballDataService(
     );
 
     private record EspnStatus(
+        [property: JsonPropertyName("clock")] double Clock,
+        [property: JsonPropertyName("displayClock")] string DisplayClock,
+        [property: JsonPropertyName("period")] int Period,
         [property: JsonPropertyName("type")] EspnStatusType Type
     );
 
