@@ -93,7 +93,7 @@ public class BadgeService(ProdeaDbContext db)
         }
 
         int maxPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Max();
-        int minPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
+        int minPoints = playerStats.Values.Where(s => s.HasAnyPrediction).Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
         int maxPredictedGoals = playerPredictedGoals.Values.DefaultIfEmpty(0).Max();
         int goleadorCount = maxPredictedGoals > 0 ? playerPredictedGoals.Values.Count(g => g == maxPredictedGoals) : 0;
         var goalsWithPreds = playerPredictedGoals.Where(kv => playerStats.TryGetValue(kv.Key, out var s) && s.HasAnyPrediction).ToList();
