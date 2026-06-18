@@ -15,8 +15,11 @@ const EMOJIS = {
 }
 
 export const BADGE_TAGS = {
+  Crack:         'Líder de la Fecha',
+  Mufa:          'Último de la Fecha',
   Francotirador: '3 exactos',
   Adivino:       '4 exactos',
+  Tibio:         'Mitad de Tabla',
 }
 
 export function BadgePill({ type, className = '' }) {
