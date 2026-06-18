@@ -109,7 +109,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
 
         tournament.Description = request.Description?.Trim();
         if (request.StartingMatchDate.HasValue)
-            tournament.StartingMatchDate = request.StartingMatchDate.Value;
+            tournament.StartingMatchDate = AsUtc(request.StartingMatchDate.Value);
         await db.SaveChangesAsync();
 
         return Ok(new TournamentDetailDto(
@@ -139,7 +139,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             InviteLink = inviteLink,
             AdminUserId = userId,
             CreatedAt = now,
-            StartingMatchDate = request.StartingMatchDate ?? now,
+            StartingMatchDate = request.StartingMatchDate.HasValue ? AsUtc(request.StartingMatchDate.Value) : now,
         };
 
         db.Tournaments.Add(tournament);
@@ -410,6 +410,9 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         return new string(Enumerable.Range(0, 6).Select(_ => chars[Random.Shared.Next(chars.Length)]).ToArray());
     }
+
+    private static DateTime AsUtc(DateTime dt) =>
+        dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 
     private static string? FullName(User u) =>
         (u.FirstName != null || u.LastName != null)
