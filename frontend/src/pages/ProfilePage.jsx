@@ -127,29 +127,32 @@ export default function ProfilePage() {
           profile.matchdayBadges.map((b) => (
             <div
               key={`${b.phase}-${b.matchday}`}
-              className="p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-3"
+              className="px-3 py-2.5 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-2"
             >
-              <span className="text-3xl leading-none">{EMOJIS[b.badgeType] || '❓'}</span>
+              <span className="text-2xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <BadgePill type={b.badgeType} />
-                  <span className="text-[#8A8A9A] text-xs shrink-0">{jornadaLabel(b.phase, b.matchday)}</span>
+                <BadgePill type={b.badgeType} />
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[#8A8A9A] text-[10px]">{jornadaLabel(b.phase, b.matchday)}</span>
+                  <span className="text-[#8A8A9A] text-[10px]">·</span>
+                  <span className="text-white/50 text-[10px] italic truncate">"{b.randomPhrase}"</span>
                 </div>
-                <p className="text-white/60 text-xs italic mt-1 line-clamp-2">"{b.randomPhrase}"</p>
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-lg font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-                  {b.pointsInMatchday}
-                </p>
-                <p className="text-[10px] text-[#8A8A9A]">pts</p>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <div className="text-right">
+                  <span className="text-base font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                    {b.pointsInMatchday}
+                  </span>
+                  <span className="text-[9px] text-[#8A8A9A] ml-0.5">pts</span>
+                </div>
+                <button
+                  onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#00FF87]/10 text-[#00FF87] text-[10px] font-semibold"
+                >
+                  <Share2 size={10} />
+                  Carta
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
-                className="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
-              >
-                <Share2 size={11} />
-                Carta
-              </button>
             </div>
           ))
         )}
