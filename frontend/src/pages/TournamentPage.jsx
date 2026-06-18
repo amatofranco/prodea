@@ -517,10 +517,10 @@ export default function TournamentPage() {
                         setStartDateDraft(tournament?.startingMatchDate ? tournament.startingMatchDate.slice(0, 10) : '')
                         setShowStartDateModal(true)
                       }}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E] border-b border-[#2A2A3E]"
+                      className="flex items-center w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E] border-b border-[#2A2A3E]"
                     >
                       <Calendar size={16} className="shrink-0" />
-                      <span className="flex-1 text-left">Fecha de Inicio</span>
+                      <span className="flex-1 text-center">Fecha de Inicio</span>
                     </button>
                   )}
                   <button
