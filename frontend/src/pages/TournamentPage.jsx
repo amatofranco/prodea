@@ -259,7 +259,7 @@ export default function TournamentPage() {
     if (!startDateDraft) return
     setSavingStartDate(true)
     try {
-      const updated = await api.updateTournament(id, { startingMatchDate: startDateDraft })
+      const updated = await api.updateTournament(id, { description: tournament?.description ?? null, startingMatchDate: startDateDraft })
       setTournament(t => ({ ...t, startingMatchDate: updated.startingMatchDate }))
       setShowStartDateModal(false)
       await Promise.all([
