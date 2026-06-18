@@ -26,7 +26,7 @@ export const BADGE_TAGS = {
   PechoFrio:     '2° de la fecha',
   Goleador:      'Más goles predichos',
   Rustico:       'Menos goles predichos',
-  Tambaleante:   'Penúltimo de la fecha',
+  Tambaleante:   'Penúltimo',
   Tibio:         'Mitad de tabla',
   Payaso:        '0 puntos',
   Dormido:       'Sin predicciones',
