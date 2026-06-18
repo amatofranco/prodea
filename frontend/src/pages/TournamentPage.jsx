@@ -517,10 +517,10 @@ export default function TournamentPage() {
                         setStartDateDraft(tournament?.startingMatchDate ? tournament.startingMatchDate.slice(0, 10) : '')
                         setShowStartDateModal(true)
                       }}
-                      className="flex items-center w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E] border-b border-[#2A2A3E]"
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E] border-b border-[#2A2A3E]"
                     >
                       <Calendar size={16} className="shrink-0" />
-                      <span className="flex-1 text-center">Fecha de arranque</span>
+                      <span className="flex-1 text-left">Fecha de Inicio</span>
                     </button>
                   )}
                   <button
@@ -783,7 +783,7 @@ export default function TournamentPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl p-5"
             >
-              <h3 className="text-white font-bold text-lg mb-2">Fecha de arranque</h3>
+              <h3 className="text-white font-bold text-lg mb-2">Fecha de Inicio</h3>
               <p className="text-[#8A8A9A] text-sm mb-4">
                 Los puntos y motes de este torneo solo cuentan los partidos jugados a partir de esta fecha. Los partidos anteriores no afectan la tabla.
               </p>
