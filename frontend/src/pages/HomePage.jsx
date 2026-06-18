@@ -319,19 +319,28 @@ export default function HomePage() {
       }, LIVE_POLL_MS)
     }
 
-    // Refresh inmediato cuando el usuario vuelve al tab (evita throttling de browser)
+    // Refresh inmediato al volver al tab o al app (cubre visibilitychange + pageshow de iOS)
     function onVisible() {
       if (document.visibilityState === 'visible') {
         clearTimeout(pollRef.current)
         refresh().then(scheduleNext)
       }
     }
+    function onPageShow(e) {
+      // persisted = true cuando iOS restaura la página desde el bfcache
+      if (e.persisted) {
+        clearTimeout(pollRef.current)
+        refresh().then(scheduleNext)
+      }
+    }
 
     document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('pageshow', onPageShow)
     scheduleNext()
     return () => {
       clearTimeout(pollRef.current)
       document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('pageshow', onPageShow)
     }
   }, [])
 

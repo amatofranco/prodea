@@ -48,11 +48,12 @@ registerRoute(
   })
 )
 
-// Mis predicciones (Home y pantalla de Predicciones)
+// Mis predicciones (Home y pantalla de Predicciones) — NetworkFirst para siempre mostrar estado actual
 registerRoute(
   /\/api\/predictions$/,
-  new StaleWhileRevalidate({
+  new NetworkFirst({
     cacheName: 'predictions-cache',
+    networkTimeoutSeconds: 4,
     plugins: [
       new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 60 * 10 }),
       new CacheableResponsePlugin({ statuses: [200] }),
