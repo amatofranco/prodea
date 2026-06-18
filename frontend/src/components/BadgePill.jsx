@@ -32,7 +32,7 @@ export const BADGE_TAGS = {
   Dormido:       'Sin predicciones',
 }
 
-export function BadgePill({ type, className = '' }) {
+export function BadgePill({ type, className = '', showTag = true }) {
   const style = BADGE_STYLES[type] || { bg: 'badge-dormido', label: type }
   const emoji = EMOJIS[type] || '❓'
   const tag = BADGE_TAGS[type]
@@ -41,7 +41,7 @@ export function BadgePill({ type, className = '' }) {
       <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-semibold text-white ${style.bg}`}>
         {emoji} {style.label}
       </span>
-      {tag && (
+      {showTag && tag && (
         <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#2A2A3E] text-[#8A8A9A] whitespace-nowrap">
           {tag}
         </span>

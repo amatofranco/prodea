@@ -131,7 +131,7 @@ export default function ProfilePage() {
             >
               <span className="text-2xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
               <div className="flex-1 min-w-0">
-                <BadgePill type={b.badgeType} />
+                <BadgePill type={b.badgeType} showTag={false} />
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[#8A8A9A] text-[10px]">{jornadaLabel(b.phase, b.matchday)}</span>
                   <span className="text-[#8A8A9A] text-[10px]">·</span>
