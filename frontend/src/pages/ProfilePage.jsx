@@ -132,11 +132,8 @@ export default function ProfilePage() {
               <span className="text-2xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
               <div className="flex-1 min-w-0">
                 <BadgePill type={b.badgeType} showTag={false} />
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[#8A8A9A] text-[10px]">{jornadaLabel(b.phase, b.matchday)}</span>
-                  <span className="text-[#8A8A9A] text-[10px]">·</span>
-                  <span className="text-white/50 text-[10px] italic truncate">"{b.randomPhrase}"</span>
-                </div>
+                <span className="text-[#8A8A9A] text-[10px] mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>
+                <p className="text-white/50 text-[10px] italic mt-0.5 line-clamp-2">"{b.randomPhrase}"</p>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <div className="text-right">
