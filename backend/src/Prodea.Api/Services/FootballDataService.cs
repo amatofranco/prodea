@@ -356,21 +356,37 @@ public class FootballDataService(
 
     // Parsea el minuto base desde el displayClock de ESPN (para guardar en DB).
     // Ejemplos: "5'" → 5, "45'+2'" → 45, "90'+14'" → 90, "0'" → null
+    private static (int Base, int Extra) SplitEspnClock(string displayClock)
+    {
+        // Handles "45'+5'", "90'+3'", "45'", "90'"
+        var trimmed = displayClock.TrimEnd('\'');
+        var sep = trimmed.IndexOf("'+", StringComparison.Ordinal);
+        if (sep >= 0)
+        {
+            int.TryParse(trimmed[..sep], out var b);
+            int.TryParse(trimmed[(sep + 2)..].TrimEnd('\''), out var e);
+            return (b, e);
+        }
+        int.TryParse(trimmed.TrimEnd('\''), out var baseMin);
+        return (baseMin, 0);
+    }
+
     private static int? ParseEspnMinute(string? displayClock, int period)
     {
         if (string.IsNullOrEmpty(displayClock)) return null;
-        var raw = displayClock.Split('+')[0].TrimEnd('\'').Trim();
-        if (!int.TryParse(raw, out var min) || min == 0) return null;
-        return min;
+        var (baseMin, extra) = SplitEspnClock(displayClock);
+        if (baseMin == 0) return null;
+        return baseMin + extra;
     }
 
-    // Formatea el displayClock para mostrar en la UI, preservando el tiempo adicional.
-    // Ejemplos: "5'" → "5'", "45'+5'" → "45+5'", "90'+14'" → "90+14'"
+    // Formatea el displayClock sumando los minutos adicionales al base.
+    // Ejemplos: "5'" → "5'", "45'+5'" → "50'", "90'+14'" → "104'"
     private static string? FormatEspnDisplayClock(string? displayClock)
     {
         if (string.IsNullOrEmpty(displayClock)) return null;
-        var formatted = displayClock.Replace("'+", "+").TrimEnd('\'');
-        return formatted + "'";
+        var (baseMin, extra) = SplitEspnClock(displayClock);
+        if (baseMin == 0) return null;
+        return $"{baseMin + extra}'";
     }
 
     private static string MapEspnTeam(string espnName) => EspnTeamMapping.Map(espnName);
