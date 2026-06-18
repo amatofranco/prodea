@@ -69,6 +69,10 @@ public class BadgeService(ProdeaDbContext db)
             .Select(tp => tp.UserId)
             .ToListAsync();
 
+        // Con un solo participante no hay nadie contra quien compararse — no tiene
+        // sentido asignar ningún mote de fecha.
+        if (participants.Count <= 1) return;
+
         var startingMatchDate = await db.Tournaments
             .Where(t => t.Id == tournamentId)
             .Select(t => t.StartingMatchDate)
