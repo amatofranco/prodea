@@ -37,12 +37,12 @@ export function BadgePill({ type, className = '', showTag = true }) {
   const emoji = EMOJIS[type] || '❓'
   const tag = BADGE_TAGS[type]
   return (
-    <span className={`inline-flex items-center gap-1 ${className}`}>
-      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-semibold text-white ${style.bg}`}>
+    <span className={`inline-flex items-center gap-0.5 ${className}`}>
+      <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[10px] font-semibold text-white whitespace-nowrap shrink-0 ${style.bg}`}>
         {emoji} {style.label}
       </span>
       {showTag && tag && (
-        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#2A2A3E] text-[#8A8A9A] whitespace-nowrap">
+        <span className="text-[8px] font-semibold px-1 py-0.5 rounded-full bg-[#2A2A3E] text-[#8A8A9A] whitespace-nowrap shrink-0">
           {tag}
         </span>
       )}
