@@ -14,7 +14,8 @@ El objetivo es que sea divertida, visualmente llamativa, y que se viralice orgá
 - **Base de datos:** PostgreSQL (via Npgsql + Entity Framework Core)
 - **Tiempo real:** SignalR
 - **Frontend:** React + Tailwind CSS (mobile-first) — PWA (Progressive Web App)
-- **Hosteo backend + DB:** Railway
+- **Hosteo backend + DB de producción:** Render (NUNCA Railway)
+- **DB de testing/dev:** Neon PostgreSQL — el backend de staging en Render (rama `dev`) corre las migraciones automáticas contra esta DB en cada push
 - **Hosteo frontend:** Vercel
 - **API de fútbol:** football-data.org (tier gratuito)
 
@@ -244,6 +245,12 @@ AccumulativeBadge
 - En caso de error (rate limit, caída), loguear y activar modo manual sin romper la app
 
 ---
+
+## Migraciones de base de datos
+
+Este proyecto **no usa `Database.Migrate()`**. Los cambios de esquema se aplican mediante bloques de `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` escritos a mano en `Program.cs`, que corren automáticamente en cada arranque de la app (es decir, en cada deploy a Render). Son idempotentes y autocontenidos.
+
+La carpeta `Migrations/` (generada con `dotnet ef migrations add`) existe solo para tooling local — no se aplica sola en producción ni en staging. Si se agrega un campo nuevo a un modelo, hay que agregar el `ALTER TABLE` correspondiente en `Program.cs` además de (opcionalmente) generar la migración EF para mantener el snapshot sincronizado.
 
 ## Notas para el desarrollo
 

@@ -151,6 +151,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "FirstName" varchar(100);
             ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "LastName" varchar(100);
             ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "IsPwa" boolean NOT NULL DEFAULT false;
+            ALTER TABLE "Tournaments" ADD COLUMN IF NOT EXISTS "StartingMatchDate" timestamptz NOT NULL DEFAULT '0001-01-01T00:00:00Z';
+            UPDATE "Tournaments" SET "StartingMatchDate" = "CreatedAt" WHERE "StartingMatchDate" = '0001-01-01T00:00:00Z';
             CREATE TABLE IF NOT EXISTS "PredictionBackups" (
                 "Id"        serial PRIMARY KEY,
                 "CreatedAt" timestamptz NOT NULL,

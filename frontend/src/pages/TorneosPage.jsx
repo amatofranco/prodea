@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Users, Zap } from 'lucide-react'
+import { Plus, Users, Zap, ChevronDown } from 'lucide-react'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
 
@@ -14,6 +14,8 @@ export default function TorneosPage() {
   const [joinCode, setJoinCode] = useState('')
   const [createName, setCreateName] = useState('')
   const [createDesc, setCreateDesc] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [createStartingDate, setCreateStartingDate] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
@@ -25,11 +27,17 @@ export default function TorneosPage() {
     e.preventDefault()
     setError('')
     try {
-      const t = await api.createTournament({ name: createName, description: createDesc.trim() || null })
+      const t = await api.createTournament({
+        name: createName,
+        description: createDesc.trim() || null,
+        startingMatchDate: createStartingDate || undefined,
+      })
       setTournaments([...tournaments, t])
       setShowCreate(false)
       setCreateName('')
       setCreateDesc('')
+      setShowAdvanced(false)
+      setCreateStartingDate('')
       window.fbq?.('trackCustom', 'JoinTournament')
       navigate(`/torneos/${t.id}`)
     } catch (err) { setError(err.message) }
@@ -130,6 +138,31 @@ export default function TorneosPage() {
               />
               <p className="text-right text-xs text-[#8A8A9A] pr-1">{createDesc.length}/{MAX_DESC}</p>
             </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-1 text-xs text-[#8A8A9A]"
+              >
+                <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                Opciones avanzadas
+              </button>
+              {showAdvanced && (
+                <div className="flex flex-col gap-1 mt-2">
+                  <label className="text-xs text-[#8A8A9A]">
+                    Los puntos del torneo cuentan desde esta fecha (por default, desde hoy)
+                  </label>
+                  <input
+                    type="date"
+                    value={createStartingDate}
+                    onChange={(e) => setCreateStartingDate(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-[#0D0D0D] border border-[#2A2A3E] text-white focus:outline-none focus:border-[#00FF87] text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold">Crear</button>
           </form>

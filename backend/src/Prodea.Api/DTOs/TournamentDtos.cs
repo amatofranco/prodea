@@ -4,7 +4,8 @@ namespace Prodea.Api.DTOs;
 
 public record CreateTournamentRequest(
     [Required, MinLength(3), MaxLength(100)] string Name,
-    [MaxLength(150)] string? Description
+    [MaxLength(150)] string? Description,
+    DateTime? StartingMatchDate
 );
 
 public record JoinTournamentRequest(
@@ -12,7 +13,8 @@ public record JoinTournamentRequest(
 );
 
 public record UpdateTournamentRequest(
-    [MaxLength(150)] string? Description
+    [MaxLength(150)] string? Description,
+    DateTime? StartingMatchDate
 );
 
 public record TournamentDto(
@@ -24,7 +26,8 @@ public record TournamentDto(
     int AdminUserId,
     string AdminUsername,
     int ParticipantCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime StartingMatchDate
 );
 
 public record TournamentDetailDto(
@@ -36,7 +39,8 @@ public record TournamentDetailDto(
     int AdminUserId,
     string AdminUsername,
     List<ParticipantDto> Participants,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime StartingMatchDate
 );
 
 public record ParticipantDto(

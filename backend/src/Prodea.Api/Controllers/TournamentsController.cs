@@ -32,7 +32,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         return Ok(tournaments.Select(t => new TournamentDto(
             t.Id, t.Name, t.Description, t.Code, t.InviteLink,
             t.AdminUserId, t.Admin.Username,
-            t.Participants.Count, t.CreatedAt
+            t.Participants.Count, t.CreatedAt, t.StartingMatchDate
         )));
     }
 
@@ -56,7 +56,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var participantIds = tournament.Participants.Select(tp => tp.UserId).ToList();
 
         var points = await db.Predictions
-            .Where(p => participantIds.Contains(p.UserId))
+            .Where(p => participantIds.Contains(p.UserId) && p.Match.MatchDate >= tournament.StartingMatchDate)
             .GroupBy(p => p.UserId)
             .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
             .ToListAsync();
@@ -90,7 +90,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         return Ok(new TournamentDetailDto(
             tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,
             tournament.AdminUserId, tournament.Admin.Username,
-            ranked, tournament.CreatedAt
+            ranked, tournament.CreatedAt, tournament.StartingMatchDate
         ));
         }
         catch (Exception ex)
@@ -108,11 +108,13 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         if (tournament.AdminUserId != userId) return Forbid();
 
         tournament.Description = request.Description?.Trim();
+        if (request.StartingMatchDate.HasValue)
+            tournament.StartingMatchDate = request.StartingMatchDate.Value;
         await db.SaveChangesAsync();
 
         return Ok(new TournamentDetailDto(
             tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,
-            tournament.AdminUserId, tournament.Admin.Username, [], tournament.CreatedAt
+            tournament.AdminUserId, tournament.Admin.Username, [], tournament.CreatedAt, tournament.StartingMatchDate
         ));
     }
 
@@ -127,6 +129,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
 
         var code = GenerateCode();
         var inviteLink = Guid.NewGuid().ToString("N")[..12];
+        var now = DateTime.UtcNow;
 
         var tournament = new Tournament
         {
@@ -135,6 +138,8 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             Code = code,
             InviteLink = inviteLink,
             AdminUserId = userId,
+            CreatedAt = now,
+            StartingMatchDate = request.StartingMatchDate ?? now,
         };
 
         db.Tournaments.Add(tournament);
@@ -151,7 +156,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var admin = await db.Users.FindAsync(userId);
         return CreatedAtAction(nameof(GetTournament), new { id = tournament.Id },
             new TournamentDto(tournament.Id, tournament.Name, tournament.Description, tournament.Code,
-                tournament.InviteLink, tournament.AdminUserId, admin!.Username, 1, tournament.CreatedAt));
+                tournament.InviteLink, tournament.AdminUserId, admin!.Username, 1, tournament.CreatedAt, tournament.StartingMatchDate));
     }
 
     [HttpPost("join")]
@@ -189,7 +194,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         return Ok(new TournamentDto(
             tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,
             tournament.AdminUserId, tournament.Admin.Username,
-            tournament.Participants.Count + 1, tournament.CreatedAt
+            tournament.Participants.Count + 1, tournament.CreatedAt, tournament.StartingMatchDate
         ));
     }
 
@@ -241,8 +246,13 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
 
         var participantIds = participants.Select(tp => tp.UserId).ToList();
 
+        var startingMatchDate = await db.Tournaments
+            .Where(t => t.Id == id)
+            .Select(t => t.StartingMatchDate)
+            .FirstOrDefaultAsync();
+
         var points = await db.Predictions
-            .Where(p => participantIds.Contains(p.UserId))
+            .Where(p => participantIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
             .GroupBy(p => p.UserId)
             .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
             .ToListAsync();

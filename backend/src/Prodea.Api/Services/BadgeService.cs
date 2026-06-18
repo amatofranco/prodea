@@ -69,8 +69,14 @@ public class BadgeService(ProdeaDbContext db)
             .Select(tp => tp.UserId)
             .ToListAsync();
 
+        var startingMatchDate = await db.Tournaments
+            .Where(t => t.Id == tournamentId)
+            .Select(t => t.StartingMatchDate)
+            .FirstOrDefaultAsync();
+
         var jornada = await db.Matches
-            .Where(m => m.Phase == phase && (matchday == 0 ? m.Matchday == null : m.Matchday == matchday))
+            .Where(m => m.Phase == phase && (matchday == 0 ? m.Matchday == null : m.Matchday == matchday)
+                && m.MatchDate >= startingMatchDate)
             .ToListAsync();
 
         if (jornada.Count == 0) return;

@@ -9,6 +9,7 @@ public class Tournament
     public string InviteLink { get; set; } = string.Empty;
     public int AdminUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime StartingMatchDate { get; set; } = DateTime.UtcNow;
 
     public User Admin { get; set; } = null!;
     public ICollection<TournamentParticipant> Participants { get; set; } = [];
