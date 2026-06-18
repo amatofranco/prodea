@@ -6,6 +6,7 @@ public enum MatchdayBadgeType
     Mufa,
     Adivino,
     Francotirador,
+    PechoFrio,
     Goleador,
     Rustico,
     Payaso,

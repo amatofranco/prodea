@@ -12,6 +12,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Mufa] = ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
         [MatchdayBadgeType.Francotirador] = ["Un tiro, un gol", "Cuando apuntás, no fallás", "La mira calibrada", "Una bala. Un cadáver", "Economía de recursos. Brutalidad de precisión"],
         [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Cuatro exactos. Brujo confirmado.", "Clarividencia pura y dura", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
+        [MatchdayBadgeType.PechoFrio] = ["Llegaste hasta la puerta pero no entraste", "Tan cerca, tan lejos", "El podio te vio de afuera", "Segundo es el primero de los perdedores", "El técnico te sacó justo cuando arrancabas"],
         [MatchdayBadgeType.Goleador] = ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
         [MatchdayBadgeType.Rustico] = ["El arquero agradeció tus predicciones", "Con el cuchillo entre los dientes", "Bilardo estaría orgulloso", "Le tenés miedo al éxito", "Predijiste con el freno de mano puesto"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
@@ -25,6 +26,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Mufa] = "💀",
         [MatchdayBadgeType.Adivino] = "🔮",
         [MatchdayBadgeType.Francotirador] = "🎯",
+        [MatchdayBadgeType.PechoFrio] = "❄️",
         [MatchdayBadgeType.Goleador] = "⚽",
         [MatchdayBadgeType.Rustico] = "⛏️",
         [MatchdayBadgeType.Payaso] = "🤡",
@@ -94,6 +96,15 @@ public class BadgeService(ProdeaDbContext db)
 
         int maxPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Max();
         int minPoints = playerStats.Values.Where(s => s.HasAnyPrediction).Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
+        var distinctPoints = playerStats.Values
+            .Where(s => s.HasAnyPrediction)
+            .Select(s => s.TotalPoints)
+            .Distinct().OrderByDescending(p => p).ToList();
+        int? secondPoints = distinctPoints.Count >= 2 ? distinctPoints[1] : (int?)null;
+        int pechofrioCount = secondPoints.HasValue
+            ? playerStats.Values.Count(s => s.HasAnyPrediction && s.TotalPoints == secondPoints.Value)
+            : 0;
+
         int maxPredictedGoals = playerPredictedGoals.Values.DefaultIfEmpty(0).Max();
         int goleadorCount = maxPredictedGoals > 0 ? playerPredictedGoals.Values.Count(g => g == maxPredictedGoals) : 0;
         var goalsWithPreds = playerPredictedGoals.Where(kv => playerStats.TryGetValue(kv.Key, out var s) && s.HasAnyPrediction).ToList();
@@ -114,6 +125,7 @@ public class BadgeService(ProdeaDbContext db)
                 { TotalPoints: var p } when p == minPoints && participants.Count > 1                   => MatchdayBadgeType.Mufa,
                 { ExactCount: >= 4 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 3 }                                                                   => MatchdayBadgeType.Francotirador,
+                _ when pechofrioCount == 1 && secondPoints.HasValue && stats.TotalPoints == secondPoints.Value => MatchdayBadgeType.PechoFrio,
                 _ when goleadorCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == maxPredictedGoals => MatchdayBadgeType.Goleador,
                 _ when rusticoCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == minPredictedGoals  => MatchdayBadgeType.Rustico,
                 { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
