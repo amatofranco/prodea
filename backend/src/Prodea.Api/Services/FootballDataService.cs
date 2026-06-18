@@ -516,6 +516,11 @@ public class FootballDataService(
             .Distinct()
             .ToListAsync(ct);
 
+        var broadcastGoals = goals
+            ?? (match.GoalsJson != null
+                ? JsonSerializer.Deserialize<List<GoalInfo>>(match.GoalsJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                : null);
+
         var payload = new
         {
             matchId = match.Id,
@@ -524,7 +529,7 @@ public class FootballDataService(
             status = match.Status.ToString(),
             minute = match.Minute,
             minuteDisplay,
-            goals = goals?.Select(g => new { scorer = g.Scorer, team = g.Team, minute = g.Minute }).ToList(),
+            goals = broadcastGoals?.Select(g => new { scorer = g.Scorer, team = g.Team, minute = g.Minute }).ToList(),
             livePhase,
         };
 
