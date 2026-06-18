@@ -1,16 +1,17 @@
 const BADGE_STYLES = {
-  Crack:         { bg: 'badge-crack',   label: 'El Crack' },
-  Mufa:          { bg: 'badge-mufa',    label: 'El Mufa' },
-  Adivino:       { bg: 'badge-adivino', label: 'El Adivino' },
-  Francotirador: { bg: 'badge-franco',  label: 'El Francotirador' },
-  Payaso:        { bg: 'badge-payaso',  label: 'El Payaso' },
-  Dormido:       { bg: 'badge-dormido', label: 'El Dormido' },
-  Tibio:         { bg: 'badge-tibio',   label: 'El Tibio' },
+  Crack:         { bg: 'badge-crack',    label: 'El Crack' },
+  Mufa:          { bg: 'badge-mufa',     label: 'El Mufa' },
+  Adivino:       { bg: 'badge-adivino',  label: 'El Adivino' },
+  Francotirador: { bg: 'badge-franco',   label: 'El Francotirador' },
+  Goleador:      { bg: 'badge-goleador', label: 'El Goleador' },
+  Payaso:        { bg: 'badge-payaso',   label: 'El Payaso' },
+  Dormido:       { bg: 'badge-dormido',  label: 'El Dormido' },
+  Tibio:         { bg: 'badge-tibio',    label: 'El Tibio' },
 }
 
 const EMOJIS = {
   Crack: '🏆', Mufa: '💀', Adivino: '🔮',
-  Francotirador: '🎯', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
+  Francotirador: '🎯', Goleador: '⚽', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
   PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
 }
 
@@ -19,6 +20,7 @@ export const BADGE_TAGS = {
   Mufa:          'Último de la Fecha',
   Francotirador: '3 exactos',
   Adivino:       '4 exactos',
+  Goleador:      'Más goles predichos',
   Tibio:         'Mitad de Tabla',
   Payaso:        '0 puntos',
   Dormido:       'Predicciones sin cargar',

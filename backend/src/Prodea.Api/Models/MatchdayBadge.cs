@@ -6,6 +6,7 @@ public enum MatchdayBadgeType
     Mufa,
     Adivino,
     Francotirador,
+    Goleador,
     Payaso,
     Dormido,
     Tibio

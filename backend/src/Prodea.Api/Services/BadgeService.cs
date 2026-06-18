@@ -12,6 +12,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Mufa] = ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
         [MatchdayBadgeType.Francotirador] = ["Un tiro, un gol", "Cuando apuntás, no fallás", "La mira calibrada", "Una bala. Un cadáver", "Economía de recursos. Brutalidad de precisión"],
         [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Cuatro exactos. Brujo confirmado.", "Clarividencia pura y dura", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
+        [MatchdayBadgeType.Goleador] = ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
         [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
         [MatchdayBadgeType.Tibio] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
@@ -23,6 +24,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Mufa] = "💀",
         [MatchdayBadgeType.Adivino] = "🔮",
         [MatchdayBadgeType.Francotirador] = "🎯",
+        [MatchdayBadgeType.Goleador] = "⚽",
         [MatchdayBadgeType.Payaso] = "🤡",
         [MatchdayBadgeType.Dormido] = "😴",
         [MatchdayBadgeType.Tibio] = "🌡️",
@@ -76,6 +78,7 @@ public class BadgeService(ProdeaDbContext db)
             .ToListAsync();
 
         var playerStats = new Dictionary<int, (int TotalPoints, int ExactCount, bool HasAnyPrediction, bool AnyWinnerCorrect)>();
+        var playerPredictedGoals = new Dictionary<int, int>();
 
         foreach (var userId in participants)
         {
@@ -84,10 +87,13 @@ public class BadgeService(ProdeaDbContext db)
             int exactCount = userPreds.Count(p => p.PointsEarned == 3);
             bool anyWinnerCorrect = userPreds.Any(p => p.PointsEarned > 0);
             playerStats[userId] = (totalPoints, exactCount, userPreds.Count > 0, anyWinnerCorrect);
+            playerPredictedGoals[userId] = userPreds.Sum(p => p.PredictedHomeScore + p.PredictedAwayScore);
         }
 
         int maxPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Max();
         int minPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
+        int maxPredictedGoals = playerPredictedGoals.Values.DefaultIfEmpty(0).Max();
+        int goleadorCount = maxPredictedGoals > 0 ? playerPredictedGoals.Values.Count(g => g == maxPredictedGoals) : 0;
 
         var phaseStr = phase.ToString();
         bool anyNewBadge = false;
@@ -103,6 +109,7 @@ public class BadgeService(ProdeaDbContext db)
                 { TotalPoints: var p } when p == minPoints && participants.Count > 1                   => MatchdayBadgeType.Mufa,
                 { ExactCount: >= 4 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 3 }                                                                   => MatchdayBadgeType.Francotirador,
+                _ when goleadorCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == maxPredictedGoals => MatchdayBadgeType.Goleador,
                 { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
                 _                                                                                      => MatchdayBadgeType.Tibio,
             };
