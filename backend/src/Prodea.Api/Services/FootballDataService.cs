@@ -69,7 +69,7 @@ public class FootballDataService(
         var matchesToCheck = await db.Matches
             .Where(m => m.ExternalId != null &&
                 (m.Status == MatchStatus.InProgress ||
-                 (m.Status == MatchStatus.Scheduled && m.MatchDate <= DateTime.UtcNow.AddMinutes(5))))
+                 (m.Status == MatchStatus.Scheduled && m.MatchDate <= DateTime.UtcNow.AddMinutes(15))))
             .ToListAsync(ct);
 
         if (matchesToCheck.Count == 0) return PollingInterval;
