@@ -20,6 +20,8 @@ export const BADGE_TAGS = {
   Francotirador: '3 exactos',
   Adivino:       '4 exactos',
   Tibio:         'Mitad de Tabla',
+  Payaso:        '0 puntos',
+  Dormido:       'Predicciones sin cargar',
 }
 
 export function BadgePill({ type, className = '' }) {
