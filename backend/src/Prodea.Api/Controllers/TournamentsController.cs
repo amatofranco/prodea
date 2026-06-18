@@ -108,9 +108,19 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         if (tournament.AdminUserId != userId) return Forbid();
 
         tournament.Description = request.Description?.Trim();
+
+        var dateChanged = false;
         if (request.StartingMatchDate.HasValue)
-            tournament.StartingMatchDate = AsUtc(request.StartingMatchDate.Value);
+        {
+            var newDate = AsUtc(request.StartingMatchDate.Value);
+            dateChanged = newDate != tournament.StartingMatchDate;
+            tournament.StartingMatchDate = newDate;
+        }
+
         await db.SaveChangesAsync();
+
+        if (dateChanged)
+            await new BadgeService(db).RecalculateAllBadgesAsync(id);
 
         return Ok(new TournamentDetailDto(
             tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,

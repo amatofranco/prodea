@@ -174,6 +174,24 @@ public class BadgeService(ProdeaDbContext db)
     public Task SendCardNotificationsPublicAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
         => SendCardNotificationsAsync(tournamentId, phase, matchday, participants, push);
 
+    // Recalcula todos los motes del torneo desde cero — usar cuando cambia StartingMatchDate,
+    // ya que los motes ya asignados no se actualizan solos al mover el corte de fechas.
+    public async Task RecalculateAllBadgesAsync(int tournamentId)
+    {
+        await db.MatchdayBadges.Where(mb => mb.TournamentId == tournamentId).ExecuteDeleteAsync();
+        await db.AccumulativeBadges.Where(ab => ab.TournamentId == tournamentId).ExecuteDeleteAsync();
+
+        var jornadas = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finished)
+            .Select(m => new { m.Phase, Matchday = m.Matchday ?? 0 })
+            .Distinct()
+            .OrderBy(j => j.Phase).ThenBy(j => j.Matchday)
+            .ToListAsync();
+
+        foreach (var j in jornadas)
+            await AssignMatchdayBadgesAsync(tournamentId, j.Phase, j.Matchday);
+    }
+
     public async Task RecalculateAccumulativeBadgesAsync(int tournamentId) =>
         await UpdateAccumulativeBadgesAsync(tournamentId);
 
