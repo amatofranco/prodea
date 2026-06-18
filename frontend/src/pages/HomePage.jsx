@@ -58,26 +58,32 @@ function LiveCard({ match, compact = false }) {
             <p className="text-[9px] font-semibold text-white text-center leading-tight w-full truncate">{awayDisplay}</p>
           </div>
         </div>
-        {match.goals && match.goals.length > 0 && (
-          <div className="mt-1.5 flex flex-col gap-1">
-            {match.goals.map((g, i) => {
-              const isHome = g.team === match.homeTeam
-              return isHome ? (
-                <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
-                  <span className="shrink-0">⚽</span>
-                  <span className="truncate">{g.scorer}</span>
-                  <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
-                </div>
-              ) : (
-                <div key={i} className="flex items-center justify-end gap-1 text-[10px] text-[#8A8A9A] min-w-0">
-                  <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
-                  <span className="truncate">{g.scorer}</span>
-                  <span className="shrink-0">⚽</span>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        {match.goals && match.goals.length > 0 && (() => {
+          const homeGoals = match.goals.filter(g => g.team === match.homeTeam)
+          const awayGoals = match.goals.filter(g => g.team !== match.homeTeam)
+          return (
+            <div className="mt-1.5 grid grid-cols-2 gap-x-2 items-start">
+              <div className="flex flex-col gap-1">
+                {homeGoals.map((g, i) => (
+                  <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                    <span className="shrink-0">⚽</span>
+                    <span className="truncate">{g.scorer}</span>
+                    <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-1 items-end">
+                {awayGoals.map((g, i) => (
+                  <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                    <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                    <span className="truncate">{g.scorer}</span>
+                    <span className="shrink-0">⚽</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
         {pred && (() => {
           const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
           return (
@@ -123,26 +129,32 @@ function LiveCard({ match, compact = false }) {
           <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 72, wordBreak: 'break-word' }}>{awayDisplay}</p>
         </div>
       </div>
-      {match.goals && match.goals.length > 0 && (
-        <div className="mt-2 flex flex-col gap-1">
-          {match.goals.map((g, i) => {
-            const isHome = g.team === match.homeTeam
-            return isHome ? (
-              <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
-                <span className="shrink-0">⚽</span>
-                <span className="truncate">{g.scorer}</span>
-                <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
-              </div>
-            ) : (
-              <div key={i} className="flex items-center justify-end gap-1 text-[10px] text-[#8A8A9A] min-w-0">
-                <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
-                <span className="truncate">{g.scorer}</span>
-                <span className="shrink-0">⚽</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      {match.goals && match.goals.length > 0 && (() => {
+        const homeGoals = match.goals.filter(g => g.team === match.homeTeam)
+        const awayGoals = match.goals.filter(g => g.team !== match.homeTeam)
+        return (
+          <div className="mt-2 grid grid-cols-2 gap-x-2 items-start">
+            <div className="flex flex-col gap-1">
+              {homeGoals.map((g, i) => (
+                <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                  <span className="shrink-0">⚽</span>
+                  <span className="truncate">{g.scorer}</span>
+                  <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-1 items-end">
+              {awayGoals.map((g, i) => (
+                <div key={i} className="flex items-center gap-1 text-[10px] text-[#8A8A9A] min-w-0">
+                  <span className="shrink-0 text-[#FF6B35]/60">{g.minute}</span>
+                  <span className="truncate">{g.scorer}</span>
+                  <span className="shrink-0">⚽</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
       {pred && (() => {
         const pts = calcLivePoints(pred, match.homeScore, match.awayScore)
         return (
