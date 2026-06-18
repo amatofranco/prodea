@@ -159,13 +159,15 @@ public class FootballDataService(
                             match.GoalsJson = JsonSerializer.Serialize(goals);
                     }
 
-                    // Durante el entretiempo no actualizamos el minuto (queda en el del último gol o anterior)
-                    // pero sí forzamos un broadcast para que el cliente muestre "ET"
-                    if (statusName == "STATUS_HALFTIME")
+                    // Persistir livePhase para que el REST también lo devuelva en page load
+                    if (match.LivePhase != livePhase)
                     {
+                        match.LivePhase = livePhase;
                         changed = true;
                     }
-                    else
+
+                    // Durante el entretiempo no actualizamos el minuto (queda en el del último gol o anterior)
+                    if (statusName != "STATUS_HALFTIME")
                     {
                         var minute = ParseEspnMinute(espnEvent.Status.DisplayClock, espnEvent.Status.Period);
                         if (minute != null && match.Minute != minute)

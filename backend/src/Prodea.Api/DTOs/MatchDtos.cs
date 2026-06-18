@@ -37,7 +37,8 @@ public record MatchWithPredictionDto(
     string Status,
     PredictionDto? UserPrediction,
     int? Minute,
-    List<GoalDto>? Goals = null
+    List<GoalDto>? Goals = null,
+    string? LivePhase = null
 );
 
 public record PredictionDto(

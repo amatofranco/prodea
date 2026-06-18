@@ -39,7 +39,8 @@ public class PredictionsController(ProdeaDbContext db) : ControllerBase
                 m.Status.ToString(),
                 pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned, pred.PredictedPenaltyWinner),
                 m.Minute,
-                goals
+                goals,
+                m.LivePhase
             );
         }));
     }
