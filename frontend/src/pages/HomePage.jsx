@@ -7,6 +7,7 @@ import { getTeam, getFlagUrl } from '../data/teamsData'
 import InstallBanner from '../components/InstallBanner'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import PushPermissionModal from '../components/PushPermissionModal'
+import { joinTournament, leaveTournament, onMatchUpdated } from '../services/signalr'
 
 const LIVE_POLL_MS = 60_000
 const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
@@ -343,6 +344,34 @@ export default function HomePage() {
       window.removeEventListener('pageshow', onPageShow)
     }
   }, [])
+
+  // Suscripción SignalR: actualizaciones en tiempo real de minuto, goles y estado
+  useEffect(() => {
+    if (tournaments.length === 0) return
+    tournaments.forEach((t) => joinTournament(t.id).catch(() => {}))
+    const unsub = onMatchUpdated((update) => {
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.id === update.matchId
+            ? {
+                ...m,
+                homeScore: update.homeScore,
+                awayScore: update.awayScore,
+                status: update.status,
+                minute: update.minute ?? m.minute,
+                goals: update.goals !== undefined ? update.goals : m.goals,
+                livePhase: update.livePhase !== undefined ? update.livePhase : m.livePhase,
+                minuteDisplay: update.minuteDisplay !== undefined ? update.minuteDisplay : m.minuteDisplay,
+              }
+            : m
+        )
+      )
+    })
+    return () => {
+      unsub()
+      tournaments.forEach((t) => leaveTournament(t.id).catch(() => {}))
+    }
+  }, [tournaments])
 
   const today = new Date().toDateString()
   const tomorrow = new Date(new Date().getTime() + 86400000).toDateString()
