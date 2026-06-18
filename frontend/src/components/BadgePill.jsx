@@ -29,8 +29,8 @@ export function BadgePill({ type, className = '' }) {
   const emoji = EMOJIS[type] || '❓'
   const tag = BADGE_TAGS[type]
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white ${style.bg} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 ${className}`}>
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white ${style.bg}`}>
         {emoji} {style.label}
       </span>
       {tag && (
