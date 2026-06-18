@@ -6,6 +6,11 @@ import { useTournamentStore } from '../store/tournamentStore'
 
 const MAX_DESC = 150
 
+function todayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function TorneosPage() {
   const { tournaments, setTournaments } = useTournamentStore()
   const [loading, setLoading] = useState(true)
@@ -14,7 +19,7 @@ export default function TorneosPage() {
   const [joinCode, setJoinCode] = useState('')
   const [createName, setCreateName] = useState('')
   const [createDesc, setCreateDesc] = useState('')
-  const [createStartingDate, setCreateStartingDate] = useState('')
+  const [createStartingDate, setCreateStartingDate] = useState(todayStr)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
@@ -35,7 +40,7 @@ export default function TorneosPage() {
       setShowCreate(false)
       setCreateName('')
       setCreateDesc('')
-      setCreateStartingDate('')
+      setCreateStartingDate(todayStr())
       window.fbq?.('trackCustom', 'JoinTournament')
       navigate(`/torneos/${t.id}`)
     } catch (err) { setError(err.message) }
