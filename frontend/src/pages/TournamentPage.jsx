@@ -15,6 +15,11 @@ import InstallBanner from '../components/InstallBanner'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const MAX_DESC = 150
+
+function todayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 const PHASE_ORDER = ['group-1', 'group-2', 'group-3', 'R32', 'R16', 'QF', 'SF', 'ThirdPlace', 'Final']
 const TAB_LABELS = {
   'group-1': 'Fecha 1', 'group-2': 'Fecha 2', 'group-3': 'Fecha 3',
@@ -259,7 +264,10 @@ export default function TournamentPage() {
     if (!startDateDraft) return
     setSavingStartDate(true)
     try {
-      const updated = await api.updateTournament(id, { description: tournament?.description ?? null, startingMatchDate: startDateDraft })
+      // Si elige "hoy", mandamos el instante exacto en vez de la medianoche, así no
+      // se incluyen partidos de hoy que ya terminaron antes de este momento.
+      const dateToSend = startDateDraft === todayStr() ? new Date().toISOString() : startDateDraft
+      const updated = await api.updateTournament(id, { description: tournament?.description ?? null, startingMatchDate: dateToSend })
       setTournament(t => ({ ...t, startingMatchDate: updated.startingMatchDate }))
       setShowStartDateModal(false)
       await Promise.all([

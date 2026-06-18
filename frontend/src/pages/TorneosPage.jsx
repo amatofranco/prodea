@@ -34,7 +34,9 @@ export default function TorneosPage() {
       const t = await api.createTournament({
         name: createName,
         description: createDesc.trim() || null,
-        startingMatchDate: createStartingDate || undefined,
+        // Si quedó en la fecha de hoy, no la mandamos: que el backend use el instante exacto
+        // (now), no la medianoche, así no se incluyen partidos de hoy que ya terminaron.
+        startingMatchDate: createStartingDate !== todayStr() ? createStartingDate : undefined,
       })
       setTournaments([...tournaments, t])
       setShowCreate(false)
