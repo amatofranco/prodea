@@ -9,6 +9,7 @@ public enum MatchdayBadgeType
     PechoFrio,
     Goleador,
     Rustico,
+    Tambaleante,
     Payaso,
     Dormido,
     Tibio

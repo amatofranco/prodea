@@ -122,7 +122,8 @@ html, body, #root {
 .badge-franco   { background: linear-gradient(135deg, #0891B2, #0E7490); }
 .badge-pechofrio { background: linear-gradient(135deg, #0284C7, #0369A1); }
 .badge-goleador  { background: linear-gradient(135deg, #16A34A, #15803D); }
-.badge-rustico  { background: linear-gradient(135deg, #92400E, #78350F); }
+.badge-rustico      { background: linear-gradient(135deg, #92400E, #78350F); }
+.badge-tambaleante  { background: linear-gradient(135deg, #EA580C, #C2410C); }
 .badge-payaso   { background: linear-gradient(135deg, #EC4899, #BE185D); }
 .badge-dormido  { background: linear-gradient(135deg, #6B7280, #374151); }
 .badge-tibio    { background: linear-gradient(135deg, #0EA5E9, #0369A1); }

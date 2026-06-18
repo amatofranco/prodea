@@ -5,7 +5,8 @@ const BADGE_STYLES = {
   Francotirador: { bg: 'badge-franco',   label: 'El Francotirador' },
   PechoFrio:     { bg: 'badge-pechofrio', label: 'El Pecho Frío' },
   Goleador:      { bg: 'badge-goleador',  label: 'El Goleador' },
-  Rustico:       { bg: 'badge-rustico',  label: 'El Rústico' },
+  Rustico:       { bg: 'badge-rustico',      label: 'El Rústico' },
+  Tambaleante:   { bg: 'badge-tambaleante', label: 'El Tambaleante' },
   Payaso:        { bg: 'badge-payaso',   label: 'El Payaso' },
   Dormido:       { bg: 'badge-dormido',  label: 'El Dormido' },
   Tibio:         { bg: 'badge-tibio',    label: 'El Tibio' },
@@ -13,7 +14,7 @@ const BADGE_STYLES = {
 
 const EMOJIS = {
   Crack: '🏆', Mufa: '💀', Adivino: '🔮',
-  Francotirador: '🎯', PechoFrio: '❄️', Goleador: '⚽', Rustico: '⛏️', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
+  Francotirador: '🎯', PechoFrio: '❄️', Goleador: '⚽', Rustico: '⛏️', Tambaleante: '🥴', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
   PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
 }
 
@@ -25,6 +26,7 @@ export const BADGE_TAGS = {
   PechoFrio:     '2° de la fecha',
   Goleador:      'Más goles',
   Rustico:       'Menos goles',
+  Tambaleante:   'Penúltimo de la fecha',
   Tibio:         'Mitad de tabla',
   Payaso:        '0 puntos',
   Dormido:       'Sin predicciones',

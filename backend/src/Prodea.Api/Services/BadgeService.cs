@@ -15,6 +15,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.PechoFrio] = ["Llegaste hasta la puerta pero no entraste", "Tan cerca, tan lejos", "El podio te vio de afuera", "Segundo es el primero de los perdedores", "El técnico te sacó justo cuando arrancabas"],
         [MatchdayBadgeType.Goleador] = ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
         [MatchdayBadgeType.Rustico] = ["El arquero agradeció tus predicciones", "Con el cuchillo entre los dientes", "Bilardo estaría orgulloso", "Le tenés miedo al éxito", "Predijiste con el freno de mano puesto"],
+        [MatchdayBadgeType.Tambaleante] = ["Sobreviviste de milagro", "En zona de descenso", "Peleando la promoción", "Por lo menos no sos último", "A un paso de la derrota"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
         [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
         [MatchdayBadgeType.Tibio] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
@@ -29,6 +30,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.PechoFrio] = "❄️",
         [MatchdayBadgeType.Goleador] = "⚽",
         [MatchdayBadgeType.Rustico] = "⛏️",
+        [MatchdayBadgeType.Tambaleante] = "🥴",
         [MatchdayBadgeType.Payaso] = "🤡",
         [MatchdayBadgeType.Dormido] = "😴",
         [MatchdayBadgeType.Tibio] = "🌡️",
@@ -104,6 +106,10 @@ public class BadgeService(ProdeaDbContext db)
         int pechofrioCount = secondPoints.HasValue
             ? playerStats.Values.Count(s => s.HasAnyPrediction && s.TotalPoints == secondPoints.Value)
             : 0;
+        int? penultimoPoints = distinctPoints.Count >= 2 ? distinctPoints[^2] : (int?)null;
+        int tambaleanteCount = penultimoPoints.HasValue
+            ? playerStats.Values.Count(s => s.HasAnyPrediction && s.TotalPoints == penultimoPoints.Value)
+            : 0;
 
         int maxPredictedGoals = playerPredictedGoals.Values.DefaultIfEmpty(0).Max();
         int goleadorCount = maxPredictedGoals > 0 ? playerPredictedGoals.Values.Count(g => g == maxPredictedGoals) : 0;
@@ -128,6 +134,7 @@ public class BadgeService(ProdeaDbContext db)
                 _ when pechofrioCount == 1 && secondPoints.HasValue && stats.TotalPoints == secondPoints.Value => MatchdayBadgeType.PechoFrio,
                 _ when goleadorCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == maxPredictedGoals => MatchdayBadgeType.Goleador,
                 _ when rusticoCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == minPredictedGoals  => MatchdayBadgeType.Rustico,
+                _ when tambaleanteCount == 1 && penultimoPoints.HasValue && stats.TotalPoints == penultimoPoints.Value => MatchdayBadgeType.Tambaleante,
                 { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
                 _                                                                                      => MatchdayBadgeType.Tibio,
             };
