@@ -17,15 +17,15 @@ const EMOJIS = {
 }
 
 export const BADGE_TAGS = {
-  Crack:         'Líder de la Fecha',
-  Mufa:          'Último de la Fecha',
+  Crack:         'Líder de la fecha',
+  Mufa:          'Último de la fecha',
   Francotirador: '3 exactos',
   Adivino:       '4 exactos',
-  Goleador:      'Más goles predichos',
-  Rustico:       'Menos goles predichos',
-  Tibio:         'Mitad de Tabla',
+  Goleador:      'Más goles',
+  Rustico:       'Menos goles',
+  Tibio:         'Mitad de tabla',
   Payaso:        '0 puntos',
-  Dormido:       'Predicciones sin cargar',
+  Dormido:       'Sin predicciones',
 }
 
 export function BadgePill({ type, className = '' }) {
@@ -33,8 +33,8 @@ export function BadgePill({ type, className = '' }) {
   const emoji = EMOJIS[type] || '❓'
   const tag = BADGE_TAGS[type]
   return (
-    <span className={`inline-flex items-center gap-1.5 ${className}`}>
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white ${style.bg}`}>
+    <span className={`inline-flex items-center gap-1 ${className}`}>
+      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-semibold text-white ${style.bg}`}>
         {emoji} {style.label}
       </span>
       {tag && (

@@ -585,7 +585,7 @@ export default function TournamentPage() {
             <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold px-4 mb-1">
               Tabla de posiciones
             </p>
-            <div className="px-4 flex flex-col gap-2">
+            <div className="px-2 flex flex-col gap-1.5">
               {leaderboard.map((entry, i) => (
                 <LeaderboardRow
                   key={entry.userId}
@@ -741,12 +741,12 @@ function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
       onClick={() => navigate(`/torneos/${tournamentId}/perfil/${entry.userId}`)}
-      className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer active:border-[#00FF87] transition-colors ${
+      className={`flex items-center gap-2 p-2.5 rounded-2xl border cursor-pointer active:border-[#00FF87] transition-colors ${
         isMe ? 'bg-[#00FF87]/5 border-[#00FF87]/30' : 'bg-[#1A1A2E] border-[#2A2A3E]'
       }`}
     >
-      <span className={`w-7 text-center font-bold text-sm ${rankColors[index] || 'text-[#8A8A9A]'}`}>{entry.rank}</span>
-      <div className="w-9 h-9 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white font-bold text-sm shrink-0">
+      <span className={`w-6 text-center font-bold text-sm ${rankColors[index] || 'text-[#8A8A9A]'}`}>{entry.rank}</span>
+      <div className="w-8 h-8 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white font-bold text-sm shrink-0">
         {(entry.fullName ?? entry.username)[0].toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
