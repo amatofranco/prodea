@@ -262,6 +262,10 @@ export default function TournamentPage() {
       const updated = await api.updateTournament(id, { startingMatchDate: startDateDraft })
       setTournament(t => ({ ...t, startingMatchDate: updated.startingMatchDate }))
       setShowStartDateModal(false)
+      await Promise.all([
+        api.getLeaderboard(id).then(setLeaderboard),
+        api.getMatchdayWinners(id).then(setMatchdayWinners),
+      ])
     } finally {
       setSavingStartDate(false)
     }
