@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Share2, ChevronLeft, Wifi, Lock, X, Pencil, ImageDown, LogOut, MoreVertical, Bell } from 'lucide-react'
+import { Share2, ChevronLeft, ChevronRight, Wifi, Lock, X, Pencil, ImageDown, LogOut, MoreVertical, Bell } from 'lucide-react'
 import QRCode from 'qrcode'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
@@ -755,9 +755,12 @@ function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
         </p>
         {entry.currentBadge && <BadgePill type={entry.currentBadge} className="mt-0.5 text-[10px]" />}
       </div>
-      <span className="text-xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-        {entry.totalPoints}<span className="text-xs text-[#8A8A9A] ml-0.5">pts</span>
-      </span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className="text-xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+          {entry.totalPoints}<span className="text-xs text-[#8A8A9A] ml-0.5">pts</span>
+        </span>
+        <ChevronRight size={14} className="text-[#8A8A9A]" />
+      </div>
     </motion.div>
   )
 }
