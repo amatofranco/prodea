@@ -14,12 +14,25 @@ const EMOJIS = {
   PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
 }
 
+export const BADGE_TAGS = {
+  Francotirador: '3 exactos',
+  Adivino:       '4 exactos',
+}
+
 export function BadgePill({ type, className = '' }) {
   const style = BADGE_STYLES[type] || { bg: 'badge-dormido', label: type }
   const emoji = EMOJIS[type] || '❓'
+  const tag = BADGE_TAGS[type]
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white ${style.bg} ${className}`}>
-      {emoji} {style.label}
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white ${style.bg} ${className}`}>
+        {emoji} {style.label}
+      </span>
+      {tag && (
+        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#2A2A3E] text-[#8A8A9A] whitespace-nowrap">
+          {tag}
+        </span>
+      )}
     </span>
   )
 }

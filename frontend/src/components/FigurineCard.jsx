@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Share2 } from 'lucide-react'
-import { EMOJIS } from './BadgePill'
+import { EMOJIS, BADGE_TAGS } from './BadgePill'
 
 const BADGE_GRADIENTS = {
   Crack:         ['#FFD700', '#FFFDE7', '#F59E0B', '#78350F'],
@@ -32,10 +32,6 @@ const BADGE_LABELS = {
   Tibio:         'El Tibio',
 }
 
-const BADGE_TAGS = {
-  Francotirador: '3 exactos',
-  Adivino:       '4 exactos',
-}
 
 function jornadaLabel(phase, matchday) {
   if (phase === 'Group') return `Fecha ${matchday}`
@@ -94,6 +90,7 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   const accent = BADGE_ACCENT[badge.badgeType]    || '#00FF87'
   const emoji  = EMOJIS[badge.badgeType]          || '❓'
   const label  = BADGE_LABELS[badge.badgeType]    || badge.badgeType
+  const tag    = BADGE_TAGS[badge.badgeType]      || null
   const jornada = jornadaLabel(badge.phase, badge.matchday)
   const phrase  = `"${badge.randomPhrase}"`
 
@@ -101,11 +98,12 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   tmp.font = 'italic 11px "DM Sans", system-ui, sans-serif'
   const phraseLines = wrapLines(tmp, phrase, W - 52)
 
-  const H = PAD + 14 + GAP        // header (wordmark)
-          + 30 + GAP              // username
-          + 1 + GAP               // divider
-          + 68 + 8 + 30 + GAP    // emoji + label
-          + 56 + GAP              // stats
+  const H = PAD + 14 + GAP            // header (wordmark)
+          + 30 + GAP                  // username
+          + 1 + GAP                   // divider
+          + 68 + 8 + 30 + 6          // emoji + label
+          + (tag ? 14 + GAP : GAP)   // pill opcional
+          + 56 + GAP                  // stats
           + phraseLines.length * 17
           + GAP + 1 + 12 + 12 + PAD  // footer
 
@@ -184,46 +182,36 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   ctx.fillText(emoji, CX, y)
   y += 68 + 8
 
-  // Badge label (+ tag pill si aplica)
-  const tag = BADGE_TAGS[badge.badgeType]
+  // Badge label
   ctx.font = '700 26px "Bebas Neue", "DM Sans", system-ui, sans-serif'
-  const labelW = ctx.measureText(label).width
+  ctx.fillStyle = accent
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillText(label, CX, y)
+  y += 30 + 6
+
+  // Pill centrado debajo del label (solo para Francotirador / Adivino)
   if (tag) {
     ctx.font = '700 9px "DM Sans", system-ui, sans-serif'
-    const pillPadX = 6
+    const pillPadX = 7
     const pillW = ctx.measureText(tag).width + pillPadX * 2
     const pillH = 14
-    const gap = 6
-    const totalW = labelW + gap + pillW
-    const startX = CX - totalW / 2
-
-    ctx.font = '700 26px "Bebas Neue", "DM Sans", system-ui, sans-serif'
-    ctx.fillStyle = accent
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.fillText(label, startX, y)
-
-    const pillX = startX + labelW + gap
-    const pillY = y + (28 - pillH) / 2
+    const pillX = CX - pillW / 2
     ctx.fillStyle = accent + '25'
-    roundedRect(ctx, pillX, pillY, pillW, pillH, 7)
+    roundedRect(ctx, pillX, y, pillW, pillH, 7)
     ctx.fill()
     ctx.strokeStyle = accent + '70'
     ctx.lineWidth = 0.75
-    roundedRect(ctx, pillX, pillY, pillW, pillH, 7)
+    roundedRect(ctx, pillX, y, pillW, pillH, 7)
     ctx.stroke()
-    ctx.font = '700 9px "DM Sans", system-ui, sans-serif'
     ctx.fillStyle = accent
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(tag, pillX + pillW / 2, pillY + pillH / 2)
+    ctx.fillText(tag, CX, y + pillH / 2)
+    y += pillH + GAP
   } else {
-    ctx.fillStyle = accent
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    ctx.fillText(label, CX, y)
+    y += GAP
   }
-  y += 30 + GAP
 
   // Stats
   const hasRank = rank != null
@@ -346,18 +334,16 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
             {/* Badge */}
             <div className="flex flex-col items-center gap-1 mt-1">
               <span className="text-6xl leading-none">{emoji}</span>
-              <div className="flex items-center gap-1.5 justify-center flex-wrap mt-1">
-                <p className="text-2xl font-bold text-center"
-                   style={{ fontFamily: 'Bebas Neue, sans-serif', letterSpacing: '0.05em', color: accent }}>
-                  {label}
-                </p>
-                {BADGE_TAGS[badge.badgeType] && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                        style={{ border: `0.75px solid ${accent}70`, color: accent, background: accent + '25' }}>
-                    {BADGE_TAGS[badge.badgeType]}
-                  </span>
-                )}
-              </div>
+              <p className="text-2xl font-bold text-center mt-1"
+                 style={{ fontFamily: 'Bebas Neue, sans-serif', letterSpacing: '0.05em', color: accent }}>
+                {label}
+              </p>
+              {BADGE_TAGS[badge.badgeType] && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                      style={{ border: `0.75px solid ${accent}70`, color: accent, background: accent + '25' }}>
+                  {BADGE_TAGS[badge.badgeType]}
+                </span>
+              )}
             </div>
 
             {/* Stats */}
