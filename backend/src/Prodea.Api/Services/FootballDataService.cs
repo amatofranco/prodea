@@ -160,7 +160,12 @@ public class FootballDataService(
                     }
 
                     // Durante el entretiempo no actualizamos el minuto (queda en el del último gol o anterior)
-                    if (statusName != "STATUS_HALFTIME")
+                    // pero sí forzamos un broadcast para que el cliente muestre "ET"
+                    if (statusName == "STATUS_HALFTIME")
+                    {
+                        changed = true;
+                    }
+                    else
                     {
                         var minute = ParseEspnMinute(espnEvent.Status.DisplayClock, espnEvent.Status.Period);
                         if (minute != null && match.Minute != minute)
