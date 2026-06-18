@@ -136,6 +136,8 @@ public class AdminController(
         var match = await db.Matches.FindAsync(id);
         if (match == null) return NotFound(new { message = "Partido no encontrado" });
 
+        var wasFinished = match.Status == MatchStatus.Finished;
+
         match.Status     = request.Status;
         match.HomeScore  = request.HomeScore;
         match.AwayScore  = request.AwayScore;
@@ -147,6 +149,16 @@ public class AdminController(
         match.LastUpdatedAt = DateTime.UtcNow;
         if (request.Status == MatchStatus.InProgress) match.StartedAt = DateTime.UtcNow;
         if (request.Status == MatchStatus.Finished) match.FinishedAt = DateTime.UtcNow;
+
+        // Si el partido deja de estar Finished, las predicciones ya no deben conservar puntos
+        // de un resultado que para la app dejó de existir (evita "puntos fantasma" en partidos
+        // que vuelven a Scheduled/InProgress durante testing).
+        if (wasFinished && request.Status != MatchStatus.Finished)
+        {
+            await db.Predictions
+                .Where(p => p.MatchId == id && p.PointsEarned != 0)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.PointsEarned, 0));
+        }
 
         await db.SaveChangesAsync();
 
