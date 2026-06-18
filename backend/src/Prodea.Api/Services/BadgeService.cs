@@ -26,7 +26,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Adivino] = "🔮",
         [MatchdayBadgeType.Francotirador] = "🎯",
         [MatchdayBadgeType.Goleador] = "⚽",
-        [MatchdayBadgeType.Rustico] = "🪨",
+        [MatchdayBadgeType.Rustico] = "🪵",
         [MatchdayBadgeType.Payaso] = "🤡",
         [MatchdayBadgeType.Dormido] = "😴",
         [MatchdayBadgeType.Tibio] = "🌡️",
