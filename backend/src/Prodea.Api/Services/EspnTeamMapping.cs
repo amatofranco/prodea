@@ -10,6 +10,7 @@ public static class EspnTeamMapping
         ["Bolivia"] = "Bolivia",
         ["Bosnia and Herzegovina"] = "Bosnia y Herzegovina",
         ["Bosnia & Herzegovina"] = "Bosnia y Herzegovina",
+        ["Bosnia-Herzegovina"] = "Bosnia y Herzegovina",
         ["Brazil"] = "Brasil",
         ["Cameroon"] = "Camerún",
         ["Canada"] = "Canadá",
