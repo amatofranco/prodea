@@ -7,6 +7,7 @@ public enum MatchdayBadgeType
     Adivino,
     Francotirador,
     Goleador,
+    Rustico,
     Payaso,
     Dormido,
     Tibio

@@ -13,6 +13,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Francotirador] = ["Un tiro, un gol", "Cuando apuntás, no fallás", "La mira calibrada", "Una bala. Un cadáver", "Economía de recursos. Brutalidad de precisión"],
         [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Cuatro exactos. Brujo confirmado.", "Clarividencia pura y dura", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
         [MatchdayBadgeType.Goleador] = ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
+        [MatchdayBadgeType.Rustico] = ["El arquero agradeció tus predicciones", "Con el cuchillo entre los dientes", "Bilardo estaría orgulloso", "Le tenés miedo al éxito", "Predijiste con el freno de mano puesto"],
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
         [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
         [MatchdayBadgeType.Tibio] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
@@ -25,6 +26,7 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Adivino] = "🔮",
         [MatchdayBadgeType.Francotirador] = "🎯",
         [MatchdayBadgeType.Goleador] = "⚽",
+        [MatchdayBadgeType.Rustico] = "🪨",
         [MatchdayBadgeType.Payaso] = "🤡",
         [MatchdayBadgeType.Dormido] = "😴",
         [MatchdayBadgeType.Tibio] = "🌡️",
@@ -94,6 +96,9 @@ public class BadgeService(ProdeaDbContext db)
         int minPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
         int maxPredictedGoals = playerPredictedGoals.Values.DefaultIfEmpty(0).Max();
         int goleadorCount = maxPredictedGoals > 0 ? playerPredictedGoals.Values.Count(g => g == maxPredictedGoals) : 0;
+        var goalsWithPreds = playerPredictedGoals.Where(kv => playerStats.TryGetValue(kv.Key, out var s) && s.HasAnyPrediction).ToList();
+        int minPredictedGoals = goalsWithPreds.Count > 0 ? goalsWithPreds.Min(kv => kv.Value) : 0;
+        int rusticoCount = goalsWithPreds.Count > 0 ? goalsWithPreds.Count(kv => kv.Value == minPredictedGoals) : 0;
 
         var phaseStr = phase.ToString();
         bool anyNewBadge = false;
@@ -110,6 +115,7 @@ public class BadgeService(ProdeaDbContext db)
                 { ExactCount: >= 4 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 3 }                                                                   => MatchdayBadgeType.Francotirador,
                 _ when goleadorCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == maxPredictedGoals => MatchdayBadgeType.Goleador,
+                _ when rusticoCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == minPredictedGoals  => MatchdayBadgeType.Rustico,
                 { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
                 _                                                                                      => MatchdayBadgeType.Tibio,
             };
