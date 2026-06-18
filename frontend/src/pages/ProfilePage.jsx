@@ -65,17 +65,17 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[#00FF87] flex items-center justify-center text-black text-2xl font-bold">
+          <div className="w-20 h-20 rounded-full bg-[#00FF87] flex items-center justify-center text-black text-3xl font-bold shrink-0">
             {avatar}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-white">
               {displayName} {isMe && <span className="text-[#8A8A9A] text-base font-normal">(vos)</span>}
             </h1>
             <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
           </div>
           <div className="ml-auto text-right">
-            <p className="text-3xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+            <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
               {profile.totalPoints}
             </p>
             <p className="text-[#8A8A9A] text-xs">puntos totales</p>
@@ -127,26 +127,26 @@ export default function ProfilePage() {
           profile.matchdayBadges.map((b) => (
             <div
               key={`${b.phase}-${b.matchday}`}
-              className="px-3 py-2.5 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-2"
+              className="px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-3"
             >
-              <span className="text-2xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
+              <span className="text-3xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
               <div className="flex-1 min-w-0">
                 <BadgePill type={b.badgeType} showTag={false} />
-                <span className="text-[#8A8A9A] text-[10px] mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>
-                <p className="text-white/50 text-[10px] italic mt-0.5 line-clamp-2">"{b.randomPhrase}"</p>
+                <span className="text-[#8A8A9A] text-xs mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>
+                <p className="text-white/50 text-xs italic mt-0.5 line-clamp-2">"{b.randomPhrase}"</p>
               </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right">
-                  <span className="text-base font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                  <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                     {b.pointsInMatchday}
                   </span>
-                  <span className="text-[9px] text-[#8A8A9A] ml-0.5">pts</span>
+                  <span className="text-[10px] text-[#8A8A9A] ml-0.5">pts</span>
                 </div>
                 <button
                   onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#00FF87]/10 text-[#00FF87] text-[10px] font-semibold"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
                 >
-                  <Share2 size={10} />
+                  <Share2 size={11} />
                   Carta
                 </button>
               </div>
