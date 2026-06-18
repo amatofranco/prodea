@@ -103,9 +103,6 @@ public class BadgeService(ProdeaDbContext db)
             .Select(s => s.TotalPoints)
             .Distinct().OrderByDescending(p => p).ToList();
         int? secondPoints = distinctPoints.Count >= 2 ? distinctPoints[1] : (int?)null;
-        int pechofrioCount = secondPoints.HasValue
-            ? playerStats.Values.Count(s => s.HasAnyPrediction && s.TotalPoints == secondPoints.Value)
-            : 0;
         int? penultimoPoints = distinctPoints.Count >= 3 ? distinctPoints[^2] : (int?)null;
 
         int maxPredictedGoals = playerPredictedGoals.Values.DefaultIfEmpty(0).Max();
@@ -128,7 +125,7 @@ public class BadgeService(ProdeaDbContext db)
                 { TotalPoints: var p } when p == minPoints && participants.Count > 1                   => MatchdayBadgeType.Mufa,
                 { ExactCount: >= 4 }                                                                   => MatchdayBadgeType.Adivino,
                 { ExactCount: >= 3 }                                                                   => MatchdayBadgeType.Francotirador,
-                _ when pechofrioCount == 1 && secondPoints.HasValue && stats.TotalPoints == secondPoints.Value => MatchdayBadgeType.PechoFrio,
+                _ when secondPoints.HasValue && stats.TotalPoints == secondPoints.Value => MatchdayBadgeType.PechoFrio,
                 _ when goleadorCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == maxPredictedGoals => MatchdayBadgeType.Goleador,
                 _ when rusticoCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == minPredictedGoals  => MatchdayBadgeType.Rustico,
                 _ when penultimoPoints.HasValue && stats.TotalPoints == penultimoPoints.Value => MatchdayBadgeType.Tambaleante,
