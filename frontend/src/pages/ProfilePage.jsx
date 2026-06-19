@@ -78,15 +78,21 @@ export default function ProfilePage() {
             <h1 className="text-3xl font-bold text-white">
               {displayName} {isMe && <span className="text-[#8A8A9A] text-base font-normal">(vos)</span>}
             </h1>
-            <p className="text-[#8A8A9A] text-sm">
-              #{profile.rank} en el torneo · 🎯 <span className="text-[#00FF87] font-bold">{exactCount}</span> resultados exactos
-            </p>
+            <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
           </div>
-          <div className="ml-auto text-right">
-            <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-              {profile.totalPoints}
-            </p>
-            <p className="text-[#8A8A9A] text-xs">puntos totales</p>
+          <div className="ml-auto flex items-start gap-4">
+            <div className="text-right">
+              <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                {profile.totalPoints}
+              </p>
+              <p className="text-[#8A8A9A] text-xs">puntos totales</p>
+            </div>
+            <div className="text-right">
+              <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                {exactCount}
+              </p>
+              <p className="text-[#8A8A9A] text-xs">🎯 exactos</p>
+            </div>
           </div>
         </div>
 
@@ -203,7 +209,7 @@ export default function ProfilePage() {
                   <TeamFlag name={m.awayTeam} label={m.awayTeamLabel} />
                 </div>
                 <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-center gap-2">
-                  <span className="text-xs text-[#8A8A9A]">Predijiste:</span>
+                  <span className="text-xs text-[#8A8A9A]">Predicción:</span>
                   <span className="text-xs font-bold text-[#00FF87]">
                     {m.userPrediction.predictedHomeScore} – {m.userPrediction.predictedAwayScore}
                   </span>
