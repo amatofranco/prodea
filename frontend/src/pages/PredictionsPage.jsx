@@ -36,7 +36,7 @@ function getTabKey(match) {
   return match.phase
 }
 
-function TeamFlag({ name, label }) {
+export function TeamFlag({ name, label }) {
   const isTbd = name === 'TBD'
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)

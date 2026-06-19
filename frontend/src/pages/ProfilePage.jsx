@@ -5,6 +5,7 @@ import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
 import FigurineCard from '../components/FigurineCard'
+import { TeamFlag } from './PredictionsPage'
 
 function jornadaLabel(phase, matchday) {
   if (phase === 'Group') return `Fecha ${matchday}`
@@ -33,6 +34,8 @@ export default function ProfilePage() {
   const currentUser = useAuthStore((s) => s.user)
   const [profile, setProfile] = useState(null)
   const [tournament, setTournament] = useState(null)
+  const [predictions, setPredictions] = useState([])
+  const [selectedTab, setSelectedTab] = useState('jornadas')
   const [selectedBadge, setSelectedBadge] = useState(null)
   const [selectedAccBadge, setSelectedAccBadge] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -41,9 +44,11 @@ export default function ProfilePage() {
     Promise.all([
       api.getProfile(tournamentId, userId),
       api.getTournament(tournamentId),
-    ]).then(([p, t]) => {
+      api.getUserPredictions(tournamentId, userId),
+    ]).then(([p, t, preds]) => {
       setProfile(p)
       setTournament(t)
+      setPredictions(preds)
     }).finally(() => setLoading(false))
   }, [tournamentId, userId])
 
@@ -52,6 +57,7 @@ export default function ProfilePage() {
   const displayName = profile.fullName ?? profile.username
   const avatar = displayName[0].toUpperCase()
   const isMe = currentUser?.id === Number(userId)
+  const exactCount = predictions.filter((m) => m.userPrediction?.pointsEarned === 3).length
 
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
@@ -72,7 +78,9 @@ export default function ProfilePage() {
             <h1 className="text-3xl font-bold text-white">
               {displayName} {isMe && <span className="text-[#8A8A9A] text-base font-normal">(vos)</span>}
             </h1>
-            <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
+            <p className="text-[#8A8A9A] text-sm">
+              #{profile.rank} en el torneo · 🎯 <span className="text-[#00FF87] font-bold">{exactCount}</span> resultados exactos
+            </p>
           </div>
           <div className="ml-auto text-right">
             <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
@@ -114,46 +122,108 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Matchday badges history */}
-      <div className="flex-1 px-4 py-4 flex flex-col gap-3 overflow-y-auto">
-        <h2 className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold">Historial de jornadas</h2>
-
-        {profile.matchdayBadges.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <Award size={36} className="text-[#2A2A3E]" />
-            <p className="text-[#8A8A9A] text-sm">Todavía no hay jornadas terminadas</p>
-          </div>
-        ) : (
-          profile.matchdayBadges.map((b) => (
-            <div
-              key={`${b.phase}-${b.matchday}`}
-              className="px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-3"
-            >
-              <span className="text-3xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
-              <div className="flex-1 min-w-0">
-                <BadgePill type={b.badgeType} showTag={false} />
-                <span className="text-[#8A8A9A] text-xs mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>
-                <p className="text-white/50 text-xs italic mt-0.5 line-clamp-2">"{b.randomPhrase}"</p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-                    {b.pointsInMatchday}
-                  </span>
-                  <span className="text-[10px] text-[#8A8A9A] ml-0.5">pts</span>
-                </div>
-                <button
-                  onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
-                >
-                  <Share2 size={11} />
-                  Carta
-                </button>
-              </div>
-            </div>
-          ))
-        )}
+      {/* Tab switcher */}
+      <div className="flex gap-2 px-4 pt-4">
+        {[
+          { key: 'jornadas', label: 'Historial de jornadas' },
+          { key: 'pronosticos', label: 'Pronósticos' },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSelectedTab(tab.key)}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              selectedTab === tab.key
+                ? 'bg-[#00FF87] text-black'
+                : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
+
+      {selectedTab === 'jornadas' && (
+        <div className="flex-1 px-4 py-4 flex flex-col gap-3 overflow-y-auto">
+          {profile.matchdayBadges.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-12 text-center">
+              <Award size={36} className="text-[#2A2A3E]" />
+              <p className="text-[#8A8A9A] text-sm">Todavía no hay jornadas terminadas</p>
+            </div>
+          ) : (
+            profile.matchdayBadges.map((b) => (
+              <div
+                key={`${b.phase}-${b.matchday}`}
+                className="px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-3"
+              >
+                <span className="text-3xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
+                <div className="flex-1 min-w-0">
+                  <BadgePill type={b.badgeType} showTag={false} />
+                  <span className="text-[#8A8A9A] text-xs mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>
+                  <p className="text-white/50 text-xs italic mt-0.5 line-clamp-2">"{b.randomPhrase}"</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                      {b.pointsInMatchday}
+                    </span>
+                    <span className="text-[10px] text-[#8A8A9A] ml-0.5">pts</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
+                  >
+                    <Share2 size={11} />
+                    Carta
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {selectedTab === 'pronosticos' && (
+        <div className="flex-1 px-4 py-4 flex flex-col gap-3 overflow-y-auto">
+          {predictions.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-12 text-center">
+              <Award size={36} className="text-[#2A2A3E]" />
+              <p className="text-[#8A8A9A] text-sm">Todavía no hay pronósticos finalizados</p>
+            </div>
+          ) : (
+            predictions.map((m) => (
+              <div key={m.id} className="px-3 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E]">
+                <div className="flex items-center justify-between gap-2">
+                  <TeamFlag name={m.homeTeam} label={m.homeTeamLabel} />
+                  <div className="flex flex-col items-center shrink-0 px-1">
+                    <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                      {m.homeScore} – {m.awayScore}
+                    </span>
+                    <span className="text-[9px] text-[#8A8A9A] mt-0.5">{jornadaLabel(m.phase, m.matchday)}</span>
+                  </div>
+                  <TeamFlag name={m.awayTeam} label={m.awayTeamLabel} />
+                </div>
+                <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-center gap-2">
+                  <span className="text-xs text-[#8A8A9A]">Predijiste:</span>
+                  <span className="text-xs font-bold text-[#00FF87]">
+                    {m.userPrediction.predictedHomeScore} – {m.userPrediction.predictedAwayScore}
+                  </span>
+                  <span
+                    className={`text-xs font-bold ${
+                      m.userPrediction.pointsEarned === 3
+                        ? 'text-[#00FF87]'
+                        : m.userPrediction.pointsEarned > 0
+                        ? 'text-white'
+                        : 'text-[#8A8A9A]'
+                    }`}
+                  >
+                    +{m.userPrediction.pointsEarned} pts
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Figurine card modal */}
       {selectedBadge && (
