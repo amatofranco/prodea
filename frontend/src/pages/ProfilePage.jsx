@@ -75,20 +75,20 @@ export default function ProfilePage() {
             {avatar}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-base md:text-3xl font-bold text-white truncate">
+            <h1 className="text-base md:text-3xl font-bold text-white">
               {displayName} {isMe && <span className="text-[#8A8A9A] text-xs md:text-base font-normal">(vos)</span>}
             </h1>
             <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
           </div>
-          <div className="ml-auto flex items-start gap-4 shrink-0">
+          <div className="ml-auto flex items-start gap-3 shrink-0">
             <div className="text-right">
-              <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+              <p className="text-2xl md:text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                 {profile.totalPoints}
               </p>
               <p className="text-[#8A8A9A] text-xs">puntos totales</p>
             </div>
             <div className="text-right">
-              <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+              <p className="text-2xl md:text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                 {exactCount}
               </p>
               <p className="text-[#8A8A9A] text-xs leading-tight">resultados<br />exactos</p>
