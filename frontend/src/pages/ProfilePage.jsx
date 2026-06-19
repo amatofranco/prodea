@@ -5,7 +5,17 @@ import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
 import FigurineCard from '../components/FigurineCard'
-import { TeamFlag } from './PredictionsPage'
+import { getTeam, getFlagUrl } from '../data/teamsData'
+
+function SmallFlag({ name }) {
+  const { flag } = getTeam(name)
+  const flagUrl = getFlagUrl(flag)
+  return (
+    <div className="w-5 h-4 rounded-[2px] overflow-hidden bg-[#2A2A3E] shrink-0">
+      {flagUrl && <img src={flagUrl} alt={name} loading="lazy" className="w-full h-full object-cover opacity-85" />}
+    </div>
+  )
+}
 
 function jornadaLabel(phase, matchday) {
   if (phase === 'Group') return `Fecha ${matchday}`
@@ -189,44 +199,48 @@ export default function ProfilePage() {
       )}
 
       {selectedTab === 'pronosticos' && (
-        <div className="flex-1 px-4 py-4 flex flex-col gap-3 overflow-y-auto">
+        <div className="flex-1 px-4 py-4 flex flex-col gap-1.5 overflow-y-auto">
           {predictions.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-center">
               <Award size={36} className="text-[#2A2A3E]" />
               <p className="text-[#8A8A9A] text-sm">Todavía no hay pronósticos finalizados</p>
             </div>
           ) : (
-            predictions.map((m) => (
-              <div key={m.id} className="px-3 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E]">
-                <div className="flex items-center justify-between gap-2">
-                  <TeamFlag name={m.homeTeam} label={m.homeTeamLabel} />
-                  <div className="flex flex-col items-center shrink-0 px-1">
-                    <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-                      {m.homeScore} – {m.awayScore}
-                    </span>
-                    <span className="text-[9px] text-[#8A8A9A] mt-0.5">{jornadaLabel(m.phase, m.matchday)}</span>
+            predictions.map((m) => {
+              const homeName = m.homeTeam !== 'TBD' ? m.homeTeam : (m.homeTeamLabel ?? m.homeTeam)
+              const awayName = m.awayTeam !== 'TBD' ? m.awayTeam : (m.awayTeamLabel ?? m.awayTeam)
+              const pred = m.userPrediction
+              return (
+                <div key={m.id} className="px-2.5 py-2 rounded-lg bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-2">
+                  <span className="text-[8px] text-[#8A8A9A] w-10 shrink-0">{jornadaLabel(m.phase, m.matchday)}</span>
+                  <div className="flex items-center gap-1 flex-1 min-w-0 justify-end">
+                    <span className="text-[11px] text-white truncate">{homeName}</span>
+                    <SmallFlag name={m.homeTeam} />
                   </div>
-                  <TeamFlag name={m.awayTeam} label={m.awayTeamLabel} />
-                </div>
-                <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-center gap-2">
-                  <span className="text-xs text-[#8A8A9A]">Predicción:</span>
-                  <span className="text-xs font-bold text-[#00FF87]">
-                    {m.userPrediction.predictedHomeScore} – {m.userPrediction.predictedAwayScore}
+                  <span className="text-sm font-bold text-white shrink-0" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                    {m.homeScore}–{m.awayScore}
                   </span>
-                  <span
-                    className={`text-xs font-bold ${
-                      m.userPrediction.pointsEarned === 3
-                        ? 'text-[#00FF87]'
-                        : m.userPrediction.pointsEarned > 0
-                        ? 'text-white'
-                        : 'text-[#8A8A9A]'
-                    }`}
-                  >
-                    +{m.userPrediction.pointsEarned} pts
-                  </span>
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
+                    <SmallFlag name={m.awayTeam} />
+                    <span className="text-[11px] text-white truncate">{awayName}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-[#2A2A3E]">
+                    <span className="text-[10px] text-[#8A8A9A]">{pred.predictedHomeScore}-{pred.predictedAwayScore}</span>
+                    <span
+                      className={`text-[11px] font-bold ${
+                        pred.pointsEarned === 3
+                          ? 'text-[#00FF87]'
+                          : pred.pointsEarned > 0
+                          ? 'text-white'
+                          : 'text-[#8A8A9A]'
+                      }`}
+                    >
+                      +{pred.pointsEarned}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       )}
