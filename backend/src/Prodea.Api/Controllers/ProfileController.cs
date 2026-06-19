@@ -88,4 +88,39 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
             )).ToList()
         ));
     }
+
+    [HttpGet("{userId}/predictions")]
+    public async Task<ActionResult<List<MatchWithPredictionDto>>> GetUserPredictions(int tournamentId, int userId)
+    {
+        var currentUser = CurrentUserId;
+        var isMember = await db.TournamentParticipants.AnyAsync(tp => tp.TournamentId == tournamentId && tp.UserId == currentUser);
+        if (!isMember) return Forbid();
+
+        var tournament = await db.Tournaments.FindAsync(tournamentId);
+        if (tournament == null) return NotFound();
+
+        var matches = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finished && m.MatchDate >= tournament.StartingMatchDate)
+            .OrderByDescending(m => m.MatchDate)
+            .ToListAsync();
+
+        var matchIds = matches.Select(m => m.Id).ToList();
+        var predictions = await db.Predictions
+            .Where(p => p.UserId == userId && matchIds.Contains(p.MatchId))
+            .ToListAsync();
+        var predByMatch = predictions.ToDictionary(p => p.MatchId);
+
+        return Ok(matches
+            .Where(m => predByMatch.ContainsKey(m.Id))
+            .Select(m =>
+            {
+                var pred = predByMatch[m.Id];
+                return new MatchWithPredictionDto(
+                    m.Id, m.HomeTeam, m.AwayTeam, m.HomeTeamLabel, m.AwayTeamLabel, m.HomeTeamFlag, m.AwayTeamFlag,
+                    m.MatchDate, m.Phase.ToString(), m.Matchday, m.HomeScore, m.AwayScore, m.Status.ToString(),
+                    new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned, pred.PredictedPenaltyWinner),
+                    null
+                );
+            }).ToList());
+    }
 }
