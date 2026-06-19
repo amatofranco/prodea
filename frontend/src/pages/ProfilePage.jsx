@@ -70,17 +70,17 @@ export default function ProfilePage() {
           <p className="text-[#8A8A9A] text-sm">{tournament?.name}</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-[#00FF87] flex items-center justify-center text-black text-3xl font-bold shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-[#00FF87] flex items-center justify-center text-black text-xl md:text-3xl font-bold shrink-0">
             {avatar}
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">
-              {displayName} {isMe && <span className="text-[#8A8A9A] text-base font-normal">(vos)</span>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl md:text-3xl font-bold text-white truncate">
+              {displayName} {isMe && <span className="text-[#8A8A9A] text-sm md:text-base font-normal">(vos)</span>}
             </h1>
             <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
           </div>
-          <div className="ml-auto flex items-start gap-4">
+          <div className="ml-auto flex items-start gap-4 shrink-0">
             <div className="text-right">
               <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                 {profile.totalPoints}
@@ -91,7 +91,7 @@ export default function ProfilePage() {
               <p className="text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                 {exactCount}
               </p>
-              <p className="text-[#8A8A9A] text-xs">🎯 exactos</p>
+              <p className="text-[#8A8A9A] text-xs leading-tight">resultados<br />exactos</p>
             </div>
           </div>
         </div>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                 <div className="flex-1 min-w-0">
                   <BadgePill type={b.badgeType} showTag={false} />
                   <span className="text-[#8A8A9A] text-xs mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>
-                  <p className="text-white/50 text-xs italic mt-0.5 line-clamp-2">"{b.randomPhrase}"</p>
+                  <p className="text-white/50 text-xs italic mt-0.5">"{b.randomPhrase}"</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="text-right">
