@@ -225,7 +225,7 @@ export default function ProfilePage() {
                     <span className="text-[11px] text-white truncate">{awayName}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-[#2A2A3E]">
-                    <span className="text-[10px] text-[#8A8A9A]">{pred.predictedHomeScore}-{pred.predictedAwayScore}</span>
+                    <span className="text-xs font-semibold text-white">{pred.predictedHomeScore}-{pred.predictedAwayScore}</span>
                     <span
                       className={`text-[11px] font-bold ${
                         pred.pointsEarned === 3
