@@ -75,8 +75,8 @@ export default function ProfilePage() {
             {avatar}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl md:text-3xl font-bold text-white truncate">
-              {displayName} {isMe && <span className="text-[#8A8A9A] text-sm md:text-base font-normal">(vos)</span>}
+            <h1 className="text-base md:text-3xl font-bold text-white truncate">
+              {displayName} {isMe && <span className="text-[#8A8A9A] text-xs md:text-base font-normal">(vos)</span>}
             </h1>
             <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
           </div>
