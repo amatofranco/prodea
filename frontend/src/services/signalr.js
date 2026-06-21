@@ -5,6 +5,7 @@ const HUB_URL = import.meta.env.VITE_API_URL
   : '/hubs/tournament'
 
 let connection = null
+const joinedTournaments = new Set()
 
 export function getConnection() {
   if (!connection) {
@@ -15,6 +16,14 @@ export function getConnection() {
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Warning)
       .build()
+
+    // El ConnectionId cambia al reconectar, y los grupos de SignalR están atados
+    // al ConnectionId viejo en el server — hay que volver a unirse a cada torneo.
+    connection.onreconnected(async () => {
+      for (const tournamentId of joinedTournaments) {
+        try { await connection.invoke('JoinTournament', String(tournamentId)) } catch { /* reintentará en el próximo reconnect */ }
+      }
+    })
   }
   return connection
 }
@@ -30,9 +39,11 @@ export async function startConnection() {
 export async function joinTournament(tournamentId) {
   const conn = await startConnection()
   await conn.invoke('JoinTournament', String(tournamentId))
+  joinedTournaments.add(String(tournamentId))
 }
 
 export async function leaveTournament(tournamentId) {
+  joinedTournaments.delete(String(tournamentId))
   const conn = getConnection()
   if (conn.state === signalR.HubConnectionState.Connected) {
     await conn.invoke('LeaveTournament', String(tournamentId))
