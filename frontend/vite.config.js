@@ -5,10 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 function getAppVersion() {
-  // Vercel inyecta el SHA del commit en build; en local/otros entornos se cae a git.
-  const sha = process.env.VERCEL_GIT_COMMIT_SHA
-    || (() => { try { return execSync('git rev-parse HEAD').toString().trim() } catch { return null } })()
-  return sha ? sha.slice(0, 7) : 'dev'
+  // Cantidad de commits en main: sube de 1 en 1 en cada deploy. Requiere historia
+  // completa de git (Vercel clona el repo entero, no en modo shallow).
+  try { return execSync('git rev-list --count HEAD').toString().trim() } catch { return '?' }
 }
 
 export default defineConfig(({ mode }) => {
