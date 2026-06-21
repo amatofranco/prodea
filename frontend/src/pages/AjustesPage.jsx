@@ -122,6 +122,8 @@ export default function AjustesPage() {
           <span className="text-red-400 text-sm font-semibold">Cerrar sesión</span>
         </button>
       </div>
+
+      <p className="text-center text-[#8A8A9A] text-[10px] mt-8">v{__APP_VERSION__}</p>
     </div>
   )
 }

@@ -1,13 +1,24 @@
 import { defineConfig, loadEnv } from 'vite'
+import { execSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+function getAppVersion() {
+  // Vercel inyecta el SHA del commit en build; en local/otros entornos se cae a git.
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA
+    || (() => { try { return execSync('git rev-parse HEAD').toString().trim() } catch { return null } })()
+  return sha ? sha.slice(0, 7) : 'dev'
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const isTesting = env.VITE_APP_ENV === 'testing'
 
   return {
+  define: {
+    __APP_VERSION__: JSON.stringify(getAppVersion()),
+  },
   plugins: [
     react(),
     tailwindcss(),
