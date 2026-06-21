@@ -59,8 +59,8 @@ Se asigna **un solo mote por jugador por fecha**, siguiendo esta jerarquía de p
 |-----------|------|-----------|
 | 1 | 🏆 El Crack | Mayor puntaje de la fecha |
 | 2 | 💀 El Mufa | Menor puntaje de la fecha |
-| 4 | 🎯 El Francotirador | Acertó al menos 1 resultado exacto |
-| 3 | 🔮 El Adivino | Acertó 3 o más resultados exactos en la fecha |
+| 4 | 🎯 El Francotirador | Acertó 3 o más resultados exactos en la fecha |
+| 3 | 🔮 El Adivino | Acertó 4 o más resultados exactos en la fecha |
 | 5 | 🤡 El Payaso | No acertó ningún ganador |
 | 6 | 😴 El Dormido | No cargó ninguna predicción |
 
