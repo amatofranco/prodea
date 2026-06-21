@@ -413,12 +413,15 @@ public class FootballDataService(
             return summary.KeyEvents
                 .Where(e => e.ScoringPlay && (
                     e.Type.TypeStr.StartsWith("goal", StringComparison.OrdinalIgnoreCase) ||
-                    e.Type.TypeStr.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase)))
+                    e.Type.TypeStr.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase) ||
+                    e.Type.TypeStr.Equals("own-goal", StringComparison.OrdinalIgnoreCase)))
                 .Select(e => {
                     var name = e.Participants?.FirstOrDefault()?.Athlete.DisplayName ?? "?";
                     var isPen = e.Type.TypeStr.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase);
+                    var isOwnGoal = e.Type.TypeStr.Equals("own-goal", StringComparison.OrdinalIgnoreCase);
+                    var suffix = isPen ? " (pen.)" : isOwnGoal ? " (GEC)" : "";
                     return new GoalInfo(
-                        Scorer: isPen ? $"{name} (pen.)" : name,
+                        Scorer: $"{name}{suffix}",
                         Team: MapEspnTeam(e.Team?.DisplayName ?? ""),
                         Minute: e.Clock?.DisplayValue ?? ""
                     );

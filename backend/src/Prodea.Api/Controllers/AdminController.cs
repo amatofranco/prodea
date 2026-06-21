@@ -331,14 +331,16 @@ public class AdminController(
                     if (!evt.TryGetProperty("type", out var typeObj)) continue;
                     if (!typeObj.TryGetProperty("type", out var typeStr)) continue;
                     var typeString = typeStr.GetString() ?? "";
-                    var isGoal = typeString.StartsWith("goal", StringComparison.OrdinalIgnoreCase);
-                    var isPen  = typeString.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase);
-                    if (!isGoal && !isPen) continue;
+                    var isGoal    = typeString.StartsWith("goal", StringComparison.OrdinalIgnoreCase);
+                    var isPen     = typeString.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase);
+                    var isOwnGoal = typeString.Equals("own-goal", StringComparison.OrdinalIgnoreCase);
+                    if (!isGoal && !isPen && !isOwnGoal) continue;
 
                     var scorer = "?";
                     if (evt.TryGetProperty("participants", out var parts) && parts.GetArrayLength() > 0)
                         scorer = parts[0].GetProperty("athlete").GetProperty("displayName").GetString() ?? "?";
                     if (isPen) scorer = $"{scorer} (pen.)";
+                    else if (isOwnGoal) scorer = $"{scorer} (GEC)";
 
                     var team = "";
                     if (evt.TryGetProperty("team", out var teamObj))
