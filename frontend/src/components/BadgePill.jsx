@@ -19,14 +19,14 @@ const EMOJIS = {
 }
 
 export const BADGE_TAGS = {
-  Crack:         'Líder de la fecha',
-  Mufa:          'Último de la fecha',
+  Crack:         'Mayor puntaje en la fecha',
+  Mufa:          'Menor puntaje en la fecha',
   Francotirador: '3 exactos',
   Adivino:       '4 exactos',
-  PechoFrio:     '2° de la fecha',
+  PechoFrio:     '2° puntaje en la fecha',
   Goleador:      'Más goles cargados',
   Rustico:       'Menos goles cargados',
-  Tambaleante:   'Penúltimo',
+  Tambaleante:   'Penúltimo de la fecha',
   Tibio:         'Mitad de tabla',
   Payaso:        '0 puntos',
   Dormido:       'Sin predicciones',
