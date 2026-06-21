@@ -21,8 +21,8 @@ const EMOJIS = {
 export const BADGE_TAGS = {
   Crack:         'Mayor puntaje en la fecha',
   Mufa:          'Menor puntaje en la fecha',
-  Francotirador: '3 exactos',
-  Adivino:       '4 exactos',
+  Francotirador: '3 exactos en la fecha',
+  Adivino:       '4 exactos en la fecha',
   PechoFrio:     '2° puntaje en la fecha',
   Goleador:      'Más goles cargados',
   Rustico:       'Menos goles cargados',
