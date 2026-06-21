@@ -16,6 +16,17 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
         }
     }
 
+    // Argentina no usa horario de verano: UTC-3 todo el año.
+    private const int ArgentinaUtcOffsetHours = -3;
+
+    private static DateTime ToArgentinaDay(DateTime matchDateUtc) => matchDateUtc.AddHours(ArgentinaUtcOffsetHours).Date;
+
+    private static (DateTime FromUtc, DateTime ToUtc) ArgentinaDayBoundsUtc(DateTime argentinaDay)
+    {
+        var fromUtc = argentinaDay.AddHours(-ArgentinaUtcOffsetHours);
+        return (fromUtc, fromUtc.AddDays(1));
+    }
+
     private async Task RunAsync()
     {
         using var scope = scopeFactory.CreateScope();
@@ -26,12 +37,10 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
         var changed = false;
 
         // --- Notificación de inicio ---
-        // Buscar cualquier partido en los próximos 20-40 min cuya jornada todavía no mandó reminder.
-        // Usar Matchday (no día calendario) para que un partido nocturno de jornada anterior
-        // no dispare un reminder de "nueva jornada".
+        // Buscar cualquier partido en los próximos 20-40 min cuyo día calendario (hora Argentina)
+        // todavía no mandó reminder.
         var soonMatch = await db.Matches
-            .Where(m => m.Matchday != null
-                     && m.Status == MatchStatus.Scheduled
+            .Where(m => m.Status == MatchStatus.Scheduled
                      && m.MatchDate > now.AddMinutes(20)
                      && m.MatchDate <= now.AddMinutes(40))
             .OrderBy(m => m.MatchDate)
@@ -39,8 +48,10 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
 
         if (soonMatch != null)
         {
+            var (fromUtc, toUtc) = ArgentinaDayBoundsUtc(ToArgentinaDay(soonMatch.MatchDate));
+
             var reminderAlreadySent = await db.Matches
-                .AnyAsync(m => m.Matchday == soonMatch.Matchday && m.ReminderSent);
+                .AnyAsync(m => m.MatchDate >= fromUtc && m.MatchDate < toUtc && m.ReminderSent);
 
             if (!reminderAlreadySent)
             {
@@ -50,40 +61,40 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
                 await SendToAllAsync(db, pushService, title, body, "/predicciones");
                 soonMatch.ReminderSent = true;
                 changed = true;
-                logger.LogInformation("Notificación de inicio de jornada {Matchday} enviada", soonMatch.Matchday);
+                logger.LogInformation("Notificación de inicio del día {Day} enviada", ToArgentinaDay(soonMatch.MatchDate).ToString("yyyy-MM-dd"));
             }
         }
 
         // --- Notificación de cierre ---
-        // Buscar jornadas donde todos los partidos terminaron y el último no mandó notificación.
-        // Al agrupar por Matchday en vez de día calendario, un partido nocturno cierra
-        // correctamente su propia jornada y no la del día siguiente.
-        var matchdaysWithUnsent = await db.Matches
-            .Where(m => m.Matchday != null
-                     && m.Status == MatchStatus.Finished
-                     && !m.ResultNotificationSent)
-            .Select(m => m.Matchday)
-            .Distinct()
+        // Buscar días calendario (hora Argentina) donde todos los partidos terminaron
+        // y el último no mandó notificación.
+        var unsentFinishedDates = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finished && !m.ResultNotificationSent)
+            .Select(m => m.MatchDate)
             .ToListAsync();
 
-        foreach (var matchday in matchdaysWithUnsent)
+        var pendingDays = unsentFinishedDates.Select(ToArgentinaDay).Distinct();
+
+        foreach (var argentinaDay in pendingDays)
         {
-            var mdMatches = await db.Matches
-                .Where(m => m.Matchday == matchday)
+            var (fromUtc, toUtc) = ArgentinaDayBoundsUtc(argentinaDay);
+
+            var dayMatches = await db.Matches
+                .Where(m => m.MatchDate >= fromUtc && m.MatchDate < toUtc)
                 .OrderBy(m => m.MatchDate)
                 .ToListAsync();
 
-            if (!mdMatches.All(m => m.Status == MatchStatus.Finished)) continue;
+            if (dayMatches.Count == 0 || !dayMatches.All(m => m.Status == MatchStatus.Finished)) continue;
 
-            var lastMatch = mdMatches.Last();
+            var lastMatch = dayMatches.Last();
             if (lastMatch.ResultNotificationSent) continue;
 
-            var title = "🏁 Se terminó la jornada";
+            var title = "🏁 Se terminaron los partidos de hoy";
             var body = $"Último resultado: {lastMatch.HomeTeam} {lastMatch.HomeScore}-{lastMatch.AwayScore} {lastMatch.AwayTeam}. Mirá cómo quedó la tabla.";
             await SendToAllAsync(db, pushService, title, body, "/torneos");
             lastMatch.ResultNotificationSent = true;
             changed = true;
-            logger.LogInformation("Notificación de cierre de jornada {Matchday} enviada", matchday);
+            logger.LogInformation("Notificación de cierre del día {Day} enviada", argentinaDay.ToString("yyyy-MM-dd"));
         }
 
         if (changed)
