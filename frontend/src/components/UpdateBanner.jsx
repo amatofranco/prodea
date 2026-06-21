@@ -1,25 +1,25 @@
+import { useEffect } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
+
+const CHECK_INTERVAL_MS = 60 * 60 * 1000 // 1 hora
 
 export default function UpdateBanner() {
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
-  } = useRegisterSW()
+  } = useRegisterSW({
+    onRegisteredSW(_url, registration) {
+      if (!registration) return
+      setInterval(() => registration.update(), CHECK_INTERVAL_MS)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') registration.update()
+      })
+    },
+  })
 
-  if (!needRefresh) return null
+  useEffect(() => {
+    if (needRefresh) updateServiceWorker(true)
+  }, [needRefresh, updateServiceWorker])
 
-  return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/40 shadow-lg max-w-[448px] mx-auto">
-      <span className="text-[#00FF87] text-lg">🔄</span>
-      <p className="flex-1 text-sm text-white">
-        Hay una nueva versión de Prodea disponible
-      </p>
-      <button
-        onClick={() => updateServiceWorker(true)}
-        className="px-3 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold shrink-0 active:scale-95 transition-transform"
-      >
-        Actualizar
-      </button>
-    </div>
-  )
+  return null
 }
