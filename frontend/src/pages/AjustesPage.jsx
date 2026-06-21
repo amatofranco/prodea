@@ -123,7 +123,7 @@ export default function AjustesPage() {
         </button>
       </div>
 
-      <p className="text-center text-[#8A8A9A] text-[10px] mt-8">Prodea v1.{__APP_VERSION__}</p>
+      <p className="text-center text-[#8A8A9A] text-[10px] mt-8">Prodea v1.{__APP_VERSION__.padStart(5, '0')}</p>
     </div>
   )
 }
