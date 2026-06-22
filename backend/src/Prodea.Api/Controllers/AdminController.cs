@@ -842,6 +842,21 @@ public class AdminController(
         return Ok(badges);
     }
 
+    [HttpDelete("tournaments/{id}/accumulative-badges")]
+    public async Task<IActionResult> DeleteAccumulativeBadges(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        // Borra por SQL directo (sin materializar entidades) para no fallar si hay
+        // valores de BadgeType obsoletos que ya no existen en el enum actual.
+        var count = await db.AccumulativeBadges.Where(ab => ab.TournamentId == id).ExecuteDeleteAsync();
+        return Ok(new { message = $"{count} motes acumulativos eliminados." });
+    }
+
     [HttpGet("tournaments/{id}/matchday-badges")]
     public async Task<IActionResult> ListMatchdayBadges(
         int id,
