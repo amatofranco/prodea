@@ -842,6 +842,35 @@ public class AdminController(
         return Ok(badges);
     }
 
+    [HttpGet("tournaments/{id}/matchday-badges")]
+    public async Task<IActionResult> ListMatchdayBadges(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromQuery] string? phase = null)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var query = db.MatchdayBadges.Where(mb => mb.TournamentId == id);
+        if (phase != null) query = query.Where(mb => mb.Phase == phase);
+
+        var badges = await query
+            .Select(mb => new
+            {
+                mb.UserId,
+                username = db.Users.Where(u => u.Id == mb.UserId).Select(u => u.Username).FirstOrDefault(),
+                mb.Phase,
+                mb.Matchday,
+                badgeType = mb.BadgeType.ToString(),
+                mb.PointsInMatchday,
+                mb.AwardedAt,
+            })
+            .ToListAsync();
+
+        return Ok(badges);
+    }
+
     [HttpGet("tournaments")]
     public async Task<IActionResult> ListTournaments(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey)
