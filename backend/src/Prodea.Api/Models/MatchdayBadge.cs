@@ -12,7 +12,10 @@ public enum MatchdayBadgeType
     Tambaleante,
     Payaso,
     Dormido,
-    Tibio
+    Tibio,
+    Campeon,
+    Subcampeon,
+    TercerPuesto
 }
 
 public class MatchdayBadge

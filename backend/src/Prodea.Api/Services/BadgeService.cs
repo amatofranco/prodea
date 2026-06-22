@@ -19,6 +19,9 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
         [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
         [MatchdayBadgeType.Tibio] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
+        [MatchdayBadgeType.Campeon] = ["Ya sabés cuánto pesa la copa. ¡Felicitaciones!"],
+        [MatchdayBadgeType.Subcampeon] = ["Lo importante es competir... dijo nunca nadie. Te acompañamos en el sentimiento"],
+        [MatchdayBadgeType.TercerPuesto] = ["Entraste al podio. Algo es algo."],
     };
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
@@ -34,6 +37,9 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Payaso] = "🤡",
         [MatchdayBadgeType.Dormido] = "😴",
         [MatchdayBadgeType.Tibio] = "🌡️",
+        [MatchdayBadgeType.Campeon] = "🏆",
+        [MatchdayBadgeType.Subcampeon] = "🥈",
+        [MatchdayBadgeType.TercerPuesto] = "🥉",
     };
 
     private static readonly Dictionary<AccumulativeBadgeType, string> AccumulativeEmojis = new()
@@ -43,9 +49,6 @@ public class BadgeService(ProdeaDbContext db)
         [AccumulativeBadgeType.ElMuro] = "🧱",
         [AccumulativeBadgeType.ElFantasma] = "👻",
         [AccumulativeBadgeType.TripleMufa] = "💀🔥",
-        [AccumulativeBadgeType.Campeon] = "🏆",
-        [AccumulativeBadgeType.Subcampeon] = "🥈",
-        [AccumulativeBadgeType.TercerPuesto] = "🥉",
     };
 
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
@@ -202,11 +205,13 @@ public class BadgeService(ProdeaDbContext db)
     public async Task RecalculateAccumulativeBadgesAsync(int tournamentId) =>
         await UpdateAccumulativeBadgesAsync(tournamentId);
 
-    private static readonly AccumulativeBadgeType[] PodiumTypes =
-        [AccumulativeBadgeType.Campeon, AccumulativeBadgeType.Subcampeon, AccumulativeBadgeType.TercerPuesto];
+    private static readonly MatchdayBadgeType[] PodiumTypes =
+        [MatchdayBadgeType.Campeon, MatchdayBadgeType.Subcampeon, MatchdayBadgeType.TercerPuesto];
 
     // Se llama al terminar la Final del Mundial: calcula la tabla general final del torneo
-    // (misma fórmula que el leaderboard) y asigna Campeón/Subcampeón/Tercer puesto al podio.
+    // (misma fórmula que el leaderboard) y pisa el MatchdayBadge de la fecha "Final" del podio
+    // con Campeón/Subcampeón/Tercer puesto, reemplazando el mote que les hubiera tocado por
+    // su desempeño puntual en ese partido.
     public async Task AwardTournamentResultBadgesAsync(int tournamentId)
     {
         var participants = await db.TournamentParticipants
@@ -241,7 +246,18 @@ public class BadgeService(ProdeaDbContext db)
             .ToList();
 
         for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
-            await UpsertAccumulativeBadge(tournamentId, ranking[i], PodiumTypes[i], true);
+        {
+            var userId = ranking[i];
+            var totalPoints = pointsMap.GetValueOrDefault(userId, 0) + champMap.GetValueOrDefault(userId, 0);
+
+            var finalBadge = await db.MatchdayBadges.FirstOrDefaultAsync(mb =>
+                mb.UserId == userId && mb.TournamentId == tournamentId && mb.Phase == "Final" && mb.Matchday == 0);
+            if (finalBadge == null) continue;
+
+            finalBadge.BadgeType = PodiumTypes[i];
+            finalBadge.PointsInMatchday = totalPoints;
+            finalBadge.AwardedAt = DateTime.UtcNow;
+        }
 
         await db.SaveChangesAsync();
     }
