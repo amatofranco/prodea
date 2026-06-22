@@ -171,7 +171,10 @@ export default function ProfilePage() {
                 key={`${b.phase}-${b.matchday}`}
                 className="px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-3"
               >
-                <span className="text-3xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
+                {b.badgeType === 'Campeon'
+                  ? <img src="/trophy.svg" alt="" className="h-9 w-auto shrink-0" />
+                  : <span className="text-3xl leading-none shrink-0">{EMOJIS[b.badgeType] || '❓'}</span>
+                }
                 <div className="flex-1 min-w-0">
                   <BadgePill type={b.badgeType} showTag={false} />
                   <span className="text-[#8A8A9A] text-xs mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>

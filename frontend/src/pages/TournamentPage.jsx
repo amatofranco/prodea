@@ -207,8 +207,8 @@ function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
 
   return (
     <div className="mx-4 mb-1 p-4 rounded-2xl bg-gradient-to-br from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/50">
-      <p className="text-[#F59E0B] text-[10px] font-bold uppercase tracking-widest mb-3">
-        🏆 Campeón del Prode
+      <p className="text-[#F59E0B] text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-1.5">
+        <img src="/trophy.svg" alt="" className="h-3 w-auto" /> Campeón del Mundo
       </p>
       <div className="flex items-center gap-3">
         <div className="w-14 h-14 rounded-full bg-[#F59E0B] flex items-center justify-center text-black font-bold text-2xl shrink-0">
@@ -218,7 +218,7 @@ function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
           <p className="text-white font-bold text-xl leading-tight truncate">{winner.fullName ?? winner.username}</p>
           <p className="text-[#F59E0B] text-sm font-semibold">{winner.totalPoints} puntos</p>
         </div>
-        <span className="text-4xl">🏆</span>
+        <img src="/trophy.svg" alt="" className="h-12 w-auto" />
       </div>
       {isMe && (
         <p className="mt-3 text-center text-[#00FF87] text-sm font-bold">
