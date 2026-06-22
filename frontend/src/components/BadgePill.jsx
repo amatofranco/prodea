@@ -16,6 +16,7 @@ const EMOJIS = {
   Crack: '🏆', Mufa: '💀', Adivino: '🔮',
   Francotirador: '🎯', PechoFrio: '❄️', Goleador: '⚽', Rustico: '⛏️', Tambaleante: '🥴', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
   PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
+  Campeon: '🏆', Subcampeon: '🥈', TercerPuesto: '🥉',
 }
 
 export const BADGE_TAGS = {

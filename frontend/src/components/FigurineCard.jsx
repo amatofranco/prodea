@@ -14,6 +14,9 @@ const BADGE_GRADIENTS = {
   Payaso:        ['#F472B6', '#FCE7F3', '#E11D48', '#4C0519'],
   Dormido:       ['#94A3B8', '#F1F5F9', '#475569', '#0F172A'],
   Tibio:         ['#38BDF8', '#E0F2FE', '#0284C7', '#0C4A6E'],
+  Campeon:       ['#FFD700', '#FFFDE7', '#DAA520', '#7A5C00'],
+  Subcampeon:    ['#C0C0C0', '#F5F5F5', '#9CA3AF', '#4B5563'],
+  TercerPuesto:  ['#CD7F32', '#FBE3C7', '#A6651A', '#5C3A12'],
 }
 
 const BADGE_ACCENT = {
@@ -28,6 +31,9 @@ const BADGE_ACCENT = {
   Payaso:        '#EC4899',
   Dormido:       '#64748B',
   Tibio:         '#38BDF8',
+  Campeon:       '#FFD700',
+  Subcampeon:    '#C0C0C0',
+  TercerPuesto:  '#CD7F32',
 }
 
 const BADGE_LABELS = {
@@ -42,10 +48,17 @@ const BADGE_LABELS = {
   Payaso:        'El Payaso',
   Dormido:       'El Dormido',
   Tibio:         'El Tibio',
+  Campeon:       'El Campeón',
+  Subcampeon:    'El Subcampeón',
+  TercerPuesto:  'Tercer Puesto',
 }
 
 
-function jornadaLabel(phase, matchday) {
+const FINAL_RESULT_TYPES = ['Campeon', 'Subcampeon', 'TercerPuesto']
+const isFinalResultBadge = (badgeType) => FINAL_RESULT_TYPES.includes(badgeType)
+
+function jornadaLabel(phase, matchday, badgeType) {
+  if (isFinalResultBadge(badgeType)) return 'Mundial 2026'
   if (phase === 'Group') return `Fecha ${matchday}`
   return { R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', ThirdPlace: '3er Puesto', Final: 'Final' }[phase] ?? phase
 }
@@ -103,7 +116,8 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   const emoji  = EMOJIS[badge.badgeType]          || '❓'
   const label  = BADGE_LABELS[badge.badgeType]    || badge.badgeType
   const tag    = BADGE_TAGS[badge.badgeType]      || null
-  const jornada = jornadaLabel(badge.phase, badge.matchday)
+  const finalResult = isFinalResultBadge(badge.badgeType)
+  const jornada = jornadaLabel(badge.phase, badge.matchday, badge.badgeType)
   const phrase  = `"${badge.randomPhrase}"`
 
   const tmp = document.createElement('canvas').getContext('2d')
@@ -226,7 +240,7 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   }
 
   // Stats
-  const hasRank = rank != null
+  const hasRank = rank != null && !finalResult
   const ptsCX = hasRank ? W / 4 : CX
   const rkCX  = hasRank ? (W * 3) / 4 : null
 
@@ -238,7 +252,7 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   ctx.fillText(String(badge.pointsInMatchday), ptsCX, y)
   ctx.font = '400 10px "DM Sans", system-ui, sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,0.4)'
-  ctx.fillText('PTS JORNADA', ptsCX, y + 42)
+  ctx.fillText(finalResult ? 'PTS TOTALES' : 'PTS JORNADA', ptsCX, y + 42)
 
   if (rkCX !== null) {
     ctx.font = '900 38px "Bebas Neue", "DM Sans", system-ui, sans-serif'
@@ -283,7 +297,8 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
   const accent = BADGE_ACCENT[badge.badgeType]    || '#00FF87'
   const emoji  = EMOJIS[badge.badgeType]          || '❓'
   const label  = BADGE_LABELS[badge.badgeType]    || badge.badgeType
-  const jornada = jornadaLabel(badge.phase, badge.matchday)
+  const finalResult = isFinalResultBadge(badge.badgeType)
+  const jornada = jornadaLabel(badge.phase, badge.matchday, badge.badgeType)
 
   // Gradiente foil con spot de luz diagonal
   const borderGradient = `linear-gradient(135deg, ${stops[0]}, ${stops[1]} 25%, ${stops[0]} 42%, ${stops[2]} 60%, ${stops[3]} 78%, ${stops[1]} 92%, ${stops[0]})`
@@ -298,7 +313,9 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
 
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
-          text: `${username} fue "${label}" en ${jornada} · Prodea Mundial 2026`,
+          text: finalResult
+            ? `${username} fue "${label}" del torneo · Prodea Mundial 2026`
+            : `${username} fue "${label}" en ${jornada} · Prodea Mundial 2026`,
           files: [file],
         })
       } else {
@@ -364,9 +381,9 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
                 <p className="text-3xl font-black leading-none" style={{ fontFamily: 'Bebas Neue, sans-serif', color: accent }}>
                   {badge.pointsInMatchday}
                 </p>
-                <p className="text-[9px] text-white/40 uppercase tracking-wide mt-0.5">pts jornada</p>
+                <p className="text-[9px] text-white/40 uppercase tracking-wide mt-0.5">{finalResult ? 'pts totales' : 'pts jornada'}</p>
               </div>
-              {rank != null && (
+              {rank != null && !finalResult && (
                 <div className="text-center">
                   <p className="text-3xl font-black text-white leading-none" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                     #{rank}

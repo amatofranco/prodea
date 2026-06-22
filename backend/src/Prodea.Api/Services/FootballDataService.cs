@@ -476,7 +476,11 @@ public class FootballDataService(
             .ToListAsync(ct);
 
         foreach (var tid in tournamentIds)
+        {
             await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0, push);
+            if (match.Phase == MatchPhase.Final)
+                await badgeService.AwardTournamentResultBadgesAsync(tid);
+        }
 
         if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue)
             await AwardChampionPickPointsAsync(db, match, ct);

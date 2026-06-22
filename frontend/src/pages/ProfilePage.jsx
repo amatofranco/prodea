@@ -28,6 +28,9 @@ const ACCUMULATIVE_LABELS = {
   ElMuro: 'El Muro',
   ElFantasma: 'El Fantasma',
   TripleMufa: 'Triple Mufa',
+  Campeon: 'Campeón',
+  Subcampeon: 'Subcampeón',
+  TercerPuesto: 'Tercer puesto',
 }
 
 const ACCUMULATIVE_DESCRIPTIONS = {
@@ -36,7 +39,12 @@ const ACCUMULATIVE_DESCRIPTIONS = {
   ElMuro: 'Nunca fue último en toda la competencia',
   ElFantasma: 'Olvidó cargar predicciones más de 3 veces',
   TripleMufa: '3 jornadas consecutivas siendo El Mufa',
+  Campeon: 'Ya sabés cuánto pesa la copa. ¡Felicitaciones!',
+  Subcampeon: 'Lo importante es competir... dijo nunca nadie. Te acompañamos en el sentimiento',
+  TercerPuesto: 'Entraste al podio. Algo es algo.',
 }
+
+const FINAL_RESULT_BADGES = ['Campeon', 'Subcampeon', 'TercerPuesto']
 
 export default function ProfilePage() {
   const { tournamentId, userId } = useParams()
@@ -113,7 +121,19 @@ export default function ProfilePage() {
               {profile.accumulativeBadges.map((b) => (
                 <button
                   key={b.badgeType}
-                  onClick={() => setSelectedAccBadge(selectedAccBadge === b.badgeType ? null : b.badgeType)}
+                  onClick={() => {
+                    if (FINAL_RESULT_BADGES.includes(b.badgeType)) {
+                      setSelectedBadge({
+                        badgeType: b.badgeType,
+                        phase: null,
+                        matchday: null,
+                        pointsInMatchday: profile.totalPoints,
+                        randomPhrase: ACCUMULATIVE_DESCRIPTIONS[b.badgeType],
+                      })
+                    } else {
+                      setSelectedAccBadge(selectedAccBadge === b.badgeType ? null : b.badgeType)
+                    }
+                  }}
                   className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-colors ${
                     selectedAccBadge === b.badgeType
                       ? 'bg-[#00FF87]/20 text-[#00FF87] ring-1 ring-[#00FF87]/40'

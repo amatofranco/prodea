@@ -6,7 +6,10 @@ public enum AccumulativeBadgeType
     RachaInfernal,
     ElMuro,
     ElFantasma,
-    TripleMufa
+    TripleMufa,
+    Campeon,
+    Subcampeon,
+    TercerPuesto
 }
 
 public class AccumulativeBadge

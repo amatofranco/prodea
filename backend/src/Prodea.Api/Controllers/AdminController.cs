@@ -253,6 +253,9 @@ public class AdminController(
                 foreach (var pick in picks) pick.PointsEarned = 10;
                 await db.SaveChangesAsync();
             }
+
+            foreach (var tid in tournamentIds)
+                await badgeService.AwardTournamentResultBadgesAsync(tid);
         }
 
         return Ok(new

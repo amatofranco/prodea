@@ -43,6 +43,9 @@ public class BadgeService(ProdeaDbContext db)
         [AccumulativeBadgeType.ElMuro] = "🧱",
         [AccumulativeBadgeType.ElFantasma] = "👻",
         [AccumulativeBadgeType.TripleMufa] = "💀🔥",
+        [AccumulativeBadgeType.Campeon] = "🏆",
+        [AccumulativeBadgeType.Subcampeon] = "🥈",
+        [AccumulativeBadgeType.TercerPuesto] = "🥉",
     };
 
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
@@ -198,6 +201,50 @@ public class BadgeService(ProdeaDbContext db)
 
     public async Task RecalculateAccumulativeBadgesAsync(int tournamentId) =>
         await UpdateAccumulativeBadgesAsync(tournamentId);
+
+    private static readonly AccumulativeBadgeType[] PodiumTypes =
+        [AccumulativeBadgeType.Campeon, AccumulativeBadgeType.Subcampeon, AccumulativeBadgeType.TercerPuesto];
+
+    // Se llama al terminar la Final del Mundial: calcula la tabla general final del torneo
+    // (misma fórmula que el leaderboard) y asigna Campeón/Subcampeón/Tercer puesto al podio.
+    public async Task AwardTournamentResultBadgesAsync(int tournamentId)
+    {
+        var participants = await db.TournamentParticipants
+            .Where(tp => tp.TournamentId == tournamentId)
+            .Select(tp => tp.UserId)
+            .ToListAsync();
+
+        if (participants.Count <= 1) return;
+
+        var startingMatchDate = await db.Tournaments
+            .Where(t => t.Id == tournamentId)
+            .Select(t => t.StartingMatchDate)
+            .FirstOrDefaultAsync();
+
+        var points = await db.Predictions
+            .Where(p => participants.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
+            .GroupBy(p => p.UserId)
+            .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
+            .ToListAsync();
+
+        var championPoints = await db.ChampionPicks
+            .Where(cp => participants.Contains(cp.UserId))
+            .GroupBy(cp => cp.UserId)
+            .Select(g => new { UserId = g.Key, Max = g.Max(cp => cp.PointsEarned) })
+            .ToListAsync();
+
+        var pointsMap = points.ToDictionary(p => p.UserId, p => p.Total);
+        var champMap = championPoints.ToDictionary(c => c.UserId, c => c.Max);
+
+        var ranking = participants
+            .OrderByDescending(uid => pointsMap.GetValueOrDefault(uid, 0) + champMap.GetValueOrDefault(uid, 0))
+            .ToList();
+
+        for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
+            await UpsertAccumulativeBadge(tournamentId, ranking[i], PodiumTypes[i], true);
+
+        await db.SaveChangesAsync();
+    }
 
     private static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
     {
