@@ -10,6 +10,9 @@ const BADGE_STYLES = {
   Payaso:        { bg: 'badge-payaso',   label: 'El Payaso' },
   Dormido:       { bg: 'badge-dormido',  label: 'El Dormido' },
   Tibio:         { bg: 'badge-tibio',    label: 'El Tibio' },
+  Campeon:       { bg: 'badge-campeon',      label: 'El Campeón' },
+  Subcampeon:    { bg: 'badge-subcampeon',   label: 'El Subcampeón' },
+  TercerPuesto:  { bg: 'badge-tercerpuesto', label: 'Tercer Puesto' },
 }
 
 const EMOJIS = {

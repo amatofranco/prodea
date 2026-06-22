@@ -127,3 +127,6 @@ html, body, #root {
 .badge-payaso   { background: linear-gradient(135deg, #EC4899, #BE185D); }
 .badge-dormido  { background: linear-gradient(135deg, #6B7280, #374151); }
 .badge-tibio    { background: linear-gradient(135deg, #0EA5E9, #0369A1); }
+.badge-campeon      { background: linear-gradient(135deg, #FFD700, #DAA520); }
+.badge-subcampeon   { background: linear-gradient(135deg, #C0C0C0, #9CA3AF); }
+.badge-tercerpuesto { background: linear-gradient(135deg, #CD7F32, #A6651A); }
