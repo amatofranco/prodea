@@ -15,7 +15,9 @@ public enum MatchdayBadgeType
     Tibio,
     Campeon,
     Subcampeon,
-    TercerPuesto
+    TercerPuesto,
+    Ultimo,
+    Penultimo
 }
 
 public class MatchdayBadge

@@ -17,6 +17,8 @@ const BADGE_GRADIENTS = {
   Campeon:       ['#FFD700', '#FFFDE7', '#DAA520', '#7A5C00'],
   Subcampeon:    ['#C0C0C0', '#F5F5F5', '#9CA3AF', '#4B5563'],
   TercerPuesto:  ['#CD7F32', '#FBE3C7', '#A6651A', '#5C3A12'],
+  Ultimo:        ['#EF4444', '#FECACA', '#B91C1C', '#450A0A'],
+  Penultimo:     ['#F97316', '#FFF7ED', '#EA580C', '#7C2D12'],
 }
 
 const BADGE_ACCENT = {
@@ -34,6 +36,8 @@ const BADGE_ACCENT = {
   Campeon:       '#FFD700',
   Subcampeon:    '#C0C0C0',
   TercerPuesto:  '#CD7F32',
+  Ultimo:        '#EF4444',
+  Penultimo:     '#F97316',
 }
 
 const BADGE_LABELS = {
@@ -51,10 +55,12 @@ const BADGE_LABELS = {
   Campeon:       'El Campeón',
   Subcampeon:    'El Subcampeón',
   TercerPuesto:  'Tercer Puesto',
+  Ultimo:        'Último',
+  Penultimo:     'Penúltimo',
 }
 
 
-const FINAL_RESULT_TYPES = ['Campeon', 'Subcampeon', 'TercerPuesto']
+const FINAL_RESULT_TYPES = ['Campeon', 'Subcampeon', 'TercerPuesto', 'Ultimo', 'Penultimo']
 const isFinalResultBadge = (badgeType) => FINAL_RESULT_TYPES.includes(badgeType)
 
 function jornadaLabel(phase, matchday, badgeType) {

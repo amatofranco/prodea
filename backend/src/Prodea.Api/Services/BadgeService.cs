@@ -22,6 +22,8 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Campeon] = ["Ya sabés cuánto pesa la copa. ¡Felicitaciones!"],
         [MatchdayBadgeType.Subcampeon] = ["Lo importante es competir... dijo nunca nadie. Te acompañamos en el sentimiento"],
         [MatchdayBadgeType.TercerPuesto] = ["Entraste al podio. Algo es algo."],
+        [MatchdayBadgeType.Ultimo] = ["Por ahí en 4 años das menos vergüenza"],
+        [MatchdayBadgeType.Penultimo] = ["Al borde del papelón... menos mal"],
     };
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
@@ -40,6 +42,8 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.Campeon] = "🏆",
         [MatchdayBadgeType.Subcampeon] = "🥈",
         [MatchdayBadgeType.TercerPuesto] = "🥉",
+        [MatchdayBadgeType.Ultimo] = "💀",
+        [MatchdayBadgeType.Penultimo] = "🥴",
     };
 
     private static readonly Dictionary<AccumulativeBadgeType, string> AccumulativeEmojis = new()
@@ -245,19 +249,28 @@ public class BadgeService(ProdeaDbContext db)
             .OrderByDescending(uid => pointsMap.GetValueOrDefault(uid, 0) + champMap.GetValueOrDefault(uid, 0))
             .ToList();
 
-        for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
+        async Task OverrideFinalBadge(int rankIndex, MatchdayBadgeType type)
         {
-            var userId = ranking[i];
+            var userId = ranking[rankIndex];
             var totalPoints = pointsMap.GetValueOrDefault(userId, 0) + champMap.GetValueOrDefault(userId, 0);
 
             var finalBadge = await db.MatchdayBadges.FirstOrDefaultAsync(mb =>
                 mb.UserId == userId && mb.TournamentId == tournamentId && mb.Phase == "Final" && mb.Matchday == 0);
-            if (finalBadge == null) continue;
+            if (finalBadge == null) return;
 
-            finalBadge.BadgeType = PodiumTypes[i];
+            finalBadge.BadgeType = type;
             finalBadge.PointsInMatchday = totalPoints;
             finalBadge.AwardedAt = DateTime.UtcNow;
         }
+
+        for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
+            await OverrideFinalBadge(i, PodiumTypes[i]);
+
+        // Último/Penúltimo del torneo: solo si no se solapan con el podio (3 primeros).
+        if (ranking.Count >= 4)
+            await OverrideFinalBadge(ranking.Count - 1, MatchdayBadgeType.Ultimo);
+        if (ranking.Count >= 5)
+            await OverrideFinalBadge(ranking.Count - 2, MatchdayBadgeType.Penultimo);
 
         await db.SaveChangesAsync();
     }

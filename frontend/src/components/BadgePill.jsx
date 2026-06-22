@@ -13,13 +13,15 @@ const BADGE_STYLES = {
   Campeon:       { bg: 'badge-campeon',      label: 'El Campeón' },
   Subcampeon:    { bg: 'badge-subcampeon',   label: 'El Subcampeón' },
   TercerPuesto:  { bg: 'badge-tercerpuesto', label: 'Tercer Puesto' },
+  Ultimo:        { bg: 'badge-mufa',         label: 'Último' },
+  Penultimo:     { bg: 'badge-tambaleante',  label: 'Penúltimo' },
 }
 
 const EMOJIS = {
   Crack: '🏆', Mufa: '💀', Adivino: '🔮',
   Francotirador: '🎯', PechoFrio: '❄️', Goleador: '⚽', Rustico: '⛏️', Tambaleante: '🥴', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
   PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
-  Campeon: '🏆', Subcampeon: '🥈', TercerPuesto: '🥉',
+  Campeon: '🏆', Subcampeon: '🥈', TercerPuesto: '🥉', Ultimo: '💀', Penultimo: '🥴',
 }
 
 export const BADGE_TAGS = {
@@ -34,6 +36,8 @@ export const BADGE_TAGS = {
   Tibio:         'Mitad de tabla',
   Payaso:        '0 puntos',
   Dormido:       'Sin predicciones',
+  Ultimo:        'Último del torneo',
+  Penultimo:     'Penúltimo del torneo',
 }
 
 export function BadgePill({ type, className = '', showTag = true }) {
