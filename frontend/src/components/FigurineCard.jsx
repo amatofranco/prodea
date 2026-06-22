@@ -105,6 +105,11 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   let wordmarkImg = null
   try { wordmarkImg = await loadImage('/logo-wordmark.png') } catch { /* fallback a texto */ }
 
+  let trophyImg = null
+  if (badge.badgeType === 'Campeon') {
+    try { trophyImg = await loadImage('/trophy.svg') } catch { /* fallback a emoji */ }
+  }
+
   const W      = 320
   const SCALE  = 3
   const BORDER = 5
@@ -201,11 +206,17 @@ async function generateCardBlob({ badge, username, tournamentName, rank }) {
   ctx.fillRect(20, y, W - 40, 1)
   y += 1 + GAP
 
-  // Emoji
-  ctx.font = '60px serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'top'
-  ctx.fillText(emoji, CX, y)
+  // Emoji (o la copa, para el Campeón)
+  if (trophyImg) {
+    const trophyH = 76
+    const trophyW = trophyH * (trophyImg.width / trophyImg.height)
+    ctx.drawImage(trophyImg, CX - trophyW / 2, y - 4, trophyW, trophyH)
+  } else {
+    ctx.font = '60px serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.fillText(emoji, CX, y)
+  }
   y += 68 + 8
 
   // Badge label
@@ -362,7 +373,10 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
 
             {/* Badge */}
             <div className="flex flex-col items-center gap-1 mt-1">
-              <span className="text-6xl leading-none">{emoji}</span>
+              {badge.badgeType === 'Campeon'
+                ? <img src="/trophy.svg" alt="" className="h-16 w-auto" />
+                : <span className="text-6xl leading-none">{emoji}</span>
+              }
               <p className="text-2xl font-bold text-center mt-1"
                  style={{ fontFamily: 'Bebas Neue, sans-serif', letterSpacing: '0.05em', color: accent }}>
                 {label}
