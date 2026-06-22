@@ -33,12 +33,15 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         var predMap = predictions.ToDictionary(p => p.MatchId);
 
+        var myChampionPick = await db.ChampionPicks.FirstOrDefaultAsync(cp => cp.UserId == userId);
+
         return Ok(matches.Select(m =>
         {
             predMap.TryGetValue(m.Id, out var pred);
             var goals = m.GoalsJson != null
                 ? JsonSerializer.Deserialize<List<GoalDto>>(m.GoalsJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                 : null;
+            bool isFinal = m.Phase == MatchPhase.Final;
             return new MatchWithPredictionDto(
                 m.Id, m.HomeTeam, m.AwayTeam, m.HomeTeamLabel, m.AwayTeamLabel,
                 m.HomeTeamFlag, m.AwayTeamFlag,
@@ -47,7 +50,9 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
                 pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned, pred.PredictedPenaltyWinner),
                 m.Minute,
                 goals,
-                m.LivePhase
+                m.LivePhase,
+                isFinal ? myChampionPick?.CountryName : null,
+                isFinal && myChampionPick != null ? myChampionPick.PointsEarned : null
             );
         }));
     }
@@ -75,17 +80,24 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
             .Where(p => p.MatchId == matchId && participantIds.Contains(p.UserId))
             .ToDictionaryAsync(p => p.UserId);
 
+        var championPicks = match.Phase == MatchPhase.Final
+            ? await db.ChampionPicks.Where(cp => participantIds.Contains(cp.UserId)).ToDictionaryAsync(cp => cp.UserId)
+            : new Dictionary<int, ChampionPick>();
+
         return Ok(participants
             .Select(tp =>
             {
                 predictions.TryGetValue(tp.UserId, out var pred);
+                championPicks.TryGetValue(tp.UserId, out var champPick);
                 var fullName = (tp.User.FirstName != null || tp.User.LastName != null)
                     ? $"{tp.User.FirstName} {tp.User.LastName}".Trim() : null;
                 return new MatchPredictionDto(
                     tp.UserId, tp.User.Username, fullName,
                     pred?.PredictedHomeScore, pred?.PredictedAwayScore,
                     pred?.PointsEarned ?? 0,
-                    pred?.PredictedPenaltyWinner
+                    pred?.PredictedPenaltyWinner,
+                    champPick?.CountryName,
+                    champPick != null ? champPick.PointsEarned : null
                 );
             })
             .OrderByDescending(p => p.PointsEarned)
@@ -131,15 +143,10 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         await db.SaveChangesAsync();
 
-        var push = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
-        var badgeService = new BadgeService(db);
-        var allTournamentIds = await db.TournamentParticipants
-            .Select(tp => tp.TournamentId)
-            .Distinct()
-            .ToListAsync();
-        foreach (var tid in allTournamentIds)
-            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0, push);
-
+        // Importante: el champion pick se corrobora y otorga ANTES de calcular las badges de
+        // podio (Campeon/Subcampeon/TercerPuesto), porque esa tabla final suma Prediction +
+        // ChampionPick. Si se calculara antes, el podio se asignaría con los puntos de campeón
+        // todavía en 0 y el "ganador del prode" podría salir mal.
         if (match.Phase == MatchPhase.Final)
         {
             string? champion = null;
@@ -155,6 +162,19 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
                 foreach (var pick in winningPicks) pick.PointsEarned = 10;
                 await db.SaveChangesAsync();
             }
+        }
+
+        var push = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
+        var badgeService = new BadgeService(db);
+        var allTournamentIds = await db.TournamentParticipants
+            .Select(tp => tp.TournamentId)
+            .Distinct()
+            .ToListAsync();
+        foreach (var tid in allTournamentIds)
+        {
+            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0, push);
+            if (match.Phase == MatchPhase.Final)
+                await badgeService.AwardTournamentResultBadgesAsync(tid);
         }
 
         var payload = new

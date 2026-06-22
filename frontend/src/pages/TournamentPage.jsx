@@ -120,6 +120,23 @@ function TournamentMatchCard({ match, onTap }) {
           <span className="text-[10px] text-[#00FF87] font-semibold shrink-0 ml-2">Ver todos →</span>
         )}
       </div>
+
+      {match.phase === 'Final' && (
+        <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-between">
+          {match.userChampionPick ? (
+            <span className="text-xs text-[#8A8A9A]">
+              🏆 Campeón elegido: <span className="text-[#F59E0B] font-bold">{match.userChampionPick}</span>
+              {isFinished && (
+                <span className={`ml-2 font-bold ${match.userChampionPickPoints > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                  +{match.userChampionPickPoints ?? 0} pts
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="text-xs text-[#8A8A9A]">🏆 Sin campeón elegido</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -172,7 +189,14 @@ function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
               <div className="w-8 h-8 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {(p.fullName ?? p.username)[0].toUpperCase()}
               </div>
-              <span className="flex-1 text-white text-sm font-medium truncate">{p.fullName ?? p.username}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-white text-sm font-medium truncate block">{p.fullName ?? p.username}</span>
+                {match.phase === 'Final' && (
+                  <span className="text-[9px] text-[#8A8A9A] truncate block">
+                    🏆 {p.championPick ?? 'Sin elegir'}
+                  </span>
+                )}
+              </div>
               {p.predictedHomeScore != null ? (
                 <div className="flex flex-col items-end">
                   <span className="text-white font-bold text-sm" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
@@ -187,9 +211,16 @@ function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
               ) : (
                 <span className="text-[#8A8A9A] text-xs italic">Sin pred</span>
               )}
-              <span className={`text-sm font-bold w-12 text-right ${pointColor(p.pointsEarned)}`}>
-                +{p.pointsEarned} pts
-              </span>
+              <div className="flex flex-col items-end w-16">
+                <span className={`text-sm font-bold text-right ${pointColor(p.pointsEarned)}`}>
+                  +{p.pointsEarned} pts
+                </span>
+                {match.phase === 'Final' && p.championPick && (
+                  <span className={`text-[9px] font-semibold ${p.championPickPoints > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                    +{p.championPickPoints ?? 0} camp.
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>

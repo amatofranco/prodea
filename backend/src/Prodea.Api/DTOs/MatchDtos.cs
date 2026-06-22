@@ -38,7 +38,9 @@ public record MatchWithPredictionDto(
     PredictionDto? UserPrediction,
     int? Minute,
     List<GoalDto>? Goals = null,
-    string? LivePhase = null
+    string? LivePhase = null,
+    string? UserChampionPick = null,
+    int? UserChampionPickPoints = null
 );
 
 public record PredictionDto(
@@ -68,5 +70,7 @@ public record MatchPredictionDto(
     int? PredictedHomeScore,
     int? PredictedAwayScore,
     int PointsEarned,
-    string? PredictedPenaltyWinner = null
+    string? PredictedPenaltyWinner = null,
+    string? ChampionPick = null,
+    int? ChampionPickPoints = null
 );

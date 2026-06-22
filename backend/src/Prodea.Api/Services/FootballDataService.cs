@@ -469,6 +469,13 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
         await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
 
+        // Importante: el champion pick se corrobora y otorga ANTES de calcular las badges de
+        // podio (Campeon/Subcampeon/TercerPuesto), porque esa tabla final suma Prediction +
+        // ChampionPick. Si se calculara antes, el podio se asignaría con los puntos de campeón
+        // todavía en 0 y el "ganador del prode" podría salir mal.
+        if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue)
+            await AwardChampionPickPointsAsync(db, match, ct);
+
         var badgeService = new BadgeService(db);
         var tournamentIds = await db.TournamentParticipants
             .Select(tp => tp.TournamentId)
@@ -481,9 +488,6 @@ public class FootballDataService(
             if (match.Phase == MatchPhase.Final)
                 await badgeService.AwardTournamentResultBadgesAsync(tid);
         }
-
-        if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue)
-            await AwardChampionPickPointsAsync(db, match, ct);
     }
 
     // Ruta football-data.org: usa FootballDataScore para extraer scores con lógica de ET/penales
