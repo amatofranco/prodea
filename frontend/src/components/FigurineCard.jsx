@@ -19,6 +19,8 @@ const BADGE_GRADIENTS = {
   TercerPuesto:  ['#CD7F32', '#FBE3C7', '#A6651A', '#5C3A12'],
   Ultimo:        ['#EF4444', '#FECACA', '#B91C1C', '#450A0A'],
   Penultimo:     ['#F97316', '#FFF7ED', '#EA580C', '#7C2D12'],
+  GoleadorTorneo: ['#22C55E', '#DCFCE7', '#16A34A', '#14532D'],
+  RusticoTorneo:  ['#92400E', '#FEF3C7', '#78350F', '#451A03'],
 }
 
 const BADGE_ACCENT = {
@@ -38,6 +40,8 @@ const BADGE_ACCENT = {
   TercerPuesto:  '#CD7F32',
   Ultimo:        '#EF4444',
   Penultimo:     '#F97316',
+  GoleadorTorneo: '#22C55E',
+  RusticoTorneo:  '#92400E',
 }
 
 const BADGE_LABELS = {
@@ -57,10 +61,12 @@ const BADGE_LABELS = {
   TercerPuesto:  'Tercer Puesto',
   Ultimo:        'Último',
   Penultimo:     'Penúltimo',
+  GoleadorTorneo: 'El Goleador',
+  RusticoTorneo:  'El Rústico',
 }
 
 
-const FINAL_RESULT_TYPES = ['Campeon', 'Subcampeon', 'TercerPuesto', 'Ultimo', 'Penultimo']
+const FINAL_RESULT_TYPES = ['Campeon', 'Subcampeon', 'TercerPuesto', 'Ultimo', 'Penultimo', 'GoleadorTorneo', 'RusticoTorneo']
 const isFinalResultBadge = (badgeType) => FINAL_RESULT_TYPES.includes(badgeType)
 
 function jornadaLabel(phase, matchday, badgeType) {

@@ -17,7 +17,9 @@ public enum MatchdayBadgeType
     Subcampeon,
     TercerPuesto,
     Ultimo,
-    Penultimo
+    Penultimo,
+    GoleadorTorneo,
+    RusticoTorneo
 }
 
 public class MatchdayBadge

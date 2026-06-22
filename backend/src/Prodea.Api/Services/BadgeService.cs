@@ -24,6 +24,8 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.TercerPuesto] = ["Entraste al podio. Algo es algo."],
         [MatchdayBadgeType.Ultimo] = ["Por ahí en 4 años das menos vergüenza"],
         [MatchdayBadgeType.Penultimo] = ["Al borde del papelón... menos mal"],
+        [MatchdayBadgeType.GoleadorTorneo] = ["El optimista de los resultados"],
+        [MatchdayBadgeType.RusticoTorneo] = ["Campeón en austeridad"],
     };
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
@@ -44,6 +46,8 @@ public class BadgeService(ProdeaDbContext db)
         [MatchdayBadgeType.TercerPuesto] = "🥉",
         [MatchdayBadgeType.Ultimo] = "💀",
         [MatchdayBadgeType.Penultimo] = "🥴",
+        [MatchdayBadgeType.GoleadorTorneo] = "⚽",
+        [MatchdayBadgeType.RusticoTorneo] = "⛏️",
     };
 
     private static readonly Dictionary<AccumulativeBadgeType, string> AccumulativeEmojis = new()
@@ -249,9 +253,10 @@ public class BadgeService(ProdeaDbContext db)
             .OrderByDescending(uid => pointsMap.GetValueOrDefault(uid, 0) + champMap.GetValueOrDefault(uid, 0))
             .ToList();
 
-        async Task OverrideFinalBadge(int rankIndex, MatchdayBadgeType type)
+        var assigned = new HashSet<int>();
+
+        async Task OverrideFinalBadge(int userId, MatchdayBadgeType type)
         {
-            var userId = ranking[rankIndex];
             var totalPoints = pointsMap.GetValueOrDefault(userId, 0) + champMap.GetValueOrDefault(userId, 0);
 
             var finalBadge = await db.MatchdayBadges.FirstOrDefaultAsync(mb =>
@@ -261,16 +266,38 @@ public class BadgeService(ProdeaDbContext db)
             finalBadge.BadgeType = type;
             finalBadge.PointsInMatchday = totalPoints;
             finalBadge.AwardedAt = DateTime.UtcNow;
+            assigned.Add(userId);
         }
 
         for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
-            await OverrideFinalBadge(i, PodiumTypes[i]);
+            await OverrideFinalBadge(ranking[i], PodiumTypes[i]);
 
         // Último/Penúltimo del torneo: solo si no se solapan con el podio (3 primeros).
         if (ranking.Count >= 4)
-            await OverrideFinalBadge(ranking.Count - 1, MatchdayBadgeType.Ultimo);
+            await OverrideFinalBadge(ranking[^1], MatchdayBadgeType.Ultimo);
         if (ranking.Count >= 5)
-            await OverrideFinalBadge(ranking.Count - 2, MatchdayBadgeType.Penultimo);
+            await OverrideFinalBadge(ranking[^2], MatchdayBadgeType.Penultimo);
+
+        // Goleador/Rústico del torneo: goles predichos en total (todas las fechas), solo si
+        // hay un único dueño del máximo/mínimo y no tiene ya un mote de puntos más importante.
+        var goals = await db.Predictions
+            .Where(p => participants.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
+            .GroupBy(p => p.UserId)
+            .Select(g => new { UserId = g.Key, Goals = g.Sum(p => p.PredictedHomeScore + p.PredictedAwayScore) })
+            .ToListAsync();
+
+        if (goals.Count > 0)
+        {
+            var maxGoals = goals.Max(g => g.Goals);
+            var maxHolders = goals.Where(g => g.Goals == maxGoals).ToList();
+            if (maxHolders.Count == 1 && !assigned.Contains(maxHolders[0].UserId))
+                await OverrideFinalBadge(maxHolders[0].UserId, MatchdayBadgeType.GoleadorTorneo);
+
+            var minGoals = goals.Min(g => g.Goals);
+            var minHolders = goals.Where(g => g.Goals == minGoals).ToList();
+            if (minHolders.Count == 1 && !assigned.Contains(minHolders[0].UserId))
+                await OverrideFinalBadge(minHolders[0].UserId, MatchdayBadgeType.RusticoTorneo);
+        }
 
         await db.SaveChangesAsync();
     }
