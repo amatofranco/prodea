@@ -857,6 +857,28 @@ public class AdminController(
         return Ok(new { message = $"{count} motes acumulativos eliminados." });
     }
 
+    [HttpPost("users/{userId}/zero-out-predictions")]
+    public async Task<IActionResult> ZeroOutPredictions(
+        int userId,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
+        [FromQuery] int count = 5)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var preds = await db.Predictions
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.PredictedHomeScore + p.PredictedAwayScore)
+            .Take(count)
+            .ToListAsync();
+
+        foreach (var p in preds) { p.PredictedHomeScore = 0; p.PredictedAwayScore = 0; }
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = $"{preds.Count} predicciones puestas en 0-0 (solo testing)" });
+    }
+
     [HttpGet("tournaments/{id}/predicted-goals")]
     public async Task<IActionResult> ListPredictedGoals(
         int id,
