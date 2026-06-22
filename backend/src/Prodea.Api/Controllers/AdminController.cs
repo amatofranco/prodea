@@ -857,6 +857,41 @@ public class AdminController(
         return Ok(new { message = $"{count} motes acumulativos eliminados." });
     }
 
+    [HttpGet("tournaments/{id}/predicted-goals")]
+    public async Task<IActionResult> ListPredictedGoals(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var participants = await db.TournamentParticipants
+            .Where(tp => tp.TournamentId == id)
+            .Select(tp => tp.UserId)
+            .ToListAsync();
+
+        var startingMatchDate = await db.Tournaments
+            .Where(t => t.Id == id)
+            .Select(t => t.StartingMatchDate)
+            .FirstOrDefaultAsync();
+
+        var goals = await db.Predictions
+            .Where(p => participants.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
+            .GroupBy(p => p.UserId)
+            .Select(g => new
+            {
+                g.Key,
+                username = db.Users.Where(u => u.Id == g.Key).Select(u => u.Username).FirstOrDefault(),
+                goals = g.Sum(p => p.PredictedHomeScore + p.PredictedAwayScore),
+                predictions = g.Count(),
+            })
+            .OrderByDescending(g => g.goals)
+            .ToListAsync();
+
+        return Ok(goals);
+    }
+
     [HttpGet("tournaments/{id}/matchday-badges")]
     public async Task<IActionResult> ListMatchdayBadges(
         int id,
