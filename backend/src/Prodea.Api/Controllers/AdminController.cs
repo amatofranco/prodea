@@ -819,6 +819,29 @@ public class AdminController(
         return Ok(new { message = $"Usuario {user.Username} ({user.FirstName} {user.LastName}) eliminado." });
     }
 
+    [HttpGet("tournaments/{id}/accumulative-badges")]
+    public async Task<IActionResult> ListAccumulativeBadges(
+        int id,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var badges = await db.AccumulativeBadges
+            .Where(ab => ab.TournamentId == id)
+            .Select(ab => new
+            {
+                ab.UserId,
+                username = db.Users.Where(u => u.Id == ab.UserId).Select(u => u.Username).FirstOrDefault(),
+                badgeType = ab.BadgeType.ToString(),
+                ab.AwardedAt,
+            })
+            .ToListAsync();
+
+        return Ok(badges);
+    }
+
     [HttpGet("tournaments")]
     public async Task<IActionResult> ListTournaments(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey)
