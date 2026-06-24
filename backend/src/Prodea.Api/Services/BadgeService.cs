@@ -75,9 +75,13 @@ public class BadgeService(ProdeaDbContext db)
         return options[indices[occurrenceIndex % options.Length]];
     }
 
-    // matchday: 1/2/3 para grupos; 0 para fases eliminatorias
-    public async Task AssignMatchdayBadgesAsync(int tournamentId, MatchPhase phase, int matchday, PushNotificationService? push = null)
+    // matchday: 1/2/3 para grupos; 0 para fases eliminatorias.
+    // Devuelve los userIds que recibieron un badge nuevo (no actualizado) en este torneo,
+    // para que el caller pueda deduplicar notificaciones entre torneos.
+    public async Task<HashSet<int>> AssignMatchdayBadgesAsync(int tournamentId, MatchPhase phase, int matchday)
     {
+        var newlyBadgedUserIds = new HashSet<int>();
+
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == tournamentId)
             .Select(tp => tp.UserId)
@@ -85,7 +89,7 @@ public class BadgeService(ProdeaDbContext db)
 
         // Con un solo participante no hay nadie contra quien compararse — no tiene
         // sentido asignar ningún mote de fecha.
-        if (participants.Count <= 1) return;
+        if (participants.Count <= 1) return newlyBadgedUserIds;
 
         var startingMatchDate = await db.Tournaments
             .Where(t => t.Id == tournamentId)
@@ -97,8 +101,8 @@ public class BadgeService(ProdeaDbContext db)
                 && m.MatchDate >= startingMatchDate)
             .ToListAsync();
 
-        if (jornada.Count == 0) return;
-        if (jornada.Any(m => m.Status != MatchStatus.Finished)) return;
+        if (jornada.Count == 0) return newlyBadgedUserIds;
+        if (jornada.Any(m => m.Status != MatchStatus.Finished)) return newlyBadgedUserIds;
 
         var matchIds = jornada.Select(m => m.Id).ToList();
 
@@ -136,7 +140,6 @@ public class BadgeService(ProdeaDbContext db)
         int rusticoCount = goalsWithPreds.Count > 0 ? goalsWithPreds.Count(kv => kv.Value == minPredictedGoals) : 0;
 
         var phaseStr = phase.ToString();
-        bool anyNewBadge = false;
 
         foreach (var userId in participants)
         {
@@ -169,7 +172,7 @@ public class BadgeService(ProdeaDbContext db)
             }
             else
             {
-                anyNewBadge = true;
+                newlyBadgedUserIds.Add(userId);
                 db.MatchdayBadges.Add(new MatchdayBadge
                 {
                     UserId = userId,
@@ -185,12 +188,13 @@ public class BadgeService(ProdeaDbContext db)
         await db.SaveChangesAsync();
         await UpdateAccumulativeBadgesAsync(tournamentId);
 
-        if (push != null && anyNewBadge)
-            await SendCardNotificationsAsync(tournamentId, phase, matchday, participants, push);
+        return newlyBadgedUserIds;
     }
 
-    public Task SendCardNotificationsPublicAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
-        => SendCardNotificationsAsync(tournamentId, phase, matchday, participants, push);
+    // userTournamentMap: userId -> tournamentId a usar para el deep link de la notificación
+    // (un usuario puede estar en varios torneos; se manda una sola notificación igual).
+    public Task SendCardNotificationsPublicAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
+        => SendCardNotificationsAsync(phase, matchday, userTournamentMap, push);
 
     // Recalcula todos los motes del torneo desde cero — usar cuando cambia StartingMatchDate,
     // ya que los motes ya asignados no se actualizan solos al mover el corte de fechas.
@@ -314,7 +318,9 @@ public class BadgeService(ProdeaDbContext db)
         _ => phase.ToString(),
     };
 
-    private async Task SendCardNotificationsAsync(int tournamentId, MatchPhase phase, int matchday, List<int> participants, PushNotificationService push)
+    // userTournamentMap: userId -> tournamentId a usar para el deep link. Un solo push por
+    // usuario aunque esté en varios torneos que terminaron la misma fecha/fase.
+    private async Task SendCardNotificationsAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
     {
         var jornada = JornadaLabel(phase, matchday);
         var termino = phase switch
@@ -329,7 +335,7 @@ public class BadgeService(ProdeaDbContext db)
             _                     => $"Terminó {jornada}.",
         };
         var subscriptions = await db.PushSubscriptions
-            .Where(s => participants.Contains(s.UserId))
+            .Where(s => userTournamentMap.Keys.Contains(s.UserId))
             .ToListAsync();
 
         var expired = new List<UserPushSubscription>();
@@ -341,7 +347,7 @@ public class BadgeService(ProdeaDbContext db)
                     sub,
                     "🃏 ¡Llegó tu Carta!",
                     $"{termino} Fijate cómo te fue y compartila.",
-                    $"/torneos/{tournamentId}/perfil/{sub.UserId}"
+                    $"/torneos/{userTournamentMap[sub.UserId]}/perfil/{sub.UserId}"
                 );
             }
             catch (ExpiredSubscriptionException) { expired.Add(sub); }

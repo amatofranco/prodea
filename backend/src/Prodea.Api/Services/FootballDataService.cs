@@ -482,12 +482,17 @@ public class FootballDataService(
             .Distinct()
             .ToListAsync(ct);
 
+        var newlyBadgedUserTournament = new Dictionary<int, int>();
         foreach (var tid in tournamentIds)
         {
-            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0, push);
+            var newUserIds = await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
+            foreach (var uid in newUserIds)
+                newlyBadgedUserTournament.TryAdd(uid, tid);
             if (match.Phase == MatchPhase.Final)
                 await badgeService.AwardTournamentResultBadgesAsync(tid);
         }
+        if (newlyBadgedUserTournament.Count > 0)
+            await badgeService.SendCardNotificationsPublicAsync(match.Phase, match.Matchday ?? 0, newlyBadgedUserTournament, push);
     }
 
     // Ruta football-data.org: usa FootballDataScore para extraer scores con lógica de ET/penales

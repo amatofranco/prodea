@@ -762,7 +762,8 @@ public class AdminController(
 
         var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
         var badgeService = new BadgeService(db);
-        await badgeService.SendCardNotificationsPublicAsync(request.TournamentId, phase, request.Matchday, participants, pushService);
+        var userTournamentMap = participants.ToDictionary(uid => uid, _ => request.TournamentId);
+        await badgeService.SendCardNotificationsPublicAsync(phase, request.Matchday, userTournamentMap, pushService);
 
         return Ok(new { message = $"Notificación de card enviada a {participants.Count} participante(s)." });
     }
