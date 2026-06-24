@@ -331,6 +331,17 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .GroupBy(p => (p.UserId, Phase: p.Phase.ToString(), Matchday: p.Matchday ?? 0))
             .ToDictionary(g => g.Key, g => g.Count());
 
+        // Momento de la última modificación de cada predicción de esa fecha (UpdatedAt) —
+        // premia a quien no especuló: si nunca tocó su predicción, UpdatedAt == CreatedAt
+        // (queda temprano); si la modificó cerca del cierre, UpdatedAt se corre para adelante.
+        var loadTimes = await db.Predictions
+            .Where(p => candidateIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
+            .Select(p => new { p.UserId, p.Match.Phase, p.Match.Matchday, p.UpdatedAt })
+            .ToListAsync();
+        var loadTimeMap = loadTimes
+            .GroupBy(p => (p.UserId, Phase: p.Phase.ToString(), Matchday: p.Matchday ?? 0))
+            .ToDictionary(g => g.Key, g => g.Max(p => p.UpdatedAt));
+
         return Ok(crackBadges
             .GroupBy(mb => new { mb.Phase, mb.Matchday })
             .Select(g =>
@@ -338,6 +349,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
                 var winner = g
                     .OrderByDescending(mb => mb.PointsInMatchday)
                     .ThenByDescending(mb => exactCountMap.GetValueOrDefault((mb.UserId, mb.Phase, mb.Matchday)))
+                    .ThenBy(mb => loadTimeMap.GetValueOrDefault((mb.UserId, mb.Phase, mb.Matchday), DateTime.MaxValue))
                     .First();
                 var phase = Enum.Parse<MatchPhase>(winner.Phase);
                 var label = phase switch
