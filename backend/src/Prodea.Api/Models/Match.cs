@@ -30,6 +30,7 @@ public class Match
     public DateTime MatchDate { get; set; }
     public MatchPhase Phase { get; set; }
     public int? Matchday { get; set; }
+    public string? Group { get; set; } // letra de grupo ("A".."L") — solo aplica a Phase == Group
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
     public MatchStatus Status { get; set; } = MatchStatus.Scheduled;

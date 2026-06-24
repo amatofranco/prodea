@@ -128,13 +128,13 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
 
         await db.SaveChangesAsync();
 
-        // Si este era el último partido de grupos, resolvemos ya los cruces de Dieciseisavos
+        // Si este era el último partido de SU grupo, resolvemos ya los cruces de Dieciseisavos
         // en vez de esperar al sync automático de 6hs.
-        if (match.Phase == MatchPhase.Group)
+        if (match.Phase == MatchPhase.Group && match.Group != null)
         {
-            var groupStageDone = !await db.Matches
-                .AnyAsync(m => m.Phase == MatchPhase.Group && m.Status != MatchStatus.Finished);
-            if (groupStageDone)
+            var groupDone = !await db.Matches
+                .AnyAsync(m => m.Phase == MatchPhase.Group && m.Group == match.Group && m.Status != MatchStatus.Finished);
+            if (groupDone)
                 await fixtureService.UpdateKnockoutTeamNamesAsync();
         }
 

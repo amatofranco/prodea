@@ -117,6 +117,7 @@ public class FixtureService(
                     existing.MatchDate     = m.MatchDate;
                     existing.Phase         = m.Phase;
                     existing.Matchday      = m.Matchday;
+                    existing.Group         = m.Group;
                     existing.Status        = m.Status;
                     existing.HomeScore     = m.HomeScore;
                     existing.AwayScore     = m.AwayScore;
@@ -239,6 +240,7 @@ public class FixtureService(
                 Status = MapStatus(m.Status),
                 Phase = phase,
                 Matchday = matchday,
+                Group = isGroup ? m.Group : null,
                 HomeScore = m.Score?.FullTime?.Home,
                 AwayScore = m.Score?.FullTime?.Away,
             });
