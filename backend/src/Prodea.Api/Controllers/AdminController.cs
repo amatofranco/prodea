@@ -35,7 +35,7 @@ public class AdminController(
 
         var matches = await query
             .OrderBy(m => m.MatchDate)
-            .Select(m => new { m.Id, m.ExternalId, m.HomeTeam, m.AwayTeam, m.Phase, m.Matchday, m.Status, m.MatchDate, m.HomeScore, m.AwayScore, m.StartedAt, m.FinishedAt, m.LastUpdatedAt, m.ReminderSent, m.ResultNotificationSent })
+            .Select(m => new { m.Id, m.ExternalId, m.HomeTeam, m.AwayTeam, m.HomeTeamLabel, m.AwayTeamLabel, m.Phase, m.Matchday, m.Status, m.MatchDate, m.HomeScore, m.AwayScore, m.StartedAt, m.FinishedAt, m.LastUpdatedAt, m.ReminderSent, m.ResultNotificationSent })
             .ToListAsync();
 
         return Ok(matches);
