@@ -57,6 +57,18 @@ public class AdminController(
         return Ok(new { message = $"{count} partidos cargados", source });
     }
 
+    [HttpPost("sync-knockout-teams")]
+    public async Task<IActionResult> SyncKnockoutTeams(
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    {
+        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
+        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
+            return Forbid();
+
+        var updated = await fixtureService.UpdateKnockoutTeamNamesAsync();
+        return Ok(new { message = $"{updated} partido(s) de knockout actualizados desde football-data.org" });
+    }
+
     [HttpGet("backups")]
     public async Task<IActionResult> ListBackups(
         [FromHeader(Name = "X-Admin-Key")] string? adminKey)
