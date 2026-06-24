@@ -15,7 +15,7 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/tournaments/{tournamentId}/matches")]
 [Authorize]
-public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hub) : ControllerBase
+public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hub, FixtureService fixtureService) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -127,6 +127,16 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
             match.Winner = request.Winner == "home" ? match.HomeTeam : match.AwayTeam;
 
         await db.SaveChangesAsync();
+
+        // Si este era el último partido de grupos, resolvemos ya los cruces de Dieciseisavos
+        // en vez de esperar al sync automático de 6hs.
+        if (match.Phase == MatchPhase.Group)
+        {
+            var groupStageDone = !await db.Matches
+                .AnyAsync(m => m.Phase == MatchPhase.Group && m.Status != MatchStatus.Finished);
+            if (groupStageDone)
+                await fixtureService.UpdateKnockoutTeamNamesAsync();
+        }
 
         string? winnerSide = (request.HomeScore == request.AwayScore && request.Winner != null)
             ? request.Winner : null;

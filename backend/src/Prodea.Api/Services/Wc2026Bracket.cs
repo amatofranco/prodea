@@ -50,18 +50,22 @@ public static class Wc2026Bracket
         [104] = ("Gan. P101",  "Gan. P102"),
     };
 
-    private static readonly Dictionary<MatchPhase, int> PhaseStart = new()
+    // Orden cronológico real de los números de partido FIFA dentro de cada fase. No siempre
+    // coincide con el orden numérico (ej. en Dieciseisavos el 76 se juega antes que el 74) —
+    // por eso no se puede inferir el número de partido como "PhaseStart + posición por fecha".
+    private static readonly Dictionary<MatchPhase, int[]> ChronologicalOrder = new()
     {
-        [MatchPhase.R32]        = 73,
-        [MatchPhase.R16]        = 89,
-        [MatchPhase.QF]         = 97,
-        [MatchPhase.SF]         = 101,
-        [MatchPhase.ThirdPlace] = 103,
-        [MatchPhase.Final]      = 104,
+        [MatchPhase.R32]        = [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87],
+        [MatchPhase.R16]        = [90, 89, 91, 92, 93, 94, 95, 96],
+        [MatchPhase.QF]         = [97, 98, 99, 100],
+        [MatchPhase.SF]         = [101, 102],
+        [MatchPhase.ThirdPlace] = [103],
+        [MatchPhase.Final]      = [104],
     };
 
     /// <summary>
-    /// Construye un mapa ExternalId → número de partido FIFA, ordenando por fecha dentro de cada fase.
+    /// Construye un mapa ExternalId → número de partido FIFA, usando el orden cronológico real
+    /// (por fecha) de cada fase para ubicar cada partido en la posición que le corresponde.
     /// </summary>
     public static Dictionary<int, int> BuildMatchNumberMap(
         IEnumerable<(int ExternalId, MatchPhase Phase, DateTime UtcDate)> knockoutMatches)
@@ -70,9 +74,9 @@ public static class Wc2026Bracket
             .GroupBy(m => m.Phase)
             .SelectMany(g =>
             {
-                var start = PhaseStart.GetValueOrDefault(g.Key, 0);
+                var order = ChronologicalOrder.GetValueOrDefault(g.Key, []);
                 return g.OrderBy(m => m.UtcDate)
-                        .Select((m, i) => (m.ExternalId, MatchNumber: start + i));
+                        .Select((m, i) => (m.ExternalId, MatchNumber: i < order.Length ? order[i] : 0));
             })
             .ToDictionary(x => x.ExternalId, x => x.MatchNumber);
     }

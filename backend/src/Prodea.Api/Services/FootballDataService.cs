@@ -452,6 +452,21 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Partido finalizado: {Home} {HS}-{AS} {Away}", match.HomeTeam, homeScore, awayScore, match.AwayTeam);
 
+        // Si este era el último partido de grupos, los cruces de Dieciseisavos ya quedaron
+        // definidos del lado de la API — no esperamos al sync de 6hs, lo resolvemos ahora.
+        if (match.Phase == MatchPhase.Group)
+        {
+            var groupStageDone = !await db.Matches
+                .AnyAsync(m => m.Phase == MatchPhase.Group && m.Status != MatchStatus.Finished, ct);
+            if (groupStageDone)
+            {
+                using var knockoutScope = scopeFactory.CreateScope();
+                var fixtureService = knockoutScope.ServiceProvider.GetRequiredService<FixtureService>();
+                await fixtureService.UpdateKnockoutTeamNamesAsync();
+                _lastKnockoutSync = DateTime.UtcNow;
+            }
+        }
+
         string? winnerSide = null;
         if (homeScore == awayScore && match.Winner != null)
             winnerSide = match.Winner == match.HomeTeam ? "home" : "away";

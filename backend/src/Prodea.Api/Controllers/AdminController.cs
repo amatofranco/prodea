@@ -219,6 +219,16 @@ public class AdminController(
 
         await db.SaveChangesAsync();
 
+        // Si este era el último partido de grupos, resolvemos ya los cruces de Dieciseisavos
+        // en vez de esperar al sync automático de 6hs.
+        if (match.Phase == MatchPhase.Group)
+        {
+            var groupStageDone = !await db.Matches
+                .AnyAsync(m => m.Phase == MatchPhase.Group && m.Status != MatchStatus.Finished);
+            if (groupStageDone)
+                await fixtureService.UpdateKnockoutTeamNamesAsync();
+        }
+
         string? winnerSide = null;
         if (match.HomeScore == match.AwayScore && match.Winner != null)
             winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
