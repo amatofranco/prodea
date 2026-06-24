@@ -315,11 +315,30 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .Include(mb => mb.User)
             .ToListAsync();
 
+        var candidateIds = crackBadges.Select(mb => mb.UserId).Distinct().ToList();
+        var startingMatchDate = await db.Tournaments
+            .Where(t => t.Id == id)
+            .Select(t => t.StartingMatchDate)
+            .FirstOrDefaultAsync();
+
+        // Cantidad de exactos por jugador y fecha — solo se usa para desempatar Cracks
+        // con el mismo puntaje dentro de la misma fecha.
+        var exactCounts = await db.Predictions
+            .Where(p => candidateIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate && p.PointsEarned == 3)
+            .Select(p => new { p.UserId, p.Match.Phase, p.Match.Matchday })
+            .ToListAsync();
+        var exactCountMap = exactCounts
+            .GroupBy(p => (p.UserId, Phase: p.Phase.ToString(), Matchday: p.Matchday ?? 0))
+            .ToDictionary(g => g.Key, g => g.Count());
+
         return Ok(crackBadges
             .GroupBy(mb => new { mb.Phase, mb.Matchday })
             .Select(g =>
             {
-                var winner = g.OrderByDescending(mb => mb.PointsInMatchday).First();
+                var winner = g
+                    .OrderByDescending(mb => mb.PointsInMatchday)
+                    .ThenByDescending(mb => exactCountMap.GetValueOrDefault((mb.UserId, mb.Phase, mb.Matchday)))
+                    .First();
                 var phase = Enum.Parse<MatchPhase>(winner.Phase);
                 var label = phase switch
                 {
