@@ -248,9 +248,19 @@ AccumulativeBadge
 
 ## Migraciones de base de datos
 
-Este proyecto **no usa `Database.Migrate()`**. Los cambios de esquema se aplican mediante bloques de `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` escritos a mano en `Program.cs`, que corren automáticamente en cada arranque de la app (es decir, en cada deploy a Render). Son idempotentes y autocontenidos.
+Este proyecto usa **EF Core Migrations** (`Database.MigrateAsync()` en `Program.cs`). Los cambios de esquema se aplican automáticamente en cada arranque de la app (es decir, en cada deploy a Render).
 
-La carpeta `Migrations/` (generada con `dotnet ef migrations add`) existe solo para tooling local — no se aplica sola en producción ni en staging. Si se agrega un campo nuevo a un modelo, hay que agregar el `ALTER TABLE` correspondiente en `Program.cs` además de (opcionalmente) generar la migración EF para mantener el snapshot sincronizado.
+**Para agregar un cambio de esquema:**
+
+1. Modificar el modelo (entidad, DbContext, etc.)
+2. Generar la migración: `dotnet ef migrations add NombreDescriptivo` (desde `backend/src/Prodea.Api/`)
+3. Verificar el archivo generado en `Data/Migrations/` — revisar que el `Up()` haga lo esperado
+4. Commitear y pushear — `MigrateAsync()` aplica la migración automáticamente en el próximo deploy
+
+**NO hacer:**
+- No escribir `ALTER TABLE` manuales en `Program.cs`
+- No usar `EnsureCreatedAsync()`
+- No modificar migraciones ya aplicadas en producción — crear una nueva migración para corregir
 
 ## Notas para el desarrollo
 
