@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;
 using Prodea.Api.Models;
+using Regex = System.Text.RegularExpressions.Regex;
 
 namespace Prodea.Api.Services;
 
@@ -21,17 +22,23 @@ public class FixtureService(
 
         if (tbdMatches.Count == 0) return 0;
 
-        if (string.IsNullOrEmpty(config["FootballData:ApiKey"])) return 0;
+        // ESPN resuelve 1°/2° de grupo apenas termina el grupo, mucho más rápido que
+        // football-data.org (que a veces demora horas en publicar el cruce). Para los 3°
+        // puestos que avanzan (combinatoria entre grupos) seguimos dependiendo de
+        // football-data.org, que es quien tiene la tabla oficial de cruces de FIFA.
+        int updatedFromEspn = await TryResolveFromEspnStandingsAsync(tbdMatches);
+
+        if (string.IsNullOrEmpty(config["FootballData:ApiKey"])) return updatedFromEspn;
 
         try
         {
             var client = httpClientFactory.CreateClient("FootballData");
             var response = await client.GetAsync("/v4/competitions/WC/matches");
-            if (!response.IsSuccessStatusCode) return 0;
+            if (!response.IsSuccessStatusCode) return updatedFromEspn;
 
             var json = await response.Content.ReadAsStringAsync();
             var result = JsonSerializer.Deserialize<FdMatchesResponse>(json, JsonOptions);
-            if (result?.Matches == null) return 0;
+            if (result?.Matches == null) return updatedFromEspn;
 
             var apiById = result.Matches.ToDictionary(m => m.Id);
             int updated = 0;
@@ -56,14 +63,117 @@ public class FixtureService(
                 logger.LogInformation("Equipos knockout actualizados: {Count}", updated);
             }
 
-            return updated;
+            return updatedFromEspn + updated;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Error al sincronizar equipos knockout");
+            return updatedFromEspn;
+        }
+    }
+
+    // Slot label generado por Wc2026Bracket: "1º Grupo A", "2º Grupo J", etc.
+    // Los puestos 3º (combinatoria entre varios grupos) quedan afuera a propósito: ESPN no
+    // resuelve esa combinatoria, así que esos labels se dejan para el fallback de football-data.org.
+    private static readonly Regex SlotLabelRegex = new(@"^([12])º Grupo ([A-L])$");
+
+    private async Task<int> TryResolveFromEspnStandingsAsync(List<Match> tbdMatches)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient("Espn");
+            var response = await client.GetAsync("/apis/v2/sports/soccer/fifa.world/standings");
+            if (!response.IsSuccessStatusCode) return 0;
+
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<EspnStandingsResponse>(json, JsonOptions);
+            if (result?.Children == null) return 0;
+
+            var groupMatches = await db.Matches
+                .Where(m => m.Phase == MatchPhase.Group && m.Group != null)
+                .Select(m => new { m.Group, m.Status })
+                .ToListAsync();
+            var finishedLetters = groupMatches
+                .GroupBy(m => m.Group!)
+                .Where(g => g.All(m => m.Status == MatchStatus.Finished))
+                .Select(g => g.Key.Replace("GROUP_", "", StringComparison.OrdinalIgnoreCase))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var rankByGroup = new Dictionary<string, Dictionary<int, string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var g in result.Children)
+            {
+                if (g.Name == null || !g.Name.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)) continue;
+                var letter = g.Name["Group ".Length..].Trim();
+                if (!finishedLetters.Contains(letter)) continue;
+
+                var entries = g.Standings?.Entries;
+                if (entries == null) continue;
+
+                var ranks = new Dictionary<int, string>();
+                foreach (var e in entries)
+                {
+                    if (e.Note?.Rank is int rank && e.Team?.DisplayName is string teamName)
+                        ranks[rank] = EspnTeamMapping.Map(teamName);
+                }
+                rankByGroup[letter] = ranks;
+            }
+
+            int updated = 0;
+            foreach (var match in tbdMatches)
+            {
+                if (match.HomeTeam == "TBD" && TryResolveSlot(match.HomeTeamLabel, rankByGroup, out var homeTeam))
+                {
+                    match.HomeTeam = homeTeam;
+                    match.HomeTeamLabel = null;
+                    updated++;
+                }
+                if (match.AwayTeam == "TBD" && TryResolveSlot(match.AwayTeamLabel, rankByGroup, out var awayTeam))
+                {
+                    match.AwayTeam = awayTeam;
+                    match.AwayTeamLabel = null;
+                    updated++;
+                }
+            }
+
+            if (updated > 0)
+            {
+                await db.SaveChangesAsync();
+                logger.LogInformation("Equipos knockout actualizados vía ESPN standings: {Count}", updated);
+            }
+
+            return updated;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error al sincronizar standings vía ESPN");
             return 0;
         }
     }
+
+    private static bool TryResolveSlot(string? label, Dictionary<string, Dictionary<int, string>> rankByGroup, out string team)
+    {
+        team = "";
+        if (label == null) return false;
+
+        var regexMatch = SlotLabelRegex.Match(label);
+        if (!regexMatch.Success) return false;
+
+        var rank = int.Parse(regexMatch.Groups[1].Value);
+        var letter = regexMatch.Groups[2].Value;
+
+        if (!rankByGroup.TryGetValue(letter, out var ranks) || !ranks.TryGetValue(rank, out var teamName))
+            return false;
+
+        team = teamName;
+        return true;
+    }
+
+    private record EspnStandingsResponse(List<EspnGroupNode>? Children);
+    private record EspnGroupNode(string? Name, EspnStandingsGroup? Standings);
+    private record EspnStandingsGroup(List<EspnStandingsEntry>? Entries);
+    private record EspnStandingsEntry(EspnTeamRef? Team, EspnNote? Note);
+    private record EspnTeamRef(string? DisplayName);
+    private record EspnNote(int? Rank);
 
     public async Task<(int count, string source)> ImportAsync(bool force = false)
     {
