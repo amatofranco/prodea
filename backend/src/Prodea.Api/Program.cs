@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.IdentityModel.Tokens;
 using Prodea.Api.Data;
 using Prodea.Api.Hubs;
@@ -130,147 +132,38 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
-
-    // EnsureCreated crea el esquema completo en DBs nuevas; en DBs existentes es no-op
-    await db.Database.EnsureCreatedAsync();
-
-    // Agrega columnas nuevas si no existen (para DBs creadas antes de este cambio)
-    try
-    {
-        await db.Database.ExecuteSqlRawAsync("""
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "HomeTeamLabel" varchar(200);
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "AwayTeamLabel" varchar(200);
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "Minute" int;
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "Winner" varchar(100);
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "StartedAt" timestamptz;
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "FinishedAt" timestamptz;
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "LastUpdatedAt" timestamptz;
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "GoalsJson" text;
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "LivePhase" varchar(10);
-            ALTER TABLE "Matches" ADD COLUMN IF NOT EXISTS "Group" varchar(20);
-            ALTER TABLE "Predictions" ADD COLUMN IF NOT EXISTS "PredictedPenaltyWinner" varchar(10);
-            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "FirstName" varchar(100);
-            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "LastName" varchar(100);
-            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "IsPwa" boolean NOT NULL DEFAULT false;
-            ALTER TABLE "Tournaments" ADD COLUMN IF NOT EXISTS "StartingMatchDate" timestamptz NOT NULL DEFAULT '0001-01-01T00:00:00Z';
-            UPDATE "Tournaments" SET "StartingMatchDate" = "CreatedAt" WHERE "StartingMatchDate" = '0001-01-01T00:00:00Z';
-            CREATE TABLE IF NOT EXISTS "PredictionBackups" (
-                "Id"        serial PRIMARY KEY,
-                "CreatedAt" timestamptz NOT NULL,
-                "Count"     int         NOT NULL,
-                "JsonData"  text        NOT NULL
-            );
-            """);
-    }
-    catch { /* columnas ya existen o la tabla aún no existe — EnsureCreated se encarga */ }
-
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    // Migración BadgesByMatchday: reemplaza Date por Phase+Matchday en MatchdayBadges
-    try
+    // Bootstrap único: las DBs de prod/staging se crearon con EnsureCreatedAsync (sin historial
+    // de migraciones EF). Si la DB ya tiene esquema pero no tiene "__EFMigrationsHistory", marcamos
+    // las migraciones existentes como ya aplicadas (sin ejecutarlas) para que MigrateAsync() no
+    // intente recrear tablas que ya existen. En una DB nueva y vacía no entra a este bloque y
+    // MigrateAsync() aplica todo el historial desde cero normalmente.
+    var historyRepository = db.GetService<IHistoryRepository>();
+    if (!await historyRepository.ExistsAsync())
     {
-        await db.Database.ExecuteSqlRawAsync("""
-            DROP INDEX IF EXISTS "IX_MatchdayBadges_UserId_TournamentId_Date";
-            ALTER TABLE "MatchdayBadges" DROP COLUMN IF EXISTS "Date";
-            ALTER TABLE "MatchdayBadges" ADD COLUMN IF NOT EXISTS "Phase" text NOT NULL DEFAULT '';
-            ALTER TABLE "MatchdayBadges" ADD COLUMN IF NOT EXISTS "Matchday" int NOT NULL DEFAULT 0;
-            DELETE FROM "MatchdayBadges" WHERE "Phase" = '';
-            """);
+        var hasExistingSchema = await db.Database
+            .SqlQueryRaw<int>("SELECT 1 FROM information_schema.tables WHERE table_name = 'Users' LIMIT 1")
+            .AnyAsync();
 
-        // Índice único: crear solo si no existe
-        await db.Database.ExecuteSqlRawAsync("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM pg_indexes
-                    WHERE indexname = 'IX_MatchdayBadges_UserId_TournamentId_Phase_Matchday'
-                ) THEN
-                    CREATE UNIQUE INDEX "IX_MatchdayBadges_UserId_TournamentId_Phase_Matchday"
-                        ON "MatchdayBadges" ("UserId", "TournamentId", "Phase", "Matchday");
-                END IF;
-            END$$;
-            """);
+        if (hasExistingSchema)
+        {
+            startupLogger.LogInformation("Baseline de migraciones: marcando migraciones existentes como ya aplicadas");
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            await db.Database.ExecuteSqlRawAsync(historyRepository.GetCreateScript());
+
+            var migrationIds = db.GetService<IMigrationsAssembly>().Migrations.Keys;
+            var productVersion = ProductInfo.GetVersion();
+            foreach (var migrationId in migrationIds)
+            {
+                var insertScript = historyRepository.GetInsertScript(new HistoryRow(migrationId, productVersion));
+                await db.Database.ExecuteSqlRawAsync(insertScript);
+            }
+            await transaction.CommitAsync();
+        }
     }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Migración BadgesByMatchday: algunos pasos ya aplicados");
-    }
-    // Migración ChampionPick global: crea la tabla sin TournamentId (deploys nuevos)
-    try
-    {
-        await db.Database.ExecuteSqlRawAsync("""
-            CREATE TABLE IF NOT EXISTS "ChampionPicks" (
-                "Id"           serial PRIMARY KEY,
-                "UserId"       int NOT NULL REFERENCES "Users"("Id") ON DELETE CASCADE,
-                "CountryName"  varchar(100) NOT NULL DEFAULT '',
-                "PickedAt"     timestamptz NOT NULL DEFAULT now(),
-                "PointsEarned" int NOT NULL DEFAULT 0
-            );
-            """);
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Migración ChampionPicks (create): {Msg}", ex.Message);
-    }
-    // Migración ChampionPick: eliminar TournamentId si la tabla ya existía con esa columna.
-    // Ejecutamos cada paso por separado para que un fallo no bloquee los demás.
-    try
-    {
-        // Paso 1: deduplicar registros por UserId (conservar el de menor Id)
-        await db.Database.ExecuteSqlRawAsync("""
-            DELETE FROM "ChampionPicks"
-            WHERE "Id" NOT IN (
-                SELECT MIN("Id") FROM "ChampionPicks" GROUP BY "UserId"
-            );
-            """);
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Migración ChampionPicks (dedup): {Msg}", ex.Message);
-    }
-    try
-    {
-        // Paso 2: eliminar FK y columna TournamentId si existe
-        await db.Database.ExecuteSqlRawAsync("""
-            ALTER TABLE "ChampionPicks"
-                DROP CONSTRAINT IF EXISTS "FK_ChampionPicks_Tournaments_TournamentId";
-            """);
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Migración ChampionPicks (drop FK): {Msg}", ex.Message);
-    }
-    try
-    {
-        await db.Database.ExecuteSqlRawAsync("""
-            DROP INDEX IF EXISTS "IX_ChampionPicks_TournamentId_UserId";
-            """);
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Migración ChampionPicks (drop idx TournamentId): {Msg}", ex.Message);
-    }
-    try
-    {
-        await db.Database.ExecuteSqlRawAsync("""
-            ALTER TABLE "ChampionPicks" DROP COLUMN IF EXISTS "TournamentId";
-            """);
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Migración ChampionPicks (drop col TournamentId): {Msg}", ex.Message);
-    }
-    try
-    {
-        // Paso 3: índice único por UserId (solo si no existen duplicados)
-        await db.Database.ExecuteSqlRawAsync("""
-            CREATE UNIQUE INDEX IF NOT EXISTS "IX_ChampionPicks_UserId" ON "ChampionPicks"("UserId");
-            """);
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Migración ChampionPicks (unique idx UserId): {Msg}", ex.Message);
-    }
+
+    await db.Database.MigrateAsync();
 
     var apiKey = app.Configuration["FootballData:ApiKey"];
 
