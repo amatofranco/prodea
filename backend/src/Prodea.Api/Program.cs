@@ -134,32 +134,35 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    // Bootstrap único: las DBs de prod/staging se crearon con EnsureCreatedAsync (sin historial
-    // de migraciones EF). Si la DB ya tiene esquema pero no tiene "__EFMigrationsHistory", marcamos
-    // las migraciones existentes como ya aplicadas (sin ejecutarlas) para que MigrateAsync() no
-    // intente recrear tablas que ya existen. En una DB nueva y vacía no entra a este bloque y
-    // MigrateAsync() aplica todo el historial desde cero normalmente.
+    // Bootstrap: las DBs de prod/staging se crearon con EnsureCreatedAsync (sin historial
+    // de migraciones EF). Marcamos todas las migraciones como ya aplicadas para que
+    // MigrateAsync() no intente recrear tablas/columnas que ya existen.
     var historyRepository = db.GetService<IHistoryRepository>();
-    if (!await historyRepository.ExistsAsync())
-    {
-        var hasExistingSchema = await db.Database
-            .SqlQueryRaw<int>("SELECT 1 FROM information_schema.tables WHERE table_name = 'Users' LIMIT 1")
-            .AnyAsync();
+    var hasExistingSchema = await db.Database
+        .SqlQueryRaw<int>("SELECT 1 FROM information_schema.tables WHERE table_name = 'Users' LIMIT 1")
+        .AnyAsync();
 
-        if (hasExistingSchema)
-        {
-            startupLogger.LogInformation("Baseline de migraciones: marcando migraciones existentes como ya aplicadas");
-            await using var transaction = await db.Database.BeginTransactionAsync();
+    if (hasExistingSchema)
+    {
+        if (!await historyRepository.ExistsAsync())
             await db.Database.ExecuteSqlRawAsync(historyRepository.GetCreateScript());
 
-            var migrationIds = db.GetService<IMigrationsAssembly>().Migrations.Keys;
+        var allMigrationIds = db.GetService<IMigrationsAssembly>().Migrations.Keys;
+        var applied = await db.Database
+            .SqlQueryRaw<string>("""SELECT "MigrationId" FROM "__EFMigrationsHistory" """)
+            .ToListAsync();
+        var missing = allMigrationIds.Except(applied).ToList();
+
+        if (missing.Count > 0)
+        {
+            startupLogger.LogInformation("Baseline: marcando {Count} migraciones como ya aplicadas: {Ids}",
+                missing.Count, string.Join(", ", missing));
             var productVersion = ProductInfo.GetVersion();
-            foreach (var migrationId in migrationIds)
+            foreach (var migrationId in missing)
             {
                 var insertScript = historyRepository.GetInsertScript(new HistoryRow(migrationId, productVersion));
                 await db.Database.ExecuteSqlRawAsync(insertScript);
             }
-            await transaction.CommitAsync();
         }
     }
 
