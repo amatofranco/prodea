@@ -1,8 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.IdentityModel.Tokens;
 using Prodea.Api.Data;
 using Prodea.Api.Hubs;
@@ -133,38 +131,6 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-    // Bootstrap: las DBs de prod/staging se crearon con EnsureCreatedAsync (sin historial
-    // de migraciones EF). Marcamos todas las migraciones como ya aplicadas para que
-    // MigrateAsync() no intente recrear tablas/columnas que ya existen.
-    var historyRepository = db.GetService<IHistoryRepository>();
-    var hasExistingSchema = await db.Database
-        .SqlQueryRaw<int>("SELECT 1 FROM information_schema.tables WHERE table_name = 'Users' LIMIT 1")
-        .AnyAsync();
-
-    if (hasExistingSchema)
-    {
-        if (!await historyRepository.ExistsAsync())
-            await db.Database.ExecuteSqlRawAsync(historyRepository.GetCreateScript());
-
-        var allMigrationIds = db.GetService<IMigrationsAssembly>().Migrations.Keys;
-        var applied = await db.Database
-            .SqlQueryRaw<string>("""SELECT "MigrationId" FROM "__EFMigrationsHistory" """)
-            .ToListAsync();
-        var missing = allMigrationIds.Except(applied).ToList();
-
-        if (missing.Count > 0)
-        {
-            startupLogger.LogInformation("Baseline: marcando {Count} migraciones como ya aplicadas: {Ids}",
-                missing.Count, string.Join(", ", missing));
-            var productVersion = ProductInfo.GetVersion();
-            foreach (var migrationId in missing)
-            {
-                var insertScript = historyRepository.GetInsertScript(new HistoryRow(migrationId, productVersion));
-                await db.Database.ExecuteSqlRawAsync(insertScript);
-            }
-        }
-    }
 
     await db.Database.MigrateAsync();
 
