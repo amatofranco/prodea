@@ -22,13 +22,13 @@ public class FixtureService(
 
         if (tbdMatches.Count == 0) return 0;
 
-        // ESPN resuelve 1°/2° de grupo apenas termina el grupo, mucho más rápido que
-        // football-data.org (que a veces demora horas en publicar el cruce). Para los 3°
-        // puestos que avanzan (combinatoria entre grupos) seguimos dependiendo de
-        // football-data.org, que es quien tiene la tabla oficial de cruces de FIFA.
+        // ESPN standings resuelve 1°/2° de grupo apenas termina cada grupo
         int updatedFromEspn = await TryResolveFromEspnStandingsAsync(tbdMatches);
 
-        if (string.IsNullOrEmpty(config["FootballData:ApiKey"])) return updatedFromEspn;
+        // ESPN scoreboard resuelve 3° puestos y cualquier equipo que ESPN ya haya colocado
+        int updatedFromScoreboard = await TryResolveFromEspnScoreboardAsync(tbdMatches);
+
+        if (string.IsNullOrEmpty(config["FootballData:ApiKey"])) return updatedFromEspn + updatedFromScoreboard;
 
         try
         {
@@ -63,12 +63,12 @@ public class FixtureService(
                 logger.LogInformation("Equipos knockout actualizados: {Count}", updated);
             }
 
-            return updatedFromEspn + updated;
+            return updatedFromEspn + updatedFromScoreboard + updated;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Error al sincronizar equipos knockout");
-            return updatedFromEspn;
+            return updatedFromEspn + updatedFromScoreboard;
         }
     }
 
@@ -166,6 +166,92 @@ public class FixtureService(
 
         team = teamName;
         return true;
+    }
+
+    private async Task<int> TryResolveFromEspnScoreboardAsync(List<Match> tbdMatches)
+    {
+        var stillTbd = tbdMatches
+            .Where(m => m.ExternalId.HasValue && (m.HomeTeam == "TBD" || m.AwayTeam == "TBD"))
+            .ToList();
+
+        if (stillTbd.Count == 0) return 0;
+
+        try
+        {
+            var byKickoff = new Dictionary<string, Match>();
+            foreach (var m in stillTbd)
+            {
+                var key = m.MatchDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
+                byKickoff.TryAdd(key, m);
+            }
+
+            var dates = stillTbd
+                .Select(m => m.MatchDate.ToUniversalTime().ToString("yyyyMMdd"))
+                .Distinct()
+                .ToList();
+
+            var client = httpClientFactory.CreateClient("Espn");
+            int updated = 0;
+
+            foreach (var date in dates)
+            {
+                var response = await client.GetAsync(
+                    $"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={date}");
+                if (!response.IsSuccessStatusCode) continue;
+
+                var json = await response.Content.ReadAsStringAsync();
+                var scoreboard = JsonSerializer.Deserialize<EspnScoreboardResponse>(json, JsonOptions);
+                if (scoreboard?.Events == null) continue;
+
+                foreach (var ev in scoreboard.Events)
+                {
+                    if (ev.Date == null || ev.Competitions is not { Count: > 0 }) continue;
+                    if (!DateTime.TryParse(ev.Date, null,
+                        System.Globalization.DateTimeStyles.RoundtripKind, out var evDate))
+                        continue;
+
+                    var evKey = evDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
+                    if (!byKickoff.TryGetValue(evKey, out var match)) continue;
+
+                    var comp = ev.Competitions[0];
+                    if (comp.Competitors is not { Count: >= 2 }) continue;
+
+                    var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+                    var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
+
+                    if (match.HomeTeam == "TBD"
+                        && homeComp?.Team?.DisplayName != null
+                        && EspnTeamMapping.EspnToSpanish.ContainsKey(homeComp.Team.DisplayName))
+                    {
+                        match.HomeTeam = EspnTeamMapping.Map(homeComp.Team.DisplayName);
+                        match.HomeTeamLabel = null;
+                        updated++;
+                    }
+
+                    if (match.AwayTeam == "TBD"
+                        && awayComp?.Team?.DisplayName != null
+                        && EspnTeamMapping.EspnToSpanish.ContainsKey(awayComp.Team.DisplayName))
+                    {
+                        match.AwayTeam = EspnTeamMapping.Map(awayComp.Team.DisplayName);
+                        match.AwayTeamLabel = null;
+                        updated++;
+                    }
+                }
+            }
+
+            if (updated > 0)
+            {
+                await db.SaveChangesAsync();
+                logger.LogInformation("Equipos knockout actualizados vía ESPN scoreboard: {Count}", updated);
+            }
+
+            return updated;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error al resolver equipos vía ESPN scoreboard");
+            return 0;
+        }
     }
 
     private record EspnStandingsResponse(List<EspnGroupNode>? Children);
