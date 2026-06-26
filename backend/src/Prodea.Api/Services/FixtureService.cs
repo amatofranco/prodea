@@ -274,26 +274,13 @@ public class FixtureService(
         var stages = result.Matches.Select(m => $"{m.Stage}(group={m.Group})").Distinct();
         logger.LogInformation("Stages API: {Stages}", string.Join(", ", stages));
 
-        // Log estructura completa de equipos en partidos knockout para ver qué devuelve la API
-        var knockoutSample = result.Matches
-            .Where(m => m.Stage != "GROUP_STAGE" && m.Group == null)
-            .Take(3)
-            .Select(m =>
-                $"[{m.Stage}] " +
-                $"home=(name={m.HomeTeam?.Name ?? "NULL"} short={m.HomeTeam?.ShortName ?? "NULL"} tla={m.HomeTeam?.Tla ?? "NULL"}) " +
-                $"away=(name={m.AwayTeam?.Name ?? "NULL"} short={m.AwayTeam?.ShortName ?? "NULL"} tla={m.AwayTeam?.Tla ?? "NULL"})");
-        logger.LogInformation("Knockout teams: {Sample}", string.Join(" || ", knockoutSample));
-
         var allMatches = result.Matches.OrderBy(m => m.UtcDate).ToList();
 
-        // Identifica partidos de fase de grupos: stage GROUP_STAGE o tiene campo group
         var groupApiMatches = allMatches
             .Where(m => m.Stage == "GROUP_STAGE" || m.Group != null)
             .ToList();
         var knockoutApiMatches = allMatches.Except(groupApiMatches).ToList();
 
-        // Calcula matchday por posición dentro de cada grupo (si hay campo group)
-        // Fallback: divide los 72 partidos de grupos en tercios por fecha (24 cada uno)
         Dictionary<int, int> groupMatchdays;
         if (groupApiMatches.Any(m => m.Group != null))
         {
@@ -309,7 +296,6 @@ public class FixtureService(
         }
         else
         {
-            // Fallback: divide todos los partidos de grupos en 3 rondas iguales por fecha
             var sorted = groupApiMatches.OrderBy(m => m.UtcDate).ToList();
             int perRound = Math.Max(1, sorted.Count / 3);
             groupMatchdays = sorted
@@ -317,15 +303,23 @@ public class FixtureService(
                 .ToDictionary(x => x.Id, x => x.Matchday);
         }
 
-        // Determina overrides de slot para R32 usando los equipos que la API ya asignó
-        var r32SlotOverrides = BuildR32SlotOverrides(knockoutApiMatches, groupApiMatches);
-        if (r32SlotOverrides.Count > 0)
-            logger.LogInformation("R32 slot overrides from API team data: {Overrides}",
-                string.Join(", ", r32SlotOverrides.Select(kv => $"{kv.Key}→{kv.Value}")));
+        // R32: bracket desde ESPN (más confiable que football-data.org para los cruces)
+        var r32ApiMatches = knockoutApiMatches
+            .Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32)
+            .ToList();
+        var espnBracket = await FetchEspnR32BracketAsync(r32ApiMatches);
 
-        var knockoutMatchNumbers = Wc2026Bracket.BuildMatchNumberMap(
-            knockoutApiMatches.Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)),
-            r32SlotOverrides);
+        // Match numbers: R32 secuencial por fecha (73-88), otras fases vía bracket estático
+        var knockoutMatchNumbers = new Dictionary<int, int>();
+        int r32Num = 73;
+        foreach (var m in r32ApiMatches.OrderBy(m => m.UtcDate))
+            knockoutMatchNumbers[m.Id] = r32Num++;
+        var nonR32Map = Wc2026Bracket.BuildMatchNumberMap(
+            knockoutApiMatches
+                .Where(m => MapKnockoutPhase(m.Stage) != MatchPhase.R32)
+                .Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)));
+        foreach (var kv in nonR32Map)
+            knockoutMatchNumbers[kv.Key] = kv.Value;
 
         var matches = new List<Match>();
         int localId = 1;
@@ -338,14 +332,29 @@ public class FixtureService(
                 ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : null)
                 : null;
 
+            string homeTeam, awayTeam;
             string? homeLabel, awayLabel;
+
             if (isGroup)
             {
+                homeTeam = TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
+                awayTeam = TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
                 homeLabel = TranslateLabel(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
                 awayLabel = TranslateLabel(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
             }
+            else if (phase == MatchPhase.R32 && espnBracket.TryGetValue(m.Id, out var espn))
+            {
+                var fdHome = m.HomeTeam?.Name ?? m.HomeTeam?.ShortName;
+                var fdAway = m.AwayTeam?.Name ?? m.AwayTeam?.ShortName;
+                homeTeam = fdHome != null ? TranslateTeam(fdHome) : espn.HomeTeam;
+                awayTeam = fdAway != null ? TranslateTeam(fdAway) : espn.AwayTeam;
+                homeLabel = espn.HomeLabel;
+                awayLabel = espn.AwayLabel;
+            }
             else
             {
+                homeTeam = TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
+                awayTeam = TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
                 var matchNum = knockoutMatchNumbers.TryGetValue(m.Id, out var mn) ? mn : 0;
                 (homeLabel, awayLabel) = Wc2026Bracket.GetSlotLabels(matchNum);
             }
@@ -354,8 +363,8 @@ public class FixtureService(
             {
                 Id = localId++,
                 ExternalId = m.Id,
-                HomeTeam = TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
-                AwayTeam = TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
+                HomeTeam = homeTeam,
+                AwayTeam = awayTeam,
                 HomeTeamLabel = homeLabel,
                 AwayTeamLabel = awayLabel,
                 MatchDate = m.UtcDate,
@@ -506,100 +515,105 @@ public class FixtureService(
         ["New Zealand"]                  = "Nueva Zelanda",
     };
 
-    private Dictionary<int, string> BuildR32SlotOverrides(List<FdMatch> knockoutMatches, List<FdMatch> groupMatches)
+    private async Task<Dictionary<int, EspnR32Data>> FetchEspnR32BracketAsync(List<FdMatch> r32Matches)
     {
-        var overrides = new Dictionary<int, string>();
+        var result = new Dictionary<int, EspnR32Data>();
+        if (r32Matches.Count == 0) return result;
 
-        var teamGroup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var gm in groupMatches)
+        var byKickoff = new Dictionary<string, int>();
+        foreach (var m in r32Matches)
         {
-            if (gm.Group == null) continue;
-            var letter = gm.Group.Replace("GROUP_", "");
-            if (gm.HomeTeam?.Name != null) teamGroup.TryAdd(gm.HomeTeam.Name, letter);
-            if (gm.AwayTeam?.Name != null) teamGroup.TryAdd(gm.AwayTeam.Name, letter);
+            var key = m.UtcDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
+            byKickoff.TryAdd(key, m.Id);
         }
 
-        var groupPositions = ComputeGroupPositions(groupMatches);
+        var dates = r32Matches
+            .Select(m => m.UtcDate.ToUniversalTime().ToString("yyyyMMdd"))
+            .Distinct()
+            .ToList();
 
-        foreach (var m in knockoutMatches.Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32))
+        var client = httpClientFactory.CreateClient("Espn");
+
+        foreach (var date in dates)
         {
-            var homeName = m.HomeTeam?.Name ?? m.HomeTeam?.ShortName;
-            if (homeName != null && teamGroup.TryGetValue(homeName, out var hGroup))
+            try
             {
-                var pos = groupPositions.GetValueOrDefault(homeName, 0);
-                if (pos is 1 or 2)
+                var response = await client.GetAsync(
+                    $"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={date}");
+                if (!response.IsSuccessStatusCode) continue;
+
+                var json = await response.Content.ReadAsStringAsync();
+                var scoreboard = JsonSerializer.Deserialize<EspnScoreboardResponse>(json, JsonOptions);
+                if (scoreboard?.Events == null) continue;
+
+                foreach (var ev in scoreboard.Events)
                 {
-                    overrides[m.Id] = $"{pos}º Grupo {hGroup}";
-                    continue;
+                    if (ev.Date == null || ev.Competitions is not { Count: > 0 }) continue;
+                    if (!DateTime.TryParse(ev.Date, null,
+                        System.Globalization.DateTimeStyles.RoundtripKind, out var evDate))
+                        continue;
+
+                    var evKey = evDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
+                    if (!byKickoff.TryGetValue(evKey, out var externalId)) continue;
+
+                    var comp = ev.Competitions[0];
+                    if (comp.Competitors is not { Count: >= 2 }) continue;
+
+                    var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+                    var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
+
+                    var (homeTeam, homeLabel) = ParseEspnBracketTeam(homeComp?.Team?.DisplayName);
+                    var (awayTeam, awayLabel) = ParseEspnBracketTeam(awayComp?.Team?.DisplayName);
+
+                    result[externalId] = new EspnR32Data(homeTeam, awayTeam, homeLabel, awayLabel);
                 }
             }
-
-            var awayName = m.AwayTeam?.Name ?? m.AwayTeam?.ShortName;
-            if (awayName != null && teamGroup.TryGetValue(awayName, out var aGroup))
+            catch (Exception ex)
             {
-                var pos = groupPositions.GetValueOrDefault(awayName, 0);
-                if (pos is 1 or 2)
-                    overrides[m.Id] = $"{pos}º Grupo {aGroup}";
+                logger.LogWarning(ex, "Error al obtener bracket ESPN para fecha {Date}", date);
             }
         }
 
-        return overrides;
+        logger.LogInformation("R32 bracket desde ESPN: {Count}/{Total} partidos mapeados",
+            result.Count, r32Matches.Count);
+        return result;
     }
 
-    private static Dictionary<string, int> ComputeGroupPositions(List<FdMatch> groupMatches)
+    private static (string Team, string? Label) ParseEspnBracketTeam(string? displayName)
     {
-        var positions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrEmpty(displayName)) return ("TBD", null);
 
-        foreach (var group in groupMatches
-            .Where(m => m.Group != null && m.Score?.FullTime?.Home != null && m.Score?.FullTime?.Away != null)
-            .GroupBy(m => m.Group!))
+        if (displayName.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)
+            && displayName.EndsWith(" Winner", StringComparison.OrdinalIgnoreCase))
         {
-            var stats = new Dictionary<string, (int Pts, int GD, int GF)>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var m in group)
-            {
-                var home = m.HomeTeam?.Name;
-                var away = m.AwayTeam?.Name;
-                if (home == null || away == null) continue;
-
-                if (!stats.ContainsKey(home)) stats[home] = (0, 0, 0);
-                if (!stats.ContainsKey(away)) stats[away] = (0, 0, 0);
-
-                var hs = m.Score!.FullTime!.Home!.Value;
-                var ascore = m.Score!.FullTime!.Away!.Value;
-                var h = stats[home];
-                var a = stats[away];
-
-                if (hs > ascore)
-                {
-                    stats[home] = (h.Pts + 3, h.GD + hs - ascore, h.GF + hs);
-                    stats[away] = (a.Pts,     a.GD + ascore - hs,  a.GF + ascore);
-                }
-                else if (ascore > hs)
-                {
-                    stats[home] = (h.Pts,     h.GD + hs - ascore, h.GF + hs);
-                    stats[away] = (a.Pts + 3, a.GD + ascore - hs,  a.GF + ascore);
-                }
-                else
-                {
-                    stats[home] = (h.Pts + 1, h.GD, h.GF + hs);
-                    stats[away] = (a.Pts + 1, a.GD, a.GF + ascore);
-                }
-            }
-
-            var ranked = stats
-                .OrderByDescending(t => t.Value.Pts)
-                .ThenByDescending(t => t.Value.GD)
-                .ThenByDescending(t => t.Value.GF)
-                .Select(t => t.Key)
-                .ToList();
-
-            for (int i = 0; i < ranked.Count; i++)
-                positions[ranked[i]] = i + 1;
+            var letter = displayName["Group ".Length..^" Winner".Length].Trim();
+            return ("TBD", $"1º Grupo {letter}");
         }
 
-        return positions;
+        if (displayName.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)
+            && displayName.EndsWith(" 2nd Place", StringComparison.OrdinalIgnoreCase))
+        {
+            var letter = displayName["Group ".Length..^" 2nd Place".Length].Trim();
+            return ("TBD", $"2º Grupo {letter}");
+        }
+
+        const string thirdPlace = "Third Place Group ";
+        if (displayName.StartsWith(thirdPlace, StringComparison.OrdinalIgnoreCase))
+        {
+            var groups = displayName[thirdPlace.Length..].Trim();
+            return ("TBD", $"3º Grupos {groups}");
+        }
+
+        var translated = EspnTeamMapping.Map(displayName);
+        return (translated, null);
     }
+
+    private record EspnR32Data(string HomeTeam, string AwayTeam, string? HomeLabel, string? AwayLabel);
+    private record EspnScoreboardResponse(List<EspnScoreboardEvent>? Events);
+    private record EspnScoreboardEvent(string? Date, List<EspnScoreboardCompetition>? Competitions);
+    private record EspnScoreboardCompetition(List<EspnScoreboardCompetitor>? Competitors);
+    private record EspnScoreboardCompetitor(string? HomeAway, EspnScoreboardTeam? Team);
+    private record EspnScoreboardTeam(string? DisplayName);
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 

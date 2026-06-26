@@ -50,12 +50,9 @@ public static class Wc2026Bracket
         [104] = ("Gan. P101",  "Gan. P102"),
     };
 
-    // Orden cronológico real de los números de partido FIFA dentro de cada fase. No siempre
-    // coincide con el orden numérico (ej. en Dieciseisavos el 76 se juega antes que el 74) —
-    // por eso no se puede inferir el número de partido como "PhaseStart + posición por fecha".
     private static readonly Dictionary<MatchPhase, int[]> ChronologicalOrder = new()
     {
-        [MatchPhase.R32]        = [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87],
+        [MatchPhase.R32]        = [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88],
         [MatchPhase.R16]        = [90, 89, 91, 92, 93, 94, 95, 96],
         [MatchPhase.QF]         = [97, 98, 99, 100],
         [MatchPhase.SF]         = [101, 102],
@@ -63,69 +60,22 @@ public static class Wc2026Bracket
         [MatchPhase.Final]      = [104],
     };
 
-    /// <summary>
-    /// Construye un mapa ExternalId → número de partido FIFA.
-    /// Para R32, si hay overrides (derivados de los equipos que la API ya asignó y las
-    /// posiciones de grupo calculadas), se usan para determinar el slot correcto en el
-    /// bracket. Los partidos sin override se asignan por orden cronológico a los slots
-    /// restantes. Para las demás fases siempre se usa el orden cronológico.
-    /// </summary>
     public static Dictionary<int, int> BuildMatchNumberMap(
-        IEnumerable<(int ExternalId, MatchPhase Phase, DateTime UtcDate)> knockoutMatches,
-        Dictionary<int, string>? r32SlotOverrides = null)
+        IEnumerable<(int ExternalId, MatchPhase Phase, DateTime UtcDate)> knockoutMatches)
     {
         var result = new Dictionary<int, int>();
-
         foreach (var phaseGroup in knockoutMatches.GroupBy(m => m.Phase))
         {
             var order = ChronologicalOrder.GetValueOrDefault(phaseGroup.Key, []);
             if (order.Length == 0) continue;
 
-            if (phaseGroup.Key == MatchPhase.R32 && r32SlotOverrides is { Count: > 0 })
-            {
-                var usedMatchNumbers = new HashSet<int>();
-                var unresolved = new List<(int ExternalId, DateTime UtcDate)>();
-
-                foreach (var m in phaseGroup)
-                {
-                    if (r32SlotOverrides.TryGetValue(m.ExternalId, out var label))
-                    {
-                        var matchNum = FindMatchNumberByLabel(label);
-                        if (matchNum.HasValue && usedMatchNumbers.Add(matchNum.Value))
-                        {
-                            result[m.ExternalId] = matchNum.Value;
-                            continue;
-                        }
-                    }
-                    unresolved.Add((m.ExternalId, m.UtcDate));
-                }
-
-                var remainingSlots = order.Where(n => !usedMatchNumbers.Contains(n)).ToArray();
-                var sorted = unresolved.OrderBy(m => m.UtcDate).ToArray();
-                for (int i = 0; i < sorted.Length && i < remainingSlots.Length; i++)
-                    result[sorted[i].ExternalId] = remainingSlots[i];
-            }
-            else
-            {
-                var sorted = phaseGroup.OrderBy(m => m.UtcDate).ToArray();
-                for (int i = 0; i < sorted.Length && i < order.Length; i++)
-                    result[sorted[i].ExternalId] = order[i];
-            }
+            var sorted = phaseGroup.OrderBy(m => m.UtcDate).ToArray();
+            for (int i = 0; i < sorted.Length && i < order.Length; i++)
+                result[sorted[i].ExternalId] = order[i];
         }
-
         return result;
     }
 
     public static (string? Home, string? Away) GetSlotLabels(int matchNumber) =>
         Slots.TryGetValue(matchNumber, out var slot) ? slot : (null, null);
-
-    private static int? FindMatchNumberByLabel(string label)
-    {
-        foreach (var (num, (home, away)) in Slots)
-        {
-            if (num >= 73 && num <= 88 && (home == label || away == label))
-                return num;
-        }
-        return null;
-    }
 }
