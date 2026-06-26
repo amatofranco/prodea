@@ -70,10 +70,15 @@ public static class DatabaseExtensions
                      m.HomeTeam == "TBD" &&
                      m.HomeTeamLabel == null);
 
-            badFixture = badMatchdays || noKnockouts || tooManyGroups || knockoutsNeedLabels;
+            bool r32Duplicates = await db.Matches
+                .Where(m => m.Phase == Prodea.Api.Models.MatchPhase.R32 && m.HomeTeam != "TBD")
+                .GroupBy(m => m.HomeTeam)
+                .AnyAsync(g => g.Count() > 1);
+
+            badFixture = badMatchdays || noKnockouts || tooManyGroups || knockoutsNeedLabels || r32Duplicates;
             logger.LogInformation(
-                "Check fixture: groupMatchdays={MD} noKnockouts={NK} groupCount={GC} tooManyGroups={TMG} knockoutsNeedLabels={KNL} → reimport={RI}",
-                groupMatchdays, noKnockouts, groupCount, tooManyGroups, knockoutsNeedLabels, badFixture);
+                "Check fixture: groupMatchdays={MD} noKnockouts={NK} groupCount={GC} tooManyGroups={TMG} knockoutsNeedLabels={KNL} r32Dup={DUP} → reimport={RI}",
+                groupMatchdays, noKnockouts, groupCount, tooManyGroups, knockoutsNeedLabels, r32Duplicates, badFixture);
         }
 
         bool forceReimport = app.Configuration.GetValue<bool>("ForceFixtureReimport");

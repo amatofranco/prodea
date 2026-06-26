@@ -64,23 +64,68 @@ public static class Wc2026Bracket
     };
 
     /// <summary>
-    /// Construye un mapa ExternalId → número de partido FIFA, usando el orden cronológico real
-    /// (por fecha) de cada fase para ubicar cada partido en la posición que le corresponde.
+    /// Construye un mapa ExternalId → número de partido FIFA.
+    /// Para R32, si hay overrides (derivados de los equipos que la API ya asignó y las
+    /// posiciones de grupo calculadas), se usan para determinar el slot correcto en el
+    /// bracket. Los partidos sin override se asignan por orden cronológico a los slots
+    /// restantes. Para las demás fases siempre se usa el orden cronológico.
     /// </summary>
     public static Dictionary<int, int> BuildMatchNumberMap(
-        IEnumerable<(int ExternalId, MatchPhase Phase, DateTime UtcDate)> knockoutMatches)
+        IEnumerable<(int ExternalId, MatchPhase Phase, DateTime UtcDate)> knockoutMatches,
+        Dictionary<int, string>? r32SlotOverrides = null)
     {
-        return knockoutMatches
-            .GroupBy(m => m.Phase)
-            .SelectMany(g =>
+        var result = new Dictionary<int, int>();
+
+        foreach (var phaseGroup in knockoutMatches.GroupBy(m => m.Phase))
+        {
+            var order = ChronologicalOrder.GetValueOrDefault(phaseGroup.Key, []);
+            if (order.Length == 0) continue;
+
+            if (phaseGroup.Key == MatchPhase.R32 && r32SlotOverrides is { Count: > 0 })
             {
-                var order = ChronologicalOrder.GetValueOrDefault(g.Key, []);
-                return g.OrderBy(m => m.UtcDate)
-                        .Select((m, i) => (m.ExternalId, MatchNumber: i < order.Length ? order[i] : 0));
-            })
-            .ToDictionary(x => x.ExternalId, x => x.MatchNumber);
+                var usedMatchNumbers = new HashSet<int>();
+                var unresolved = new List<(int ExternalId, DateTime UtcDate)>();
+
+                foreach (var m in phaseGroup)
+                {
+                    if (r32SlotOverrides.TryGetValue(m.ExternalId, out var label))
+                    {
+                        var matchNum = FindMatchNumberByLabel(label);
+                        if (matchNum.HasValue && usedMatchNumbers.Add(matchNum.Value))
+                        {
+                            result[m.ExternalId] = matchNum.Value;
+                            continue;
+                        }
+                    }
+                    unresolved.Add((m.ExternalId, m.UtcDate));
+                }
+
+                var remainingSlots = order.Where(n => !usedMatchNumbers.Contains(n)).ToArray();
+                var sorted = unresolved.OrderBy(m => m.UtcDate).ToArray();
+                for (int i = 0; i < sorted.Length && i < remainingSlots.Length; i++)
+                    result[sorted[i].ExternalId] = remainingSlots[i];
+            }
+            else
+            {
+                var sorted = phaseGroup.OrderBy(m => m.UtcDate).ToArray();
+                for (int i = 0; i < sorted.Length && i < order.Length; i++)
+                    result[sorted[i].ExternalId] = order[i];
+            }
+        }
+
+        return result;
     }
 
     public static (string? Home, string? Away) GetSlotLabels(int matchNumber) =>
         Slots.TryGetValue(matchNumber, out var slot) ? slot : (null, null);
+
+    private static int? FindMatchNumberByLabel(string label)
+    {
+        foreach (var (num, (home, away)) in Slots)
+        {
+            if (num >= 73 && num <= 88 && (home == label || away == label))
+                return num;
+        }
+        return null;
+    }
 }

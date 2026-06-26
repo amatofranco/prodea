@@ -220,8 +220,14 @@ public class FixtureService(
             {
                 if (m.ExternalId.HasValue && existingByExtId.TryGetValue(m.ExternalId.Value, out var existing))
                 {
-                    existing.HomeTeam      = m.HomeTeam;
-                    existing.AwayTeam      = m.AwayTeam;
+                    bool homeLabelChanged = existing.HomeTeamLabel != m.HomeTeamLabel;
+                    bool awayLabelChanged = existing.AwayTeamLabel != m.AwayTeamLabel;
+
+                    if (m.HomeTeam != "TBD" || homeLabelChanged)
+                        existing.HomeTeam = m.HomeTeam;
+                    if (m.AwayTeam != "TBD" || awayLabelChanged)
+                        existing.AwayTeam = m.AwayTeam;
+
                     existing.HomeTeamLabel = m.HomeTeamLabel;
                     existing.AwayTeamLabel = m.AwayTeamLabel;
                     existing.MatchDate     = m.MatchDate;
@@ -311,9 +317,15 @@ public class FixtureService(
                 .ToDictionary(x => x.Id, x => x.Matchday);
         }
 
-        // Mapa de número de partido FIFA para knockout (ordenados por fecha dentro de cada fase)
+        // Determina overrides de slot para R32 usando los equipos que la API ya asignó
+        var r32SlotOverrides = BuildR32SlotOverrides(knockoutApiMatches, groupApiMatches);
+        if (r32SlotOverrides.Count > 0)
+            logger.LogInformation("R32 slot overrides from API team data: {Overrides}",
+                string.Join(", ", r32SlotOverrides.Select(kv => $"{kv.Key}→{kv.Value}")));
+
         var knockoutMatchNumbers = Wc2026Bracket.BuildMatchNumberMap(
-            knockoutApiMatches.Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)));
+            knockoutApiMatches.Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)),
+            r32SlotOverrides);
 
         var matches = new List<Match>();
         int localId = 1;
@@ -379,11 +391,11 @@ public class FixtureService(
 
         const string winner = "Winner Group ";
         if (name.StartsWith(winner, StringComparison.OrdinalIgnoreCase))
-            return $"1° Grupo {name[winner.Length..].Trim()}";
+            return $"1º Grupo {name[winner.Length..].Trim()}";
 
         const string runnerUp = "Runner-up Group ";
         if (name.StartsWith(runnerUp, StringComparison.OrdinalIgnoreCase))
-            return $"2° Grupo {name[runnerUp.Length..].Trim()}";
+            return $"2º Grupo {name[runnerUp.Length..].Trim()}";
 
         const string winnerMatch = "Winner Match ";
         if (name.StartsWith(winnerMatch, StringComparison.OrdinalIgnoreCase))
@@ -493,6 +505,101 @@ public class FixtureService(
         // OFC
         ["New Zealand"]                  = "Nueva Zelanda",
     };
+
+    private Dictionary<int, string> BuildR32SlotOverrides(List<FdMatch> knockoutMatches, List<FdMatch> groupMatches)
+    {
+        var overrides = new Dictionary<int, string>();
+
+        var teamGroup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var gm in groupMatches)
+        {
+            if (gm.Group == null) continue;
+            var letter = gm.Group.Replace("GROUP_", "");
+            if (gm.HomeTeam?.Name != null) teamGroup.TryAdd(gm.HomeTeam.Name, letter);
+            if (gm.AwayTeam?.Name != null) teamGroup.TryAdd(gm.AwayTeam.Name, letter);
+        }
+
+        var groupPositions = ComputeGroupPositions(groupMatches);
+
+        foreach (var m in knockoutMatches.Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32))
+        {
+            var homeName = m.HomeTeam?.Name ?? m.HomeTeam?.ShortName;
+            if (homeName != null && teamGroup.TryGetValue(homeName, out var hGroup))
+            {
+                var pos = groupPositions.GetValueOrDefault(homeName, 0);
+                if (pos is 1 or 2)
+                {
+                    overrides[m.Id] = $"{pos}º Grupo {hGroup}";
+                    continue;
+                }
+            }
+
+            var awayName = m.AwayTeam?.Name ?? m.AwayTeam?.ShortName;
+            if (awayName != null && teamGroup.TryGetValue(awayName, out var aGroup))
+            {
+                var pos = groupPositions.GetValueOrDefault(awayName, 0);
+                if (pos is 1 or 2)
+                    overrides[m.Id] = $"{pos}º Grupo {aGroup}";
+            }
+        }
+
+        return overrides;
+    }
+
+    private static Dictionary<string, int> ComputeGroupPositions(List<FdMatch> groupMatches)
+    {
+        var positions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in groupMatches
+            .Where(m => m.Group != null && m.Score?.FullTime?.Home != null && m.Score?.FullTime?.Away != null)
+            .GroupBy(m => m.Group!))
+        {
+            var stats = new Dictionary<string, (int Pts, int GD, int GF)>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var m in group)
+            {
+                var home = m.HomeTeam?.Name;
+                var away = m.AwayTeam?.Name;
+                if (home == null || away == null) continue;
+
+                if (!stats.ContainsKey(home)) stats[home] = (0, 0, 0);
+                if (!stats.ContainsKey(away)) stats[away] = (0, 0, 0);
+
+                var hs = m.Score!.FullTime!.Home!.Value;
+                var ascore = m.Score!.FullTime!.Away!.Value;
+                var h = stats[home];
+                var a = stats[away];
+
+                if (hs > ascore)
+                {
+                    stats[home] = (h.Pts + 3, h.GD + hs - ascore, h.GF + hs);
+                    stats[away] = (a.Pts,     a.GD + ascore - hs,  a.GF + ascore);
+                }
+                else if (ascore > hs)
+                {
+                    stats[home] = (h.Pts,     h.GD + hs - ascore, h.GF + hs);
+                    stats[away] = (a.Pts + 3, a.GD + ascore - hs,  a.GF + ascore);
+                }
+                else
+                {
+                    stats[home] = (h.Pts + 1, h.GD, h.GF + hs);
+                    stats[away] = (a.Pts + 1, a.GD, a.GF + ascore);
+                }
+            }
+
+            var ranked = stats
+                .OrderByDescending(t => t.Value.Pts)
+                .ThenByDescending(t => t.Value.GD)
+                .ThenByDescending(t => t.Value.GF)
+                .Select(t => t.Key)
+                .ToList();
+
+            for (int i = 0; i < ranked.Count; i++)
+                positions[ranked[i]] = i + 1;
+        }
+
+        return positions;
+    }
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
