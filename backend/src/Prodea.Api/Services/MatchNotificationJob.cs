@@ -86,13 +86,14 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
 
             if (dayMatches.Count == 0 || !dayMatches.All(m => m.Status == MatchStatus.Finished)) continue;
 
-            var lastMatch = dayMatches.Last();
-            if (lastMatch.ResultNotificationSent) continue;
+            if (dayMatches.Any(m => m.ResultNotificationSent)) continue;
 
+            var lastMatch = dayMatches.Last();
             var title = "🏁 Se terminaron los partidos de hoy";
             var body = $"Último resultado: {lastMatch.HomeTeam} {lastMatch.HomeScore}-{lastMatch.AwayScore} {lastMatch.AwayTeam}. Mirá cómo quedó la tabla.";
             await SendToAllAsync(db, pushService, title, body, "/torneos");
-            lastMatch.ResultNotificationSent = true;
+            foreach (var dm in dayMatches)
+                dm.ResultNotificationSent = true;
             changed = true;
             logger.LogInformation("Notificación de cierre del día {Day} enviada", argentinaDay.ToString("yyyy-MM-dd"));
         }
