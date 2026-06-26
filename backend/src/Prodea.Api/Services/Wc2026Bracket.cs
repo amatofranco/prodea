@@ -78,4 +78,10 @@ public static class Wc2026Bracket
 
     public static (string? Home, string? Away) GetSlotLabels(int matchNumber) =>
         Slots.TryGetValue(matchNumber, out var slot) ? slot : (null, null);
+
+    public static int? MatchNumberByDatePosition(MatchPhase phase, int zeroBasedPosition)
+    {
+        if (!ChronologicalOrder.TryGetValue(phase, out var order)) return null;
+        return zeroBasedPosition >= 0 && zeroBasedPosition < order.Length ? order[zeroBasedPosition] : null;
+    }
 }

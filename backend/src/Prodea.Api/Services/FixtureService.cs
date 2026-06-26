@@ -389,16 +389,13 @@ public class FixtureService(
                 .ToDictionary(x => x.Id, x => x.Matchday);
         }
 
-        // R32: bracket desde ESPN (más confiable que football-data.org para los cruces)
-        var r32ApiMatches = knockoutApiMatches
-            .Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32)
-            .ToList();
-        var espnBracket = await FetchEspnR32BracketAsync(r32ApiMatches);
+        // Bracket desde ESPN para todas las fases knockout
+        var espnBracket = await FetchEspnKnockoutBracketAsync(knockoutApiMatches);
 
         // Match numbers: R32 secuencial por fecha (73-88), otras fases vía bracket estático
         var knockoutMatchNumbers = new Dictionary<int, int>();
         int r32Num = 73;
-        foreach (var m in r32ApiMatches.OrderBy(m => m.UtcDate))
+        foreach (var m in knockoutApiMatches.Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32).OrderBy(m => m.UtcDate))
             knockoutMatchNumbers[m.Id] = r32Num++;
         var nonR32Map = Wc2026Bracket.BuildMatchNumberMap(
             knockoutApiMatches
@@ -428,7 +425,7 @@ public class FixtureService(
                 homeLabel = TranslateLabel(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
                 awayLabel = TranslateLabel(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
             }
-            else if (phase == MatchPhase.R32 && espnBracket.TryGetValue(m.Id, out var espn))
+            else if (espnBracket.TryGetValue(m.Id, out var espn))
             {
                 var fdHome = m.HomeTeam?.Name ?? m.HomeTeam?.ShortName;
                 var fdAway = m.AwayTeam?.Name ?? m.AwayTeam?.ShortName;
@@ -601,19 +598,19 @@ public class FixtureService(
         ["New Zealand"]                  = "Nueva Zelanda",
     };
 
-    private async Task<Dictionary<int, EspnR32Data>> FetchEspnR32BracketAsync(List<FdMatch> r32Matches)
+    private async Task<Dictionary<int, EspnBracketData>> FetchEspnKnockoutBracketAsync(List<FdMatch> knockoutMatches)
     {
-        var result = new Dictionary<int, EspnR32Data>();
-        if (r32Matches.Count == 0) return result;
+        var result = new Dictionary<int, EspnBracketData>();
+        if (knockoutMatches.Count == 0) return result;
 
         var byKickoff = new Dictionary<string, int>();
-        foreach (var m in r32Matches)
+        foreach (var m in knockoutMatches)
         {
             var key = m.UtcDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
             byKickoff.TryAdd(key, m.Id);
         }
 
-        var dates = r32Matches
+        var dates = knockoutMatches
             .Select(m => m.UtcDate.ToUniversalTime().ToString("yyyyMMdd"))
             .Distinct()
             .ToList();
@@ -651,7 +648,7 @@ public class FixtureService(
                     var (homeTeam, homeLabel) = ParseEspnBracketTeam(homeComp?.Team?.DisplayName);
                     var (awayTeam, awayLabel) = ParseEspnBracketTeam(awayComp?.Team?.DisplayName);
 
-                    result[externalId] = new EspnR32Data(homeTeam, awayTeam, homeLabel, awayLabel);
+                    result[externalId] = new EspnBracketData(homeTeam, awayTeam, homeLabel, awayLabel);
                 }
             }
             catch (Exception ex)
@@ -660,15 +657,28 @@ public class FixtureService(
             }
         }
 
-        logger.LogInformation("R32 bracket desde ESPN: {Count}/{Total} partidos mapeados",
-            result.Count, r32Matches.Count);
+        logger.LogInformation("Knockout bracket desde ESPN: {Count}/{Total} partidos mapeados",
+            result.Count, knockoutMatches.Count);
         return result;
     }
+
+    private static readonly (string Prefix, string Suffix, MatchPhase Phase, string Tag)[] RoundPatterns =
+    [
+        ("Round of 32 ", " Winner", MatchPhase.R32, "Gan."),
+        ("Round of 16 ", " Winner", MatchPhase.R16, "Gan."),
+        ("Quarterfinal ", " Winner", MatchPhase.QF, "Gan."),
+        ("Quarter-Final ", " Winner", MatchPhase.QF, "Gan."),
+        ("Semifinal ", " Winner", MatchPhase.SF, "Gan."),
+        ("Semi-Final ", " Winner", MatchPhase.SF, "Gan."),
+        ("Semifinal ", " Loser", MatchPhase.SF, "Per."),
+        ("Semi-Final ", " Loser", MatchPhase.SF, "Per."),
+    ];
 
     private static (string Team, string? Label) ParseEspnBracketTeam(string? displayName)
     {
         if (string.IsNullOrEmpty(displayName)) return ("TBD", null);
 
+        // "Group X Winner" → 1º Grupo X
         if (displayName.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)
             && displayName.EndsWith(" Winner", StringComparison.OrdinalIgnoreCase))
         {
@@ -676,6 +686,7 @@ public class FixtureService(
             return ("TBD", $"1º Grupo {letter}");
         }
 
+        // "Group X 2nd Place" → 2º Grupo X
         if (displayName.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)
             && displayName.EndsWith(" 2nd Place", StringComparison.OrdinalIgnoreCase))
         {
@@ -683,6 +694,7 @@ public class FixtureService(
             return ("TBD", $"2º Grupo {letter}");
         }
 
+        // "Third Place Group A/B/C/D/F" → 3º Grupos A/B/C/D/F
         const string thirdPlace = "Third Place Group ";
         if (displayName.StartsWith(thirdPlace, StringComparison.OrdinalIgnoreCase))
         {
@@ -690,11 +702,29 @@ public class FixtureService(
             return ("TBD", $"3º Grupos {groups}");
         }
 
+        // "Round of 32 X Winner", "Semifinal X Loser", etc.
+        foreach (var (prefix, suffix, phase, tag) in RoundPatterns)
+        {
+            if (displayName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && displayName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                var numStr = displayName[prefix.Length..^suffix.Length].Trim();
+                if (int.TryParse(numStr, out var num))
+                {
+                    var matchNum = Wc2026Bracket.MatchNumberByDatePosition(phase, num - 1);
+                    if (matchNum.HasValue)
+                        return ("TBD", $"{tag} P{matchNum.Value}");
+                }
+                return ("TBD", null);
+            }
+        }
+
+        // Equipo resuelto
         var translated = EspnTeamMapping.Map(displayName);
         return (translated, null);
     }
 
-    private record EspnR32Data(string HomeTeam, string AwayTeam, string? HomeLabel, string? AwayLabel);
+    private record EspnBracketData(string HomeTeam, string AwayTeam, string? HomeLabel, string? AwayLabel);
     private record EspnScoreboardResponse(List<EspnScoreboardEvent>? Events);
     private record EspnScoreboardEvent(string? Date, List<EspnScoreboardCompetition>? Competitions);
     private record EspnScoreboardCompetition(List<EspnScoreboardCompetitor>? Competitors);
