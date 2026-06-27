@@ -527,10 +527,7 @@ public class FootballDataService(
 
     private static async Task AwardChampionPickPointsAsync(ProdeaDbContext db, Match match, CancellationToken ct)
     {
-        string? champion = null;
-        if (match.HomeScore > match.AwayScore) champion = match.HomeTeam;
-        else if (match.AwayScore > match.HomeScore) champion = match.AwayTeam;
-        else champion = match.Winner;
+        var champion = MatchResultHelper.DetermineChampion(match);
 
         if (champion == null) return;
 

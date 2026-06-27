@@ -479,7 +479,7 @@ public class FixtureService(
     private static string? TranslateLabel(string? name)
     {
         if (name == null) return null;
-        if (TeamNames.ContainsKey(name)) return null;
+        if (EspnTeamMapping.EspnToSpanish.ContainsKey(name)) return null;
 
         const string winner = "Winner Group ";
         if (name.StartsWith(winner, StringComparison.OrdinalIgnoreCase))
@@ -512,91 +512,8 @@ public class FixtureService(
     private static string TranslateTeam(string? name)
     {
         if (name == null) return "TBD";
-        return TeamNames.TryGetValue(name, out var t) ? t : name;
+        return EspnTeamMapping.Map(name);
     }
-
-    private static readonly Dictionary<string, string> TeamNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        // CONMEBOL
-        ["Argentina"]                    = "Argentina",
-        ["Brazil"]                       = "Brasil",
-        ["Colombia"]                     = "Colombia",
-        ["Ecuador"]                      = "Ecuador",
-        ["Paraguay"]                     = "Paraguay",
-        ["Peru"]                         = "Perú",
-        ["Uruguay"]                      = "Uruguay",
-        ["Venezuela"]                    = "Venezuela",
-        // UEFA
-        ["Germany"]                      = "Alemania",
-        ["Austria"]                      = "Austria",
-        ["Belgium"]                      = "Bélgica",
-        ["Bosnia and Herzegovina"]       = "Bosnia y Herzegovina",
-        ["Bosnia-Herzegovina"]           = "Bosnia y Herzegovina",
-        ["Croatia"]                      = "Croacia",
-        ["Denmark"]                      = "Dinamarca",
-        ["Spain"]                        = "España",
-        ["Scotland"]                     = "Escocia",
-        ["France"]                       = "Francia",
-        ["Wales"]                        = "Gales",
-        ["England"]                      = "Inglaterra",
-        ["Italy"]                        = "Italia",
-        ["Netherlands"]                  = "Países Bajos",
-        ["Poland"]                       = "Polonia",
-        ["Norway"]                       = "Noruega",
-        ["Portugal"]                     = "Portugal",
-        ["Czech Republic"]               = "República Checa",
-        ["Czechia"]                      = "República Checa",
-        ["Romania"]                      = "Rumania",
-        ["Serbia"]                       = "Serbia",
-        ["Sweden"]                       = "Suecia",
-        ["Switzerland"]                  = "Suiza",
-        ["Turkey"]                       = "Turquía",
-        ["Türkiye"]                      = "Turquía",
-        // CAF
-        ["Algeria"]                      = "Argelia",
-        ["Cape Verde"]                   = "Cabo Verde",
-        ["Cape Verde Islands"]           = "Cabo Verde",
-        ["Cameroon"]                     = "Camerún",
-        ["Ivory Coast"]                  = "Costa de Marfil",
-        ["Côte d'Ivoire"]                = "Costa de Marfil",
-        ["Egypt"]                        = "Egipto",
-        ["Ghana"]                        = "Ghana",
-        ["Morocco"]                      = "Marruecos",
-        ["Nigeria"]                      = "Nigeria",
-        ["DR Congo"]                     = "R. D. del Congo",
-        ["Congo DR"]                     = "R. D. del Congo",
-        ["Democratic Republic of Congo"] = "R. D. del Congo",
-        ["Senegal"]                      = "Senegal",
-        ["South Africa"]                 = "Sudáfrica",
-        ["Tunisia"]                      = "Túnez",
-        // AFC
-        ["Saudi Arabia"]                 = "Arabia Saudita",
-        ["Australia"]                    = "Australia",
-        ["Qatar"]                        = "Catar",
-        ["South Korea"]                  = "Corea del Sur",
-        ["Korea Republic"]               = "Corea del Sur",
-        ["Iraq"]                         = "Irak",
-        ["Iran"]                         = "Irán",
-        ["IR Iran"]                      = "Irán",
-        ["Japan"]                        = "Japón",
-        ["Jordan"]                       = "Jordania",
-        ["Uzbekistan"]                   = "Uzbekistán",
-        // CONCACAF
-        ["Canada"]                       = "Canadá",
-        ["Costa Rica"]                   = "Costa Rica",
-        ["Curaçao"]                      = "Curazao",
-        ["Curacao"]                      = "Curazao",
-        ["El Salvador"]                  = "El Salvador",
-        ["United States"]                = "Estados Unidos",
-        ["USA"]                          = "Estados Unidos",
-        ["Haiti"]                        = "Haití",
-        ["Honduras"]                     = "Honduras",
-        ["Jamaica"]                      = "Jamaica",
-        ["Mexico"]                       = "México",
-        ["Panama"]                       = "Panamá",
-        // OFC
-        ["New Zealand"]                  = "Nueva Zelanda",
-    };
 
     private async Task<Dictionary<int, EspnBracketData>> FetchEspnKnockoutBracketAsync(List<FdMatch> knockoutMatches)
     {

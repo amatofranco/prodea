@@ -101,6 +101,9 @@ public static class EspnTeamMapping
         ["Bahrain"] = "Bahrein",
         ["Thailand"] = "Tailandia",
         ["Kenya"] = "Kenia",
+        ["Wales"] = "Gales",
+        ["Cape Verde Islands"] = "Cabo Verde",
+        ["IR Iran"] = "Irán",
     };
 
     public static string Map(string espnName) =>

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;
+using Prodea.Api.Filters;
 using Prodea.Api.Hubs;
 using Prodea.Api.Models;
 using Prodea.Api.Services;
@@ -12,6 +13,7 @@ namespace Prodea.Api.Controllers;
 
 [ApiController]
 [Route("api/admin")]
+[AdminKey]
 public class AdminController(
     ProdeaDbContext db,
     IWebHostEnvironment env,
@@ -21,14 +23,8 @@ public class AdminController(
     IHubContext<TournamentHub> hub) : ControllerBase
 {
     [HttpGet("matches")]
-    public async Task<IActionResult> ListMatches(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromQuery] string? phase = null)
+    public async Task<IActionResult> ListMatches([FromQuery] string? phase = null)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var query = db.Matches.AsQueryable();
         if (phase != null && Enum.TryParse<MatchPhase>(phase, true, out var p))
             query = query.Where(m => m.Phase == p);
@@ -42,14 +38,8 @@ public class AdminController(
     }
 
     [HttpPost("seed-fixture")]
-    public async Task<IActionResult> SeedFixture(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromQuery] bool force = false)
+    public async Task<IActionResult> SeedFixture([FromQuery] bool force = false)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var (count, source) = await fixtureService.ImportAsync(force);
         if (count == 0 && source == "ya cargado")
             return Conflict(new { message = "Fixture ya cargado. Usá ?force=true para reimportar." });
@@ -58,25 +48,15 @@ public class AdminController(
     }
 
     [HttpPost("sync-knockout-teams")]
-    public async Task<IActionResult> SyncKnockoutTeams(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> SyncKnockoutTeams()
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var updated = await fixtureService.UpdateKnockoutTeamNamesAsync();
         return Ok(new { message = $"{updated} partido(s) de knockout actualizados desde football-data.org" });
     }
 
     [HttpGet("backups")]
-    public async Task<IActionResult> ListBackups(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> ListBackups()
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var backups = await db.PredictionBackups
             .OrderByDescending(b => b.CreatedAt)
             .Select(b => new { b.Id, b.CreatedAt, b.Count })
@@ -86,14 +66,8 @@ public class AdminController(
     }
 
     [HttpPost("backups/{id}/restore")]
-    public async Task<IActionResult> RestoreBackup(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> RestoreBackup(int id)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var backup = await db.PredictionBackups.FindAsync(id);
         if (backup == null) return NotFound(new { message = "Backup no encontrado" });
 
@@ -136,15 +110,8 @@ public class AdminController(
     }
 
     [HttpPost("matches/{id}/simulate")]
-    public async Task<IActionResult> SimulateMatch(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromBody] SimulateMatchRequest request)
+    public async Task<IActionResult> SimulateMatch(int id, [FromBody] SimulateMatchRequest request)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var match = await db.Matches.FindAsync(id);
         if (match == null) return NotFound(new { message = "Partido no encontrado" });
 
@@ -162,9 +129,7 @@ public class AdminController(
         if (request.Status == MatchStatus.InProgress) match.StartedAt = DateTime.UtcNow;
         if (request.Status == MatchStatus.Finished) match.FinishedAt = DateTime.UtcNow;
 
-        // Si el partido deja de estar Finished, las predicciones ya no deben conservar puntos
-        // de un resultado que para la app dejó de existir (evita "puntos fantasma" en partidos
-        // que vuelven a Scheduled/InProgress durante testing).
+        // Evita "puntos fantasma" en partidos que vuelven a Scheduled/InProgress durante testing
         if (wasFinished && request.Status != MatchStatus.Finished)
         {
             await db.Predictions
@@ -188,14 +153,8 @@ public class AdminController(
     }
 
     [HttpDelete("matches/{id}")]
-    public async Task<IActionResult> DeleteMatch(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> DeleteMatch(int id)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var match = await db.Matches.FindAsync(id);
         if (match == null) return NotFound(new { message = "Partido no encontrado" });
 
@@ -206,15 +165,8 @@ public class AdminController(
     }
 
     [HttpPost("matches/{id}/finalize")]
-    public async Task<IActionResult> FinalizeMatch(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromBody] FinalizeMatchRequest request)
+    public async Task<IActionResult> FinalizeMatch(int id, [FromBody] FinalizeMatchRequest request)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var match = await db.Matches.FindAsync(id);
         if (match == null) return NotFound(new { message = "Partido no encontrado" });
 
@@ -224,15 +176,13 @@ public class AdminController(
         match.FinishedAt = DateTime.UtcNow;
         match.LastUpdatedAt = DateTime.UtcNow;
 
-        // winner: "home" | "away" — para penales cuando scores son iguales
+        // "home" | "away" — para penales cuando scores son iguales
         if (request.Winner == "home") match.Winner = match.HomeTeam;
         else if (request.Winner == "away") match.Winner = match.AwayTeam;
         else match.Winner = null;
 
         await db.SaveChangesAsync();
 
-        // Si este era el último partido de SU grupo, resolvemos ya los cruces de Dieciseisavos
-        // en vez de esperar al sync automático de 6hs.
         if (match.Phase == MatchPhase.Group && match.Group != null)
         {
             var groupDone = !await db.Matches
@@ -265,9 +215,7 @@ public class AdminController(
 
         if (match.Phase == MatchPhase.Final)
         {
-            string? champion = match.HomeScore > match.AwayScore ? match.HomeTeam
-                : match.AwayScore > match.HomeScore ? match.AwayTeam
-                : match.Winner;
+            var champion = MatchResultHelper.DetermineChampion(match);
             if (champion != null)
             {
                 var picks = await db.ChampionPicks
@@ -296,14 +244,8 @@ public class AdminController(
     }
 
     [HttpPost("matches/{id}/fetch-goals")]
-    public async Task<IActionResult> FetchGoals(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> FetchGoals(int id)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var match = await db.Matches.FindAsync(id);
         if (match == null) return NotFound(new { message = "Partido no encontrado" });
 
@@ -395,14 +337,8 @@ public class AdminController(
     }
 
     [HttpPost("simulate-jornada")]
-    public async Task<IActionResult> SimulateJornada(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromBody] SimulateJornadaRequest request)
+    public async Task<IActionResult> SimulateJornada([FromBody] SimulateJornadaRequest request)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var phase = Enum.Parse<MatchPhase>(request.Phase);
         var matches = await db.Matches
             .Where(m => m.Phase == phase && (request.Matchday == 0 ? m.Matchday == null : m.Matchday == request.Matchday))
@@ -421,7 +357,6 @@ public class AdminController(
 
         var rng = new Random(request.Seed ?? Environment.TickCount);
 
-        // Si force, limpiar predicciones y badges existentes de esta jornada
         if (request.Force)
         {
             var matchIds2 = matches.Select(m => m.Id).ToList();
@@ -438,7 +373,6 @@ public class AdminController(
             await db.SaveChangesAsync();
         }
 
-        // Asignar resultados a los partidos de la DB de staging
         foreach (var match in matches)
         {
             match.HomeScore = rng.Next(0, 5);
@@ -449,7 +383,6 @@ public class AdminController(
         }
         await db.SaveChangesAsync();
 
-        // Crear predicciones variadas para cada participante
         var matchIds = matches.Select(m => m.Id).ToList();
         var existingPreds = await db.Predictions
             .Where(p => participants.Contains(p.UserId) && matchIds.Contains(p.MatchId))
@@ -495,7 +428,6 @@ public class AdminController(
         }
         await db.SaveChangesAsync();
 
-        // Asignar badges
         var badgeService = new BadgeService(db);
         await badgeService.AssignMatchdayBadgesAsync(request.TournamentId, phase, request.Matchday);
 
@@ -509,18 +441,11 @@ public class AdminController(
     }
 
     [HttpPost("recalculate-all/{tournamentId}")]
-    public async Task<IActionResult> RecalculateAll(
-        int tournamentId,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> RecalculateAll(int tournamentId)
     {
         if (env.IsProduction())
             return NotFound();
 
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (expectedKey == null || adminKey != expectedKey)
-            return Forbid();
-
-        // Recalcular puntos de predicciones para todos los partidos finalizados
         var finishedMatches = await db.Matches
             .Where(m => m.Status == MatchStatus.Finished && m.HomeScore != null && m.AwayScore != null)
             .ToListAsync();
@@ -544,7 +469,6 @@ public class AdminController(
         }
         await db.SaveChangesAsync();
 
-        // Recalcular badges
         var badgeService = new BadgeService(db);
         var phaseMatchdays = await db.Matches
             .Where(m => m.Status == MatchStatus.Finished)
@@ -559,17 +483,10 @@ public class AdminController(
     }
 
     [HttpPost("recalculate-badges/{tournamentId}")]
-    public async Task<IActionResult> RecalculateBadges(
-        int tournamentId,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> RecalculateBadges(int tournamentId)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var badgeService = new BadgeService(db);
 
-        // Recalcular badges de jornada para todas las fases/jornadas ya terminadas
         var finishedPhaseMatchdays = await db.Matches
             .Where(m => m.Status == MatchStatus.Finished)
             .Select(m => new { m.Phase, Matchday = m.Matchday ?? 0 })
@@ -586,6 +503,7 @@ public class AdminController(
         return Ok(new { message = $"Badges recalculados para torneo {tournamentId}: {matchdayCount} jornadas/fases procesadas." });
     }
 
+    [SkipAdminKey]
     [HttpGet("polling-status")]
     public async Task<IActionResult> GetPollingStatus()
     {
@@ -613,15 +531,10 @@ public class AdminController(
     }
 
     [HttpPost("finalize-group-stage")]
-    public async Task<IActionResult> FinalizeGroupStage(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> FinalizeGroupStage()
     {
         if (env.IsProduction())
             return NotFound();
-
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (expectedKey == null || adminKey != expectedKey)
-            return Forbid();
 
         var matches = await db.Matches
             .Where(m => m.Phase == MatchPhase.Group)
@@ -639,7 +552,6 @@ public class AdminController(
         }
         await db.SaveChangesAsync();
 
-        // Recalcular puntos de predicciones
         int predsUpdated = 0;
         foreach (var m in matches)
         {
@@ -656,21 +568,14 @@ public class AdminController(
     }
 
     [HttpPost("cleanup-production")]
-    public async Task<IActionResult> CleanupProduction(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromQuery] string? confirm = null)
+    public async Task<IActionResult> CleanupProduction([FromQuery] string? confirm = null)
     {
         if (env.IsProduction())
             return NotFound();
 
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (expectedKey == null || adminKey != expectedKey)
-            return Forbid();
-
         if (confirm != "si")
             return BadRequest(new { message = "Agregá ?confirm=si para confirmar la limpieza." });
 
-        // Borrar todo excepto el usuario admin
         await db.MatchdayBadges.ExecuteDeleteAsync();
         await db.AccumulativeBadges.ExecuteDeleteAsync();
         await db.PredictionBackups.ExecuteDeleteAsync();
@@ -679,12 +584,10 @@ public class AdminController(
         await db.Tournaments.ExecuteDeleteAsync();
         await db.ChampionPicks.ExecuteDeleteAsync();
 
-        // Borrar usuarios que no sean francoamato92@gmail.com
         var deletedUsers = await db.Users
             .Where(u => u.Email != "francoamato92@gmail.com")
             .ExecuteDeleteAsync();
 
-        // Re-importar fixture limpio desde la API
         var (matchCount, source) = await fixtureService.ImportAsync(force: true);
 
         return Ok(new
@@ -697,25 +600,16 @@ public class AdminController(
     }
 
     [HttpPost("reset-simulation")]
-    public async Task<IActionResult> ResetSimulation(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> ResetSimulation()
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
-        // Re-importar fixture desde la API: restaura fechas reales, equipos y estados
         var (matchCount, source) = await fixtureService.ImportAsync(force: true);
 
-        // Reset prediction points
         await db.Predictions
             .ExecuteUpdateAsync(s => s.SetProperty(p => p.PointsEarned, 0));
 
-        // Delete all badges
         await db.MatchdayBadges.ExecuteDeleteAsync();
         await db.AccumulativeBadges.ExecuteDeleteAsync();
 
-        // Reset champion pick points
         await db.ChampionPicks
             .ExecuteUpdateAsync(s => s.SetProperty(cp => cp.PointsEarned, 0));
 
@@ -723,14 +617,8 @@ public class AdminController(
     }
 
     [HttpPost("push/test")]
-    public async Task<IActionResult> TestPush(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromBody] TestPushRequest? request = null)
+    public async Task<IActionResult> TestPush([FromBody] TestPushRequest? request = null)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
         var subscriptions = await db.PushSubscriptions.ToListAsync();
 
@@ -765,14 +653,8 @@ public class AdminController(
     }
 
     [HttpPost("push/test-card")]
-    public async Task<IActionResult> TestCardPush(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromBody] TestCardPushRequest request)
+    public async Task<IActionResult> TestCardPush([FromBody] TestCardPushRequest request)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var phase = Enum.Parse<MatchPhase>(request.Phase);
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == request.TournamentId)
@@ -791,13 +673,8 @@ public class AdminController(
     }
 
     [HttpGet("users")]
-    public async Task<IActionResult> ListUsers(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> ListUsers()
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var users = await db.Users
             .OrderByDescending(u => u.CreatedAt)
             .Select(u => new
@@ -819,14 +696,8 @@ public class AdminController(
     }
 
     [HttpDelete("users/{id}")]
-    public async Task<IActionResult> DeleteUser(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> DeleteUser(int id)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var user = await db.Users.FindAsync(id);
         if (user == null) return NotFound(new { message = "Usuario no encontrado" });
 
@@ -843,14 +714,8 @@ public class AdminController(
     }
 
     [HttpGet("tournaments/{id}/accumulative-badges")]
-    public async Task<IActionResult> ListAccumulativeBadges(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> ListAccumulativeBadges(int id)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var badges = await db.AccumulativeBadges
             .Where(ab => ab.TournamentId == id)
             .Select(ab => new
@@ -866,29 +731,16 @@ public class AdminController(
     }
 
     [HttpDelete("tournaments/{id}/accumulative-badges")]
-    public async Task<IActionResult> DeleteAccumulativeBadges(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> DeleteAccumulativeBadges(int id)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
-        // Borra por SQL directo (sin materializar entidades) para no fallar si hay
-        // valores de BadgeType obsoletos que ya no existen en el enum actual.
+        // ExecuteDeleteAsync evita fallar con valores de BadgeType obsoletos en el enum
         var count = await db.AccumulativeBadges.Where(ab => ab.TournamentId == id).ExecuteDeleteAsync();
         return Ok(new { message = $"{count} motes acumulativos eliminados." });
     }
 
     [HttpGet("tournaments/{id}/predicted-goals")]
-    public async Task<IActionResult> ListPredictedGoals(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> ListPredictedGoals(int id)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == id)
             .Select(tp => tp.UserId)
@@ -916,15 +768,8 @@ public class AdminController(
     }
 
     [HttpGet("tournaments/{id}/matchday-badges")]
-    public async Task<IActionResult> ListMatchdayBadges(
-        int id,
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey,
-        [FromQuery] string? phase = null)
+    public async Task<IActionResult> ListMatchdayBadges(int id, [FromQuery] string? phase = null)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var query = db.MatchdayBadges.Where(mb => mb.TournamentId == id);
         if (phase != null) query = query.Where(mb => mb.Phase == phase);
 
@@ -945,13 +790,8 @@ public class AdminController(
     }
 
     [HttpGet("tournaments")]
-    public async Task<IActionResult> ListTournaments(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> ListTournaments()
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var tournaments = await db.Tournaments
             .OrderByDescending(t => t.CreatedAt)
             .Select(t => new
@@ -970,13 +810,8 @@ public class AdminController(
     }
 
     [HttpGet("stats")]
-    public async Task<IActionResult> GetStats(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey)
+    public async Task<IActionResult> GetStats()
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY");
-        if (!env.IsDevelopment() && (expectedKey == null || adminKey != expectedKey))
-            return Forbid();
-
         var totalUsers        = await db.Users.CountAsync();
         var activeUsers       = await db.Predictions.Select(p => p.UserId).Distinct().CountAsync();
         var pwaUsers          = await db.Users.CountAsync(u => u.IsPwa);
@@ -993,7 +828,7 @@ public class AdminController(
     };
 
     public record SimulateMatchRequest(MatchStatus Status, int? HomeScore, int? AwayScore, int? Minute = null, DateTime? MatchDate = null, string? HomeTeam = null, string? AwayTeam = null);
-    public record FinalizeMatchRequest(int HomeScore, int AwayScore, string? Winner = null); // Winner: "home" | "away" para penales
+    public record FinalizeMatchRequest(int HomeScore, int AwayScore, string? Winner = null);
     public record SimulateJornadaRequest(int TournamentId, string Phase, int Matchday, int? Seed = null, bool Force = false);
     public record TestPushRequest(string? Title, string? Body, string? Url);
     public record TestCardPushRequest(int TournamentId, string Phase, int Matchday);

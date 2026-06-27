@@ -159,10 +159,7 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         // todavía en 0 y el "ganador del prode" podría salir mal.
         if (match.Phase == MatchPhase.Final)
         {
-            string? champion = null;
-            if (request.HomeScore > request.AwayScore) champion = match.HomeTeam;
-            else if (request.AwayScore > request.HomeScore) champion = match.AwayTeam;
-            else champion = match.Winner; // penalty case
+            var champion = MatchResultHelper.DetermineChampion(match.HomeTeam, match.AwayTeam, request.HomeScore, request.AwayScore, match.Winner);
 
             if (champion != null)
             {

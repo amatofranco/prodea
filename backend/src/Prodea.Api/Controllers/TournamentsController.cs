@@ -397,12 +397,8 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             var finalMatch = await db.Matches
                 .Where(m => m.Phase == MatchPhase.Final && m.Status == MatchStatus.Finished)
                 .FirstOrDefaultAsync();
-            if (finalMatch?.HomeScore != null)
-            {
-                if (finalMatch.HomeScore > finalMatch.AwayScore) champion = finalMatch.HomeTeam;
-                else if (finalMatch.AwayScore > finalMatch.HomeScore) champion = finalMatch.AwayTeam;
-                else champion = finalMatch.Winner; // penalty case
-            }
+            if (finalMatch != null)
+                champion = MatchResultHelper.DetermineChampion(finalMatch);
 
             var groupMatches = await db.Matches
                 .Where(m => m.Phase == MatchPhase.Group)

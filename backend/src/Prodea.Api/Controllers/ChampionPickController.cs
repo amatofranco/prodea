@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Prodea.Api.Data;
 using Prodea.Api.DTOs;
 using Prodea.Api.Models;
+using Prodea.Api.Services;
 
 namespace Prodea.Api.Controllers;
 
@@ -30,10 +31,7 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
         var finalMatch = await db.Matches
             .Where(m => m.Phase == MatchPhase.Final && m.Status == MatchStatus.Finished)
             .FirstOrDefaultAsync();
-        if (finalMatch?.HomeScore == null) return null;
-        if (finalMatch.HomeScore > finalMatch.AwayScore) return finalMatch.HomeTeam;
-        if (finalMatch.AwayScore > finalMatch.HomeScore) return finalMatch.AwayTeam;
-        return finalMatch.Winner; // penalty case
+        return finalMatch == null ? null : MatchResultHelper.DetermineChampion(finalMatch);
     }
 
     private static async Task<List<string>> GetAvailableTeamsAsync(ProdeaDbContext db)
