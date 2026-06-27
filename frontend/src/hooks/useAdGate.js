@@ -1,4 +1,4 @@
-const COOLDOWN_MS = 5 * 60 * 1000
+const COOLDOWN_MS = import.meta.env.VITE_APP_ENV === 'testing' ? 10 * 1000 : 5 * 60 * 1000
 const LAST_AD_KEY = 'prodea_last_ad'
 
 export function useAdGate() {
