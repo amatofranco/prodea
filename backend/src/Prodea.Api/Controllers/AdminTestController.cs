@@ -13,7 +13,8 @@ namespace Prodea.Api.Controllers;
 public class AdminTestController(
     ProdeaDbContext db,
     IWebHostEnvironment env,
-    FixtureService fixtureService) : ControllerBase
+    FixtureService fixtureService,
+    BadgeService badgeService) : ControllerBase
 {
     [HttpPost("simulate-matchday")]
     public async Task<IActionResult> SimulateMatchday([FromBody] SimulateMatchdayRequest request)
@@ -107,7 +108,6 @@ public class AdminTestController(
         }
         await db.SaveChangesAsync();
 
-        var badgeService = new BadgeService(db);
         await badgeService.AssignMatchdayBadgesAsync(request.TournamentId, phase, request.Matchday);
 
         return Ok(new
@@ -148,7 +148,6 @@ public class AdminTestController(
         }
         await db.SaveChangesAsync();
 
-        var badgeService = new BadgeService(db);
         var phaseMatchdays = await db.Matches
             .Where(m => m.Status == MatchStatus.Finished)
             .Select(m => new { m.Phase, Matchday = m.Matchday ?? 0 })
@@ -164,8 +163,6 @@ public class AdminTestController(
     [HttpPost("recalculate-badges/{tournamentId}")]
     public async Task<IActionResult> RecalculateBadges(int tournamentId)
     {
-        var badgeService = new BadgeService(db);
-
         var finishedPhaseMatchdays = await db.Matches
             .Where(m => m.Status == MatchStatus.Finished)
             .Select(m => new { m.Phase, Matchday = m.Matchday ?? 0 })

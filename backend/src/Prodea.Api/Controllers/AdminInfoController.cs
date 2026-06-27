@@ -10,42 +10,17 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/admin")]
 [AdminKey]
-public class AdminInfoController(ProdeaDbContext db) : ControllerBase
+public class AdminInfoController(ProdeaDbContext db, BadgeService badgeService, PushNotificationService pushService) : ControllerBase
 {
     [HttpPost("push/test")]
     public async Task<IActionResult> TestPush([FromBody] TestPushRequest? request = null)
     {
-        var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
-        var subscriptions = await db.PushSubscriptions.ToListAsync();
-
-        if (!subscriptions.Any())
-            return Ok(new { message = "No hay suscriptores registrados." });
-
         var title = request?.Title ?? "🔔 Notificación de prueba";
         var body = request?.Body ?? "El sistema de push notifications está funcionando.";
         var url = request?.Url ?? "/";
 
-        var sent = 0;
-        var expired = new List<UserPushSubscription>();
-
-        foreach (var sub in subscriptions)
-        {
-            try
-            {
-                await pushService.SendToUserAsync(sub, title, body, url);
-                sent++;
-            }
-            catch (ExpiredSubscriptionException) { expired.Add(sub); }
-            catch { }
-        }
-
-        if (expired.Any())
-        {
-            db.PushSubscriptions.RemoveRange(expired);
-            await db.SaveChangesAsync();
-        }
-
-        return Ok(new { message = $"Enviado a {sent} suscriptor(es). {expired.Count} expirados eliminados." });
+        var sent = await pushService.BroadcastAsync(db, title, body, url);
+        return Ok(new { message = $"Enviado a {sent} suscriptor(es)." });
     }
 
     [HttpPost("push/test-card")]
@@ -60,8 +35,6 @@ public class AdminInfoController(ProdeaDbContext db) : ControllerBase
         if (participants.Count == 0)
             return BadRequest(new { message = "El torneo no tiene participantes." });
 
-        var pushService = HttpContext.RequestServices.GetRequiredService<PushNotificationService>();
-        var badgeService = new BadgeService(db);
         var userTournamentMap = participants.ToDictionary(uid => uid, _ => request.TournamentId);
         await badgeService.SendCardNotificationsPublicAsync(phase, request.Matchday, userTournamentMap, pushService);
 

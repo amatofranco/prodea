@@ -439,7 +439,6 @@ public class FootballDataService(
     // Finalización
     // -------------------------------------------------------------------------
 
-    // Ruta ESPN y fallback genérico: scores ya extraídos
     private async Task FinalizeMatchCoreAsync(ProdeaDbContext db, PushNotificationService push, Match match, int homeScore, int awayScore, string? winner, List<GoalInfo>? goals, CancellationToken ct)
     {
         match.Status = MatchStatus.Finished;
@@ -452,63 +451,14 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Partido finalizado: {Home} {HS}-{AS} {Away}", match.HomeTeam, homeScore, awayScore, match.AwayTeam);
 
-        // Si este era el último partido de SU grupo (no de toda la fase de grupos), ese grupo
-        // ya puede tener ganador/segundo confirmados del lado de la API — no esperamos al sync
-        // de 6hs, lo resolvemos ahora.
-        if (match.Phase == MatchPhase.Group && match.Group != null)
-        {
-            var groupDone = !await db.Matches
-                .AnyAsync(m => m.Phase == MatchPhase.Group && m.Group == match.Group && m.Status != MatchStatus.Finished, ct);
-            if (groupDone)
-            {
-                using var knockoutScope = scopeFactory.CreateScope();
-                var fixtureService = knockoutScope.ServiceProvider.GetRequiredService<FixtureService>();
-                await fixtureService.UpdateKnockoutTeamNamesAsync();
-                _lastKnockoutSync = DateTime.UtcNow;
-            }
-        }
+        using var finalizationScope = scopeFactory.CreateScope();
+        var finalizationService = finalizationScope.ServiceProvider.GetRequiredService<MatchFinalizationService>();
+        await finalizationService.ProcessAsync(match);
 
-        string? winnerSide = null;
-        if (homeScore == awayScore && match.Winner != null)
-            winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
+        if (match.Phase == MatchPhase.Group)
+            _lastKnockoutSync = DateTime.UtcNow;
 
-        var predictions = await db.Predictions
-            .Where(p => p.MatchId == match.Id)
-            .ToListAsync(ct);
-
-        foreach (var pred in predictions)
-        {
-            pred.PointsEarned = ScoringService.CalculatePoints(pred, homeScore, awayScore, winnerSide);
-            pred.UpdatedAt = DateTime.UtcNow;
-        }
-
-        await db.SaveChangesAsync(ct);
         await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
-
-        // Importante: el champion pick se corrobora y otorga ANTES de calcular las badges de
-        // podio (Campeon/Subcampeon/TercerPuesto), porque esa tabla final suma Prediction +
-        // ChampionPick. Si se calculara antes, el podio se asignaría con los puntos de campeón
-        // todavía en 0 y el "ganador del prode" podría salir mal.
-        if (match.Phase == MatchPhase.Final && match.HomeScore.HasValue)
-            await AwardChampionPickPointsAsync(db, match, ct);
-
-        var badgeService = new BadgeService(db);
-        var tournamentIds = await db.TournamentParticipants
-            .Select(tp => tp.TournamentId)
-            .Distinct()
-            .ToListAsync(ct);
-
-        var newlyBadgedUserTournament = new Dictionary<int, int>();
-        foreach (var tid in tournamentIds)
-        {
-            var newUserIds = await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
-            foreach (var uid in newUserIds)
-                newlyBadgedUserTournament.TryAdd(uid, tid);
-            if (match.Phase == MatchPhase.Final)
-                await badgeService.AwardTournamentResultBadgesAsync(tid);
-        }
-        if (newlyBadgedUserTournament.Count > 0)
-            await badgeService.SendCardNotificationsPublicAsync(match.Phase, match.Matchday ?? 0, newlyBadgedUserTournament, push);
     }
 
     // Ruta football-data.org: usa FootballDataScore para extraer scores con lógica de ET/penales
@@ -523,19 +473,6 @@ public class FootballDataService(
 
         var (finalHome, finalAway) = FinalScore(apiScore);
         await FinalizeMatchCoreAsync(db, push, match, finalHome ?? match.HomeScore ?? 0, finalAway ?? match.AwayScore ?? 0, winner, null, ct);
-    }
-
-    private static async Task AwardChampionPickPointsAsync(ProdeaDbContext db, Match match, CancellationToken ct)
-    {
-        var champion = MatchResultHelper.DetermineChampion(match);
-
-        if (champion == null) return;
-
-        var winners = await db.ChampionPicks
-            .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0)
-            .ToListAsync(ct);
-        foreach (var pick in winners) pick.PointsEarned = 10;
-        await db.SaveChangesAsync(ct);
     }
 
     private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, List<GoalInfo>? goals, string? livePhase, string? minuteDisplay, CancellationToken ct)

@@ -102,22 +102,8 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
             await db.SaveChangesAsync();
     }
 
-    private async Task SendToAllAsync(ProdeaDbContext db, PushNotificationService pushService, string title, string body, string url)
+    private static async Task SendToAllAsync(ProdeaDbContext db, PushNotificationService pushService, string title, string body, string url)
     {
-        var subscriptions = await db.PushSubscriptions.ToListAsync();
-        var expired = new List<UserPushSubscription>();
-
-        foreach (var sub in subscriptions)
-        {
-            try { await pushService.SendToUserAsync(sub, title, body, url); }
-            catch (ExpiredSubscriptionException) { expired.Add(sub); }
-            catch { }
-        }
-
-        if (expired.Any())
-        {
-            db.PushSubscriptions.RemoveRange(expired);
-            await db.SaveChangesAsync();
-        }
+        await pushService.BroadcastAsync(db, title, body, url);
     }
 }

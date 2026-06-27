@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using System.Text.Json;
 using Prodea.Api.Data;
 using Prodea.Api.DTOs;
@@ -12,11 +11,9 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/predictions")]
 [Authorize]
-public class PredictionsController(ProdeaDbContext db) : ControllerBase
+public class PredictionsController(ProdeaDbContext db) : AuthorizedControllerBase
 {
     private static readonly TimeSpan PredictionCloseBeforeKickoff = TimeSpan.FromMinutes(15);
-
-    private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
     public async Task<ActionResult<List<MatchWithPredictionDto>>> GetMyPredictions()

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using Prodea.Api.Data;
 using Prodea.Api.DTOs;
+using Prodea.Api.Extensions;
 using Prodea.Api.Models;
 using Prodea.Api.Services;
 
@@ -12,11 +12,9 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TournamentsController(ProdeaDbContext db) : ControllerBase
+public class TournamentsController(ProdeaDbContext db, BadgeService badgeService) : AuthorizedControllerBase
 {
     private const int MaxTournamentsPerUser = 10;
-
-    private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
     public async Task<ActionResult<List<TournamentDto>>> GetMyTournaments()
@@ -39,8 +37,6 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<TournamentDetailDto>> GetTournament(int id)
     {
-        try
-        {
         var userId = CurrentUserId;
         var isMember = await db.TournamentParticipants
             .AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
@@ -59,7 +55,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         var ranked = tournament.Participants
             .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
             .Select((tp, idx) => new ParticipantDto(
-                tp.UserId, tp.User.Username, FullName(tp.User), tp.User.AvatarUrl,
+                tp.UserId, tp.User.Username, tp.User.FullName(), tp.User.AvatarUrl,
                 pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
                 idx + 1,
                 badgeMap.GetValueOrDefault(tp.UserId)?.BadgeType.ToString()
@@ -71,11 +67,6 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             tournament.AdminUserId, tournament.Admin.Username,
             ranked, tournament.CreatedAt, tournament.StartingMatchDate
         ));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.Message, step = "GetTournament" });
-        }
     }
 
     [HttpPatch("{id}")]
@@ -99,7 +90,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         if (dateChanged)
-            await new BadgeService(db).RecalculateAllBadgesAsync(id);
+            await badgeService.RecalculateAllBadgesAsync(id);
 
         return Ok(new TournamentDetailDto(
             tournament.Id, tournament.Name, tournament.Description, tournament.Code, tournament.InviteLink,
@@ -223,7 +214,6 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
     [HttpGet("{id}/leaderboard")]
     public async Task<ActionResult<List<LeaderboardEntryDto>>> GetLeaderboard(int id)
     {
-      try {
         var userId = CurrentUserId;
         var isMember = await db.TournamentParticipants.AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
         if (!isMember) return Forbid();
@@ -246,18 +236,13 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             {
                 var badge = badgeMap.GetValueOrDefault(tp.UserId);
                 return new LeaderboardEntryDto(
-                    idx + 1, tp.UserId, tp.User.Username, FullName(tp.User), tp.User.AvatarUrl,
+                    idx + 1, tp.UserId, tp.User.Username, tp.User.FullName(), tp.User.AvatarUrl,
                     pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
                     badge?.BadgeType.ToString(),
                     badge != null ? BadgeService.GetEmoji(badge.BadgeType) : null
                 );
             })
             .ToList());
-      }
-      catch (Exception ex)
-      {
-          return StatusCode(500, new { message = ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.Message, step = "GetLeaderboard" });
-      }
     }
 
     [HttpGet("{id}/matchday-winners")]
@@ -278,8 +263,6 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .Select(t => t.StartingMatchDate)
             .FirstOrDefaultAsync();
 
-        // Cantidad de exactos por jugador y fecha — solo se usa para desempatar Cracks
-        // con el mismo puntaje dentro de la misma fecha.
         var exactCounts = await db.Predictions
             .Where(p => candidateIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate && p.PointsEarned == 3)
             .Select(p => new { p.UserId, p.Match.Phase, p.Match.Matchday })
@@ -288,9 +271,6 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .GroupBy(p => (p.UserId, Phase: p.Phase.ToString(), Matchday: p.Matchday ?? 0))
             .ToDictionary(g => g.Key, g => g.Count());
 
-        // Momento de la última modificación de cada predicción de esa fecha (UpdatedAt) —
-        // premia a quien no especuló: si nunca tocó su predicción, UpdatedAt == CreatedAt
-        // (queda temprano); si la modificó cerca del cierre, UpdatedAt se corre para adelante.
         var loadTimes = await db.Predictions
             .Where(p => candidateIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
             .Select(p => new { p.UserId, p.Match.Phase, p.Match.Matchday, p.UpdatedAt })
@@ -320,9 +300,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
                     MatchPhase.Final      => "Final",
                     _                     => winner.Phase,
                 };
-                var fullName = (winner.User.FirstName != null || winner.User.LastName != null)
-                    ? $"{winner.User.FirstName} {winner.User.LastName}".Trim() : null;
-                return new JornadaWinnerDto(winner.Phase, winner.Matchday, label, winner.UserId, winner.User.Username, fullName, winner.PointsInMatchday);
+                return new JornadaWinnerDto(winner.Phase, winner.Matchday, label, winner.UserId, winner.User.Username, winner.User.FullName(), winner.PointsInMatchday);
             })
             .OrderBy(w => w.Phase)
             .ThenBy(w => w.Matchday)
@@ -332,71 +310,64 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
     [HttpGet("{id}/champion-pick")]
     public async Task<ActionResult<ChampionPickStatusDto>> GetTournamentChampionPick(int id)
     {
-        try
+        var userId = CurrentUserId;
+        var isMember = await db.TournamentParticipants
+            .AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
+        if (!isMember) return Forbid();
+
+        var firstMatchTime = await db.Matches.AnyAsync()
+            ? await db.Matches.MinAsync(m => m.MatchDate)
+            : DateTime.UtcNow.AddYears(1);
+        var lockTime = firstMatchTime - TimeSpan.FromMinutes(15);
+        var isLocked = DateTime.UtcNow >= lockTime;
+
+        var myPick = await db.ChampionPicks
+            .Where(cp => cp.UserId == userId)
+            .Select(cp => cp.CountryName)
+            .FirstOrDefaultAsync();
+
+        string? champion = null;
+        var finalMatch = await db.Matches
+            .Where(m => m.Phase == MatchPhase.Final && m.Status == MatchStatus.Finished)
+            .FirstOrDefaultAsync();
+        if (finalMatch != null)
+            champion = MatchResultHelper.DetermineChampion(finalMatch);
+
+        var groupMatches = await db.Matches
+            .Where(m => m.Phase == MatchPhase.Group)
+            .Select(m => new { m.HomeTeam, m.AwayTeam })
+            .ToListAsync();
+        var teams = groupMatches
+            .SelectMany(m => new[] { m.HomeTeam, m.AwayTeam })
+            .Where(t => t != "TBD")
+            .Distinct().OrderBy(t => t).ToList();
+
+        List<ParticipantPickDto> allPicks = [];
+        if (isLocked)
         {
-            var userId = CurrentUserId;
-            var isMember = await db.TournamentParticipants
-                .AnyAsync(tp => tp.TournamentId == id && tp.UserId == userId);
-            if (!isMember) return Forbid();
-
-            var firstMatchTime = await db.Matches.AnyAsync()
-                ? await db.Matches.MinAsync(m => m.MatchDate)
-                : DateTime.UtcNow.AddYears(1);
-            var lockTime = firstMatchTime - TimeSpan.FromMinutes(15);
-            var isLocked = DateTime.UtcNow >= lockTime;
-
-            var myPick = await db.ChampionPicks
-                .Where(cp => cp.UserId == userId)
-                .Select(cp => cp.CountryName)
-                .FirstOrDefaultAsync();
-
-            string? champion = null;
-            var finalMatch = await db.Matches
-                .Where(m => m.Phase == MatchPhase.Final && m.Status == MatchStatus.Finished)
-                .FirstOrDefaultAsync();
-            if (finalMatch != null)
-                champion = MatchResultHelper.DetermineChampion(finalMatch);
-
-            var groupMatches = await db.Matches
-                .Where(m => m.Phase == MatchPhase.Group)
-                .Select(m => new { m.HomeTeam, m.AwayTeam })
+            var participants = await db.TournamentParticipants
+                .Where(tp => tp.TournamentId == id)
+                .Include(tp => tp.User)
                 .ToListAsync();
-            var teams = groupMatches
-                .SelectMany(m => new[] { m.HomeTeam, m.AwayTeam })
-                .Where(t => t != "TBD")
-                .Distinct().OrderBy(t => t).ToList();
 
-            List<ParticipantPickDto> allPicks = [];
-            if (isLocked)
-            {
-                var participants = await db.TournamentParticipants
-                    .Where(tp => tp.TournamentId == id)
-                    .Include(tp => tp.User)
-                    .ToListAsync();
+            var participantUserIds = participants.Select(tp => tp.UserId).ToList();
+            var picksList = await db.ChampionPicks
+                .Where(cp => participantUserIds.Contains(cp.UserId))
+                .ToListAsync();
+            var picks = picksList
+                .GroupBy(cp => cp.UserId)
+                .ToDictionary(g => g.Key, g => g.First().CountryName);
 
-                var participantUserIds = participants.Select(tp => tp.UserId).ToList();
-                var picksList = await db.ChampionPicks
-                    .Where(cp => participantUserIds.Contains(cp.UserId))
-                    .ToListAsync();
-                var picks = picksList
-                    .GroupBy(cp => cp.UserId)
-                    .ToDictionary(g => g.Key, g => g.First().CountryName);
-
-                allPicks = participants
-                    .Select(tp => new ParticipantPickDto(
-                        tp.UserId, tp.User.Username, FullName(tp.User),
-                        picks.GetValueOrDefault(tp.UserId),
-                        champion != null && picks.GetValueOrDefault(tp.UserId) == champion
-                    ))
-                    .ToList();
-            }
-
-            return Ok(new ChampionPickStatusDto(myPick, isLocked, lockTime, champion, allPicks, teams));
+            allPicks = participants
+                .Select(tp => new ParticipantPickDto(
+                    tp.UserId, tp.User.Username, tp.User.FullName(),
+                    picks.GetValueOrDefault(tp.UserId),
+                    champion != null && picks.GetValueOrDefault(tp.UserId) == champion
+                ))
+                .ToList();
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = ex.Message, inner = ex.InnerException?.Message });
-        }
+
+        return Ok(new ChampionPickStatusDto(myPick, isLocked, lockTime, champion, allPicks, teams));
     }
 
     private static string GenerateCode()
@@ -436,9 +407,4 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             lastBadges.ToDictionary(b => b.UserId, b => b)
         );
     }
-
-    private static string? FullName(User u) =>
-        (u.FirstName != null || u.LastName != null)
-            ? $"{u.FirstName} {u.LastName}".Trim()
-            : null;
 }

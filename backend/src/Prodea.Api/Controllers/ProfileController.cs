@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using Prodea.Api.Data;
 using Prodea.Api.DTOs;
+using Prodea.Api.Extensions;
 using Prodea.Api.Models;
 using Prodea.Api.Services;
 
@@ -12,9 +12,8 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/tournaments/{tournamentId}/profile")]
 [Authorize]
-public class ProfileController(ProdeaDbContext db) : ControllerBase
+public class ProfileController(ProdeaDbContext db) : AuthorizedControllerBase
 {
-    private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet("{userId}")]
     public async Task<ActionResult<PlayerProfileDto>> GetProfile(int tournamentId, int userId)
@@ -66,8 +65,7 @@ public class ProfileController(ProdeaDbContext db) : ControllerBase
             .Where(ab => ab.TournamentId == tournamentId && ab.UserId == userId)
             .ToListAsync();
 
-        var fullName = (user.FirstName != null || user.LastName != null)
-            ? $"{user.FirstName} {user.LastName}".Trim() : null;
+        var fullName = user.FullName();
         return Ok(new PlayerProfileDto(
             userId, user.Username, fullName, user.AvatarUrl, totalPoints, rank,
             matchdayBadges.Select(mb => new MatchdayBadgeDto(

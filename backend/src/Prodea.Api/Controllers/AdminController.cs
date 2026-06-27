@@ -19,7 +19,8 @@ public class AdminController(
     FixtureService fixtureService,
     PollingStatusService pollingStatus,
     IHttpClientFactory httpClientFactory,
-    IHubContext<TournamentHub> hub) : ControllerBase
+    IHubContext<TournamentHub> hub,
+    MatchFinalizationService finalizationService) : ControllerBase
 {
     [HttpGet("matches")]
     public async Task<IActionResult> ListMatches([FromQuery] string? phase = null)
@@ -182,50 +183,11 @@ public class AdminController(
 
         await db.SaveChangesAsync();
 
-        if (match.Phase == MatchPhase.Group && match.Group != null)
-        {
-            var groupDone = !await db.Matches
-                .AnyAsync(m => m.Phase == MatchPhase.Group && m.Group == match.Group && m.Status != MatchStatus.Finished);
-            if (groupDone)
-                await fixtureService.UpdateKnockoutTeamNamesAsync();
-        }
+        var result = await finalizationService.ProcessAsync(match, sendCardNotifications: false);
 
         string? winnerSide = null;
         if (match.HomeScore == match.AwayScore && match.Winner != null)
             winnerSide = match.Winner == match.HomeTeam ? "home" : "away";
-
-        var predictions = await db.Predictions
-            .Where(p => p.MatchId == match.Id)
-            .ToListAsync();
-
-        foreach (var pred in predictions)
-        {
-            pred.PointsEarned = ScoringService.CalculatePoints(pred, match.HomeScore!.Value, match.AwayScore!.Value, winnerSide);
-            pred.UpdatedAt = DateTime.UtcNow;
-        }
-
-        await db.SaveChangesAsync();
-
-        var badgeService = new BadgeService(db);
-        var tournamentIds = await db.TournamentParticipants
-            .Select(tp => tp.TournamentId).Distinct().ToListAsync();
-        foreach (var tid in tournamentIds)
-            await badgeService.AssignMatchdayBadgesAsync(tid, match.Phase, match.Matchday ?? 0);
-
-        if (match.Phase == MatchPhase.Final)
-        {
-            var champion = MatchResultHelper.DetermineChampion(match);
-            if (champion != null)
-            {
-                var picks = await db.ChampionPicks
-                    .Where(cp => cp.CountryName == champion && cp.PointsEarned == 0).ToListAsync();
-                foreach (var pick in picks) pick.PointsEarned = 10;
-                await db.SaveChangesAsync();
-            }
-
-            foreach (var tid in tournamentIds)
-                await badgeService.AwardTournamentResultBadgesAsync(tid);
-        }
 
         return Ok(new
         {
@@ -237,8 +199,8 @@ public class AdminController(
             awayScore    = match.AwayScore,
             winner       = match.Winner,
             winnerSide,
-            predictionsScored = predictions.Count,
-            details = predictions.Select(p => new { p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.PredictedPenaltyWinner, p.PointsEarned }),
+            predictionsScored = result.ScoredPredictions.Count,
+            details = result.ScoredPredictions.Select(p => new { p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.PredictedPenaltyWinner, p.PointsEarned }),
         });
     }
 

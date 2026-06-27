@@ -52,6 +52,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<EmailService>();
         services.AddScoped<EspnBracketService>();
         services.AddScoped<FixtureService>();
+        services.AddScoped<MatchFinalizationService>();
         services.AddSingleton<PollingStatusService>();
         services.AddHostedService<FootballDataService>();
         services.AddHostedService<BackupService>();
