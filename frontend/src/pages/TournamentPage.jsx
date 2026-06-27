@@ -12,6 +12,8 @@ import ApiStatusBanner from '../components/ApiStatusBanner'
 import ChampionPickBanner from '../components/ChampionPickBanner'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 import InstallBanner from '../components/InstallBanner'
+import AdInterstitial from '../components/AdInterstitial'
+import { useAdGate } from '../hooks/useAdGate'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const MAX_DESC = 150
@@ -283,6 +285,8 @@ export default function TournamentPage() {
   const [startDateDraft, setStartDateDraft] = useState('')
   const [savingStartDate, setSavingStartDate] = useState(false)
   const { showModal: showPushBanner, subscribe: subscribePush, dismiss: dismissPush } = usePushNotifications()
+  const [showAd, setShowAd] = useState(false)
+  const adGate = useAdGate()
   const phaseBarRef = useRef(null)
 
   async function saveDescription() {
@@ -333,7 +337,17 @@ export default function TournamentPage() {
       api.getTournament(id).then(setTournament),
       api.getLeaderboard(id).then(setLeaderboard),
       api.getMatchdayWinners(id).then(setMatchdayWinners),
-    ]).finally(() => setLoading(false))
+    ]).finally(() => {
+      setLoading(false)
+      api.getMatches(id).then((m) => {
+        const hasFinished = m.some((x) => x.status === 'Finished')
+        const hasLive = m.some((x) => x.status === 'InProgress')
+        if (hasFinished && !hasLive && adGate.shouldShowAd()) {
+          adGate.recordAdShown()
+          setShowAd(true)
+        }
+      })
+    })
 
     fetchMatches()
     joinTournament(id)
@@ -618,7 +632,13 @@ export default function TournamentPage() {
           {['tabla', 'fixture'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab)
+                if (tab === 'fixture' && liveCount === 0 && adGate.shouldShowOnNthVisit('fixture', 3) && adGate.shouldShowAd()) {
+                  adGate.recordAdShown()
+                  setShowAd(true)
+                }
+              }}
               className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-colors ${
                 activeTab === tab
                   ? 'bg-[#00FF87] text-black'
@@ -844,6 +864,8 @@ export default function TournamentPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {showAd && <AdInterstitial onClose={() => setShowAd(false)} />}
 
     </div>
   )

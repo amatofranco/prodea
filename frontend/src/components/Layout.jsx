@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Trophy, Target, Settings } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import StickyBannerAd from './StickyBannerAd'
+import { adsEnabled } from './AdBanner'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Inicio', end: true },
@@ -51,9 +53,11 @@ export default function Layout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <main className={`flex-1 min-w-0 overflow-y-auto md:pb-0 ${adsEnabled() ? 'pb-[calc(3.5rem+3.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
         <Outlet />
       </main>
+
+      <StickyBannerAd />
 
       {/* Bottom nav — mobile only */}
       <nav
