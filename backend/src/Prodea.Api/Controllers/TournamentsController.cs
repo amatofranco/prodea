@@ -54,28 +54,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
         if (tournament == null) return NotFound();
 
         var participantIds = tournament.Participants.Select(tp => tp.UserId).ToList();
-
-        var points = await db.Predictions
-            .Where(p => participantIds.Contains(p.UserId) && p.Match.MatchDate >= tournament.StartingMatchDate)
-            .GroupBy(p => p.UserId)
-            .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
-            .ToListAsync();
-
-        var championPicksList = await db.ChampionPicks
-            .Where(cp => participantIds.Contains(cp.UserId))
-            .ToListAsync();
-        var championPoints = championPicksList
-            .GroupBy(cp => cp.UserId)
-            .ToDictionary(g => g.Key, g => g.Max(cp => cp.PointsEarned));
-
-        var lastBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == id && mb.Phase != "")
-            .GroupBy(mb => mb.UserId)
-            .Select(g => g.OrderByDescending(mb => mb.AwardedAt).First())
-            .ToListAsync();
-
-        var pointsMap = points.ToDictionary(p => p.UserId, p => p.Total);
-        var badgeMap = lastBadges.ToDictionary(b => b.UserId, b => b.BadgeType.ToString());
+        var (pointsMap, championPoints, badgeMap) = await ComputeRankingDataAsync(id, participantIds, tournament.StartingMatchDate);
 
         var ranked = tournament.Participants
             .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
@@ -83,7 +62,7 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
                 tp.UserId, tp.User.Username, FullName(tp.User), tp.User.AvatarUrl,
                 pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
                 idx + 1,
-                badgeMap.GetValueOrDefault(tp.UserId)
+                badgeMap.GetValueOrDefault(tp.UserId)?.BadgeType.ToString()
             ))
             .ToList();
 
@@ -255,33 +234,11 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
             .ToListAsync();
 
         var participantIds = participants.Select(tp => tp.UserId).ToList();
-
         var startingMatchDate = await db.Tournaments
             .Where(t => t.Id == id)
             .Select(t => t.StartingMatchDate)
             .FirstOrDefaultAsync();
-
-        var points = await db.Predictions
-            .Where(p => participantIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
-            .GroupBy(p => p.UserId)
-            .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
-            .ToListAsync();
-
-        var champPicksList2 = await db.ChampionPicks
-            .Where(cp => participantIds.Contains(cp.UserId))
-            .ToListAsync();
-        var championPoints = champPicksList2
-            .GroupBy(cp => cp.UserId)
-            .ToDictionary(g => g.Key, g => g.Max(cp => cp.PointsEarned));
-
-        var lastBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == id && mb.Phase != "")
-            .GroupBy(mb => mb.UserId)
-            .Select(g => g.OrderByDescending(mb => mb.AwardedAt).First())
-            .ToListAsync();
-
-        var pointsMap = points.ToDictionary(p => p.UserId, p => p.Total);
-        var badgeMap = lastBadges.ToDictionary(b => b.UserId, b => b);
+        var (pointsMap, championPoints, badgeMap) = await ComputeRankingDataAsync(id, participantIds, startingMatchDate);
 
         return Ok(participants
             .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
@@ -450,6 +407,35 @@ public class TournamentsController(ProdeaDbContext db) : ControllerBase
 
     private static DateTime AsUtc(DateTime dt) =>
         dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+
+    private async Task<(Dictionary<int, int> pointsMap, Dictionary<int, int> championPoints, Dictionary<int, MatchdayBadge> badgeMap)>
+        ComputeRankingDataAsync(int tournamentId, List<int> participantIds, DateTime startingMatchDate)
+    {
+        var points = await db.Predictions
+            .Where(p => participantIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
+            .GroupBy(p => p.UserId)
+            .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
+            .ToListAsync();
+
+        var championPicksList = await db.ChampionPicks
+            .Where(cp => participantIds.Contains(cp.UserId))
+            .ToListAsync();
+        var championPoints = championPicksList
+            .GroupBy(cp => cp.UserId)
+            .ToDictionary(g => g.Key, g => g.Max(cp => cp.PointsEarned));
+
+        var lastBadges = await db.MatchdayBadges
+            .Where(mb => mb.TournamentId == tournamentId && mb.Phase != "")
+            .GroupBy(mb => mb.UserId)
+            .Select(g => g.OrderByDescending(mb => mb.AwardedAt).First())
+            .ToListAsync();
+
+        return (
+            points.ToDictionary(p => p.UserId, p => p.Total),
+            championPoints,
+            lastBadges.ToDictionary(b => b.UserId, b => b)
+        );
+    }
 
     private static string? FullName(User u) =>
         (u.FirstName != null || u.LastName != null)
