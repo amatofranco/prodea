@@ -232,10 +232,10 @@ public class FixtureService(
             }
             else if (espnBracketData.TryGetValue(m.Id, out var espnData))
             {
-                var fdHome = m.HomeTeam?.Name ?? m.HomeTeam?.ShortName;
-                var fdAway = m.AwayTeam?.Name ?? m.AwayTeam?.ShortName;
-                homeTeam = fdHome != null ? TranslateTeam(fdHome) : espnData.HomeTeam;
-                awayTeam = fdAway != null ? TranslateTeam(fdAway) : espnData.AwayTeam;
+                homeTeam = espnData.HomeTeam != "TBD" ? espnData.HomeTeam
+                         : TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
+                awayTeam = espnData.AwayTeam != "TBD" ? espnData.AwayTeam
+                         : TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
                 homeLabel = espnData.HomeLabel;
                 awayLabel = espnData.AwayLabel;
             }
