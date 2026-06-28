@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import AdSlot from '../components/AdSlot'
 import { useAuthStore } from '../store/authStore'
 
 const STEPS = [
@@ -142,8 +141,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <AdSlot slot="REEMPLAZAR_SLOT_ID_1" />
-
         {/* Diferenciales */}
         <section>
           <SectionTitle>Lo que hace diferente a Prodea</SectionTitle>
@@ -200,8 +197,6 @@ export default function LandingPage() {
             </figure>
           </div>
         </section>
-
-        <AdSlot slot="REEMPLAZAR_SLOT_ID_2" />
 
         {/* FAQ */}
         <section>

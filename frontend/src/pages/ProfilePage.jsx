@@ -5,8 +5,6 @@ import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
 import FigurineCard from '../components/FigurineCard'
-import AdInterstitial from '../components/AdInterstitial'
-import { useAdGate } from '../hooks/useAdGate'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
 function SmallFlag({ name }) {
@@ -51,9 +49,6 @@ export default function ProfilePage() {
   const [selectedBadge, setSelectedBadge] = useState(null)
   const [selectedAccBadge, setSelectedAccBadge] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [showAd, setShowAd] = useState(false)
-  const adGate = useAdGate()
-
   useEffect(() => {
     Promise.all([
       api.getProfile(tournamentId, userId),
@@ -192,14 +187,7 @@ export default function ProfilePage() {
                     <span className="text-[10px] text-[#8A8A9A] ml-0.5">pts</span>
                   </div>
                   <button
-                    onClick={() => {
-                      const badge = selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b
-                      setSelectedBadge(badge)
-                      if (badge && adGate.shouldShowAd()) {
-                        adGate.recordAdShown()
-                        setShowAd(true)
-                      }
-                    }}
+                    onClick={() => setSelectedBadge(selectedBadge?.phase === b.phase && selectedBadge?.matchday === b.matchday ? null : b)}
                     className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
                   >
                     <Share2 size={11} />
@@ -287,7 +275,6 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {showAd && <AdInterstitial onClose={() => setShowAd(false)} />}
     </div>
   )
 }
