@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, BellOff, LogOut, MessageSquare, Send, HelpCircle, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import { api } from '../services/api'
@@ -8,6 +9,7 @@ import { api } from '../services/api'
 const MAX_MSG = 500
 
 export default function AjustesPage() {
+  const { t } = useTranslation()
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
   const { supported, isStandalone, subscribed, subscribe, unsubscribe } = usePushNotifications()
@@ -49,7 +51,7 @@ export default function AjustesPage() {
 
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D] px-4 pt-14 pb-6">
-      <h1 className="text-white text-2xl font-bold mb-8">Ajustes</h1>
+      <h1 className="text-white text-2xl font-bold mb-8">{t('settings.title')}</h1>
 
       <div className="flex flex-col gap-3">
         {supported && isStandalone && (
@@ -60,9 +62,9 @@ export default function AjustesPage() {
                 : <BellOff size={20} className="text-[#8A8A9A]" />
               }
               <div>
-                <p className="text-white text-sm font-semibold">Notificaciones</p>
+                <p className="text-white text-sm font-semibold">{t('settings.notifications')}</p>
                 <p className="text-[#8A8A9A] text-xs mt-0.5">
-                  {optimistic ? 'Activadas' : 'Desactivadas'}
+                  {optimistic ? t('settings.enabled') : t('settings.disabled')}
                 </p>
               </div>
             </div>
@@ -79,12 +81,12 @@ export default function AjustesPage() {
         <div className="bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E] flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <MessageSquare size={20} className="text-[#00FF87]" />
-            <p className="text-white text-sm font-semibold">Contacto</p>
+            <p className="text-white text-sm font-semibold">{t('settings.contact')}</p>
           </div>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, MAX_MSG))}
-            placeholder="Sugerencias, bugs, consultas..."
+            placeholder={t('settings.contactPlaceholder')}
             rows={3}
             className="w-full px-3 py-2.5 rounded-xl bg-[#0D0D0D] border border-[#2A2A3E] text-white text-sm placeholder-[#8A8A9A] focus:outline-none focus:border-[#00FF87]/40 resize-none"
           />
@@ -100,7 +102,7 @@ export default function AjustesPage() {
               }`}
             >
               <Send size={14} />
-              {sent ? '¡Enviado!' : sending ? 'Enviando...' : 'Enviar'}
+              {sent ? t('common.sent') : sending ? t('common.sending') : t('common.send')}
             </button>
           </div>
         </div>
@@ -110,7 +112,7 @@ export default function AjustesPage() {
           className="flex items-center gap-3 bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E] text-left w-full hover:border-[#00FF87]/40 transition-colors"
         >
           <HelpCircle size={20} className="text-[#00FF87]" />
-          <span className="text-white text-sm font-semibold flex-1">¿Cómo se juega?</span>
+          <span className="text-white text-sm font-semibold flex-1">{t('settings.howToPlay')}</span>
           <ChevronRight size={18} className="text-[#8A8A9A]" />
         </button>
 
@@ -119,7 +121,7 @@ export default function AjustesPage() {
           className="flex items-center gap-3 bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E] text-left w-full hover:border-red-500/40 transition-colors"
         >
           <LogOut size={20} className="text-red-400" />
-          <span className="text-red-400 text-sm font-semibold">Cerrar sesión</span>
+          <span className="text-red-400 text-sm font-semibold">{t('settings.logout')}</span>
         </button>
       </div>
 

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import GoogleButton from '../components/GoogleButton'
 import InAppBrowserBanner from '../components/InAppBrowserBanner'
 
 export default function RegisterPage() {
+  const { t } = useTranslation()
   const [form, setForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -29,10 +31,10 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
     if (!/^[a-zA-Z0-9_]+$/.test(form.username)) {
-      setError('El nombre de usuario solo puede contener letras, números y guión bajo (_)')
+      setError(t('auth.usernameInvalid'))
       return
     }
-    if (form.password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    if (form.password.length < 6) { setError(t('auth.passwordTooShort')); return }
     setLoading(true)
     try {
       const data = await api.register(form)
@@ -64,29 +66,29 @@ export default function RegisterPage() {
       <div className="mb-5 flex flex-col items-center gap-0">
         <img src="/logo-icon.png" alt="Prodea" className="w-[140px] h-[140px] md:w-[240px] md:h-[240px] object-contain" />
         <img src="/logo-wordmark.png" alt="Prodea" className="h-[46px] md:h-[72px] object-contain -mt-3" />
-        <p className="text-[#8A8A9A] text-base font-semibold tracking-widest uppercase -mt-2" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
+        <p className="text-[#8A8A9A] text-base font-semibold tracking-widest uppercase -mt-2" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>{t('common.worldCup')}</p>
       </div>
 
       <div className="w-full max-w-sm md:max-w-[400px] flex flex-col gap-3">
-        <GoogleButton onCredential={handleGoogleCredential} text="Registrarse con Google" />
+        <GoogleButton onCredential={handleGoogleCredential} text={t('auth.registerWithGoogle')} />
 
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-[#2A2A3E]" />
-          <span className="text-[#8A8A9A] text-xs">o</span>
+          <span className="text-[#8A8A9A] text-xs">{t('common.or')}</span>
           <div className="flex-1 h-px bg-[#2A2A3E]" />
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex gap-3">
-            {field('firstName', 'text', 'Nombre')}
-            {field('lastName', 'text', 'Apellido')}
+            {field('firstName', 'text', t('auth.firstName'))}
+            {field('lastName', 'text', t('auth.lastName'))}
           </div>
           <div className="flex flex-col gap-1">
-            {field('username', 'text', 'Nombre de usuario')}
-            <p className="text-xs text-[#8A8A9A] px-1">Solo letras, números y _ (sin espacios ni símbolos)</p>
+            {field('username', 'text', t('auth.username'))}
+            <p className="text-xs text-[#8A8A9A] px-1">{t('auth.usernameHint')}</p>
           </div>
-          {field('email', 'email', 'Email')}
-          {field('password', 'password', 'Contraseña (mín. 6 caracteres)')}
+          {field('email', 'email', t('auth.email'))}
+          {field('password', 'password', t('auth.passwordHint'))}
 
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
@@ -95,13 +97,13 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-base disabled:opacity-50 active:scale-95 transition-transform"
           >
-            {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+            {loading ? t('auth.registering') : t('auth.register')}
           </button>
         </form>
 
         <p className="text-center text-[#8A8A9A] text-sm">
-          ¿Ya tenés cuenta?{' '}
-          <Link to="/login" className="text-[#00FF87] font-semibold">Iniciá sesión</Link>
+          {t('auth.hasAccount')}{' '}
+          <Link to="/login" className="text-[#00FF87] font-semibold">{t('auth.signIn')}</Link>
         </p>
       </div>
       </div>

@@ -1,17 +1,22 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Trophy, Target, Settings } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 
-const navItems = [
-  { to: '/', icon: Home, label: 'Inicio', end: true },
-  { to: '/predicciones', icon: Target, label: 'Predicciones' },
-  { to: '/torneos', icon: Trophy, label: 'Torneos' },
-  { to: '/ajustes', icon: Settings, label: 'Ajustes' },
-]
+function useNavItems() {
+  const { t } = useTranslation()
+  return [
+    { to: '/', icon: Home, label: t('nav.home'), end: true },
+    { to: '/predicciones', icon: Target, label: t('nav.predictions') },
+    { to: '/torneos', icon: Trophy, label: t('nav.tournaments') },
+    { to: '/ajustes', icon: Settings, label: t('nav.settings') },
+  ]
+}
 
 export default function Layout() {
   const user = useAuthStore((s) => s.user)
   const avatar = user?.username?.[0]?.toUpperCase() || '?'
+  const navItems = useNavItems()
 
   return (
     <div className="flex min-h-dvh bg-[#0D0D0D]">
