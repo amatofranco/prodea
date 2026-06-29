@@ -22,7 +22,7 @@ const BADGE_STYLES = {
 const EMOJIS = {
   Crack: '🏆', Mufa: '💀', Adivino: '🔮',
   Francotirador: '🎯', PechoFrio: '❄️', Goleador: '⚽', Rustico: '⛏️', Tambaleante: '🥴', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
-  PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥',
+  PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥', TibiezaTotal: '🌡️',
   Campeon: '🏆', Subcampeon: '🥈', TercerPuesto: '🥉', Ultimo: '💀', Penultimo: '🥴',
   GoleadorTorneo: '⚽', RusticoTorneo: '⛏️',
 }

@@ -57,6 +57,7 @@ public class BadgeService(ProdeaDbContext db)
         [AccumulativeBadgeType.ElMuro] = "🧱",
         [AccumulativeBadgeType.ElFantasma] = "👻",
         [AccumulativeBadgeType.TripleMufa] = "💀🔥",
+        [AccumulativeBadgeType.TibiezaTotal] = "🌡️",
     };
 
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
@@ -375,6 +376,9 @@ public class BadgeService(ProdeaDbContext db)
 
         int totalJornadas = allBadges.Select(b => new { b.Phase, b.Matchday }).Distinct().Count();
 
+        bool tournamentFinished = !await db.Matches
+            .AnyAsync(m => m.Status != MatchStatus.Finished);
+
         foreach (var userId in participants)
         {
             var userBadges = allBadges.Where(b => b.UserId == userId).OrderBy(b => b.AwardedAt).ToList();
@@ -386,7 +390,7 @@ public class BadgeService(ProdeaDbContext db)
                 userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Crack);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.RachaInfernal, rachaInfernal);
 
-            bool neverLast = totalJornadas >= 3 && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
+            bool neverLast = tournamentFinished && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElMuro, neverLast);
 
             bool enCaidaLibre = userBadges.Count >= 3 &&
@@ -397,6 +401,10 @@ public class BadgeService(ProdeaDbContext db)
             bool tripleMufa = userBadges.Count >= 3 &&
                 userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Mufa);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.TripleMufa, tripleMufa);
+
+            bool tibiezaTotal = userBadges.Count >= 3 &&
+                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Tibio);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.TibiezaTotal, tibiezaTotal);
         }
 
         await db.SaveChangesAsync();

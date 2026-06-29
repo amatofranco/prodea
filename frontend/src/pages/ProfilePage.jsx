@@ -24,10 +24,11 @@ function jornadaLabel(phase, matchday) {
 
 const ACCUMULATIVE_LABELS = {
   PecheadaTotal: 'Pecheada Total',
-  RachaInfernal: 'Racha infernal',
+  RachaInfernal: 'Crack Total',
   ElMuro: 'El Muro',
   ElFantasma: 'El Fantasma',
   TripleMufa: 'Triple Mufa',
+  TibiezaTotal: 'Tibieza Total',
 }
 
 const ACCUMULATIVE_DESCRIPTIONS = {
@@ -36,6 +37,7 @@ const ACCUMULATIVE_DESCRIPTIONS = {
   ElMuro: 'Nunca fue último en toda la competencia',
   ElFantasma: 'Olvidó cargar predicciones más de 3 veces',
   TripleMufa: '3 jornadas consecutivas siendo El Mufa',
+  TibiezaTotal: '3 jornadas consecutivas siendo El Tibio',
 }
 
 export default function ProfilePage() {
