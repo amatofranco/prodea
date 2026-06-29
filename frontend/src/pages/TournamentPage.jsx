@@ -129,7 +129,7 @@ export default function TournamentPage() {
     api.getMatches(id).then((m) => {
       setMatches(m)
       setLiveCount(m.filter((x) => x.status === 'InProgress').length)
-    })
+    }).catch(() => {})
   }
 
   useEffect(() => {
@@ -137,23 +137,52 @@ export default function TournamentPage() {
       api.getTournament(id).then(setTournament),
       api.getLeaderboard(id).then(setLeaderboard),
       api.getMatchdayWinners(id).then(setMatchdayWinners),
-    ]).finally(() => {
-      setLoading(false)
-      api.getMatches(id).then((m) => {
-        const hasFinished = m.some((x) => x.status === 'Finished')
-      })
-    })
+    ]).finally(() => setLoading(false))
 
     fetchMatches()
     joinTournament(id)
 
     const off = onMatchUpdated((update) => {
       updateMatchLive(update)
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.id === update.matchId
+            ? {
+                ...m,
+                homeScore: update.homeScore,
+                awayScore: update.awayScore,
+                status: update.status,
+                minute: update.minute ?? m.minute,
+                goals: update.goals !== undefined ? update.goals : m.goals,
+                livePhase: update.livePhase !== undefined ? update.livePhase : m.livePhase,
+                minuteDisplay: update.minuteDisplay !== undefined ? update.minuteDisplay : m.minuteDisplay,
+              }
+            : m
+        )
+      )
+      setLiveCount((prev) => {
+        const isNowLive = update.status === 'InProgress'
+        const wasLive = prev > 0
+        return isNowLive ? Math.max(prev, 1) : wasLive ? Math.max(0, prev - 1) : prev
+      })
       api.getLeaderboard(id).then(setLeaderboard)
+      api.getMatchdayWinners(id).then(setMatchdayWinners).catch(() => {})
       fetchMatches()
     })
 
-    return () => { off(); leaveTournament(id) }
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        fetchMatches()
+        api.getLeaderboard(id).then(setLeaderboard)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      off()
+      leaveTournament(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [id])
 
   useEffect(() => {

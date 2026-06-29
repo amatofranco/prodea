@@ -81,6 +81,9 @@ export default function HomePage() {
             : m
         )
       )
+      if (update.status === 'Finished') {
+        setTimeout(() => api.getMyPredictions().then(setMatches).catch(() => {}), 2000)
+      }
     })
     return () => {
       unsub()

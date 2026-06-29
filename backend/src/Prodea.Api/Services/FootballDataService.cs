@@ -336,14 +336,14 @@ public class FootballDataService(
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Partido finalizado: {Home} {HS}-{AS} {Away}", match.HomeTeam, homeScore, awayScore, match.AwayTeam);
 
-        using var finalizationScope = scopeFactory.CreateScope();
-        var finalizationService = finalizationScope.ServiceProvider.GetRequiredService<MatchFinalizationService>();
-        await finalizationService.ProcessAsync(match);
+        await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
 
         if (match.Phase == MatchPhase.Group)
             _lastKnockoutSync = DateTime.UtcNow;
 
-        await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
+        using var finalizationScope = scopeFactory.CreateScope();
+        var finalizationService = finalizationScope.ServiceProvider.GetRequiredService<MatchFinalizationService>();
+        await finalizationService.ProcessAsync(match);
     }
 
     private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
