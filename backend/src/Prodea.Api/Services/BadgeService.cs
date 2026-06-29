@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;
+using Prodea.Api.DTOs;
 using Prodea.Api.Models;
 
 namespace Prodea.Api.Services;
@@ -91,6 +92,52 @@ public class BadgeService(ProdeaDbContext db)
             (indices[i], indices[j]) = (indices[j], indices[i]);
         }
         return options[indices[occurrenceIndex % options.Length]];
+    }
+
+    // ── Profile badges ──────────────────────────────────────────────────
+
+    public async Task<(List<MatchdayBadgeDto> Matchday, List<AccumulativeBadgeDto> Accumulative)>
+        GetUserProfileBadgesAsync(int tournamentId, int userId)
+    {
+        var badgesRaw = await db.MatchdayBadges
+            .Where(mb => mb.TournamentId == tournamentId && mb.UserId == userId && mb.Phase != "")
+            .ToListAsync();
+
+        var badges = badgesRaw
+            .OrderByDescending(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
+            .ThenByDescending(mb => mb.Matchday)
+            .ToList();
+
+        var occurrenceCounts = new Dictionary<MatchdayBadgeType, int>();
+        var phraseIndex = badges
+            .OrderBy(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
+            .ThenBy(mb => mb.Matchday)
+            .ToDictionary(
+                mb => (mb.Phase, mb.Matchday),
+                mb =>
+                {
+                    occurrenceCounts.TryGetValue(mb.BadgeType, out var count);
+                    occurrenceCounts[mb.BadgeType] = count + 1;
+                    return count;
+                });
+
+        var matchdayDtos = badges.Select(mb => new MatchdayBadgeDto(
+            mb.Phase, mb.Matchday, mb.BadgeType.ToString(),
+            GetEmoji(mb.BadgeType), mb.BadgeType.ToString(), mb.PointsInMatchday,
+            GetPhrase(mb.BadgeType, mb.UserId, phraseIndex[(mb.Phase, mb.Matchday)]),
+            mb.AwardedAt
+        )).ToList();
+
+        var accBadges = await db.AccumulativeBadges
+            .Where(ab => ab.TournamentId == tournamentId && ab.UserId == userId)
+            .ToListAsync();
+
+        var accDtos = accBadges.Select(ab => new AccumulativeBadgeDto(
+            ab.BadgeType.ToString(), GetAccumulativeEmoji(ab.BadgeType),
+            ab.BadgeType.ToString(), ab.AwardedAt
+        )).ToList();
+
+        return (matchdayDtos, accDtos);
     }
 
     // ── Motes de fecha ─────────────────────────────────────────────────
@@ -412,7 +459,7 @@ public class BadgeService(ProdeaDbContext db)
     public Task SendCardNotificationsPublicAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
         => SendCardNotificationsAsync(phase, matchday, userTournamentMap, push);
 
-    private static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
+    public static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
     {
         MatchPhase.Group => $"Fecha {matchday}",
         MatchPhase.R32 => "Dieciseisavos",

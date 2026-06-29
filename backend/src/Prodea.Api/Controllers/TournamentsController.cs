@@ -12,7 +12,7 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TournamentsController(ProdeaDbContext db, BadgeService badgeService) : AuthorizedControllerBase
+public class TournamentsController(ProdeaDbContext db, BadgeService badgeService, TournamentRankingService ranking) : AuthorizedControllerBase
 {
     private const int MaxTournamentsPerUser = 10;
 
@@ -50,15 +50,15 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
         if (tournament == null) return NotFound();
 
         var participantIds = tournament.Participants.Select(tp => tp.UserId).ToList();
-        var (pointsMap, championPoints, badgeMap) = await ComputeRankingDataAsync(id, participantIds, tournament.StartingMatchDate);
+        var data = await ranking.ComputeAsync(id, participantIds, tournament.StartingMatchDate);
 
         var ranked = tournament.Participants
-            .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
+            .OrderByDescending(tp => TournamentRankingService.TotalPoints(data, tp.UserId))
             .Select((tp, idx) => new ParticipantDto(
                 tp.UserId, tp.User.Username, tp.User.FullName(), tp.User.AvatarUrl,
-                pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
+                TournamentRankingService.TotalPoints(data, tp.UserId),
                 idx + 1,
-                badgeMap.GetValueOrDefault(tp.UserId)?.BadgeType.ToString()
+                data.LastBadgeMap.GetValueOrDefault(tp.UserId)?.BadgeType.ToString()
             ))
             .ToList();
 
@@ -228,16 +228,16 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
             .Where(t => t.Id == id)
             .Select(t => t.StartingMatchDate)
             .FirstOrDefaultAsync();
-        var (pointsMap, championPoints, badgeMap) = await ComputeRankingDataAsync(id, participantIds, startingMatchDate);
+        var data = await ranking.ComputeAsync(id, participantIds, startingMatchDate);
 
         return Ok(participants
-            .OrderByDescending(tp => pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0))
+            .OrderByDescending(tp => TournamentRankingService.TotalPoints(data, tp.UserId))
             .Select((tp, idx) =>
             {
-                var badge = badgeMap.GetValueOrDefault(tp.UserId);
+                var badge = data.LastBadgeMap.GetValueOrDefault(tp.UserId);
                 return new LeaderboardEntryDto(
                     idx + 1, tp.UserId, tp.User.Username, tp.User.FullName(), tp.User.AvatarUrl,
-                    pointsMap.GetValueOrDefault(tp.UserId, 0) + championPoints.GetValueOrDefault(tp.UserId, 0),
+                    TournamentRankingService.TotalPoints(data, tp.UserId),
                     badge?.BadgeType.ToString(),
                     badge != null ? BadgeService.GetEmoji(badge.BadgeType) : null
                 );
@@ -289,17 +289,7 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
                     .ThenBy(mb => loadTimeMap.GetValueOrDefault((mb.UserId, mb.Phase, mb.Matchday), DateTime.MaxValue))
                     .First();
                 var phase = Enum.Parse<MatchPhase>(winner.Phase);
-                var label = phase switch
-                {
-                    MatchPhase.Group      => $"Fecha {winner.Matchday}",
-                    MatchPhase.R32        => "Dieciseisavos",
-                    MatchPhase.R16        => "Octavos",
-                    MatchPhase.QF         => "Cuartos",
-                    MatchPhase.SF         => "Semis",
-                    MatchPhase.ThirdPlace => "3er Puesto",
-                    MatchPhase.Final      => "Final",
-                    _                     => winner.Phase,
-                };
+                var label = BadgeService.JornadaLabel(phase, winner.Matchday);
                 return new JornadaWinnerDto(winner.Phase, winner.Matchday, label, winner.UserId, winner.User.Username, winner.User.FullName(), winner.PointsInMatchday);
             })
             .OrderBy(w => w.Phase)
@@ -378,39 +368,4 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
 
     private static DateTime AsUtc(DateTime dt) =>
         dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-
-    private async Task<(Dictionary<int, int> pointsMap, Dictionary<int, int> championPoints, Dictionary<int, MatchdayBadge> badgeMap)>
-        ComputeRankingDataAsync(int tournamentId, List<int> participantIds, DateTime startingMatchDate)
-    {
-        var points = await db.Predictions
-            .Where(p => participantIds.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
-            .GroupBy(p => p.UserId)
-            .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
-            .ToListAsync();
-
-        var championPicksList = await db.ChampionPicks
-            .Where(cp => participantIds.Contains(cp.UserId))
-            .ToListAsync();
-        var championPoints = championPicksList
-            .GroupBy(cp => cp.UserId)
-            .ToDictionary(g => g.Key, g => g.Max(cp => cp.PointsEarned));
-
-        var allBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == tournamentId && mb.Phase != "")
-            .ToListAsync();
-
-        var lastBadges = allBadges
-            .GroupBy(mb => mb.UserId)
-            .Select(g => g
-                .OrderByDescending(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
-                .ThenByDescending(mb => mb.Matchday)
-                .First())
-            .ToList();
-
-        return (
-            points.ToDictionary(p => p.UserId, p => p.Total),
-            championPoints,
-            lastBadges.ToDictionary(b => b.UserId, b => b)
-        );
-    }
 }

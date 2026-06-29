@@ -12,7 +12,7 @@ namespace Prodea.Api.Controllers;
 [ApiController]
 [Route("api/tournaments/{tournamentId}/profile")]
 [Authorize]
-public class ProfileController(ProdeaDbContext db) : AuthorizedControllerBase
+public class ProfileController(ProdeaDbContext db, TournamentRankingService ranking, BadgeService badgeService) : AuthorizedControllerBase
 {
 
     [HttpGet("{userId}")]
@@ -25,70 +25,25 @@ public class ProfileController(ProdeaDbContext db) : AuthorizedControllerBase
         var user = await db.Users.FindAsync(userId);
         if (user == null) return NotFound();
 
-        var totalPoints = await db.Predictions
-            .Where(p => p.UserId == userId)
-            .SumAsync(p => p.PointsEarned);
-
-        var participants = await db.TournamentParticipants
+        var participantIds = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == tournamentId)
             .Select(tp => tp.UserId)
             .ToListAsync();
 
-        var allPoints = await db.Predictions
-            .Where(p => participants.Contains(p.UserId))
-            .GroupBy(p => p.UserId)
-            .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.PointsEarned) })
-            .OrderByDescending(x => x.Total)
-            .ToListAsync();
+        var startingMatchDate = await db.Tournaments
+            .Where(t => t.Id == tournamentId)
+            .Select(t => t.StartingMatchDate)
+            .FirstOrDefaultAsync();
 
-        int rank = allPoints.FindIndex(x => x.UserId == userId) + 1;
+        var data = await ranking.ComputeAsync(tournamentId, participantIds, startingMatchDate);
+        var totalPoints = TournamentRankingService.TotalPoints(data, userId);
+        var rank = TournamentRankingService.Rank(data, participantIds, userId);
 
-        var matchdayBadgesRaw = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == tournamentId && mb.UserId == userId && mb.Phase != "")
-            .ToListAsync();
+        var (matchdayBadges, accumulativeBadges) = await badgeService.GetUserProfileBadgesAsync(tournamentId, userId);
 
-        var matchdayBadges = matchdayBadgesRaw
-            .OrderByDescending(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
-            .ThenByDescending(mb => mb.Matchday)
-            .ToList();
-
-        // Assign occurrence index per badge type (chronological, oldest = 0) for unique phrase selection
-        var occurrenceCounts = new Dictionary<MatchdayBadgeType, int>();
-        var phraseIndex = matchdayBadges
-            .OrderBy(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
-            .ThenBy(mb => mb.Matchday)
-            .ToDictionary(
-                mb => (mb.Phase, mb.Matchday),
-                mb =>
-                {
-                    occurrenceCounts.TryGetValue(mb.BadgeType, out var count);
-                    occurrenceCounts[mb.BadgeType] = count + 1;
-                    return count;
-                });
-
-        var accumulativeBadges = await db.AccumulativeBadges
-            .Where(ab => ab.TournamentId == tournamentId && ab.UserId == userId)
-            .ToListAsync();
-
-        var fullName = user.FullName();
         return Ok(new PlayerProfileDto(
-            userId, user.Username, fullName, user.AvatarUrl, totalPoints, rank,
-            matchdayBadges.Select(mb => new MatchdayBadgeDto(
-                mb.Phase,
-                mb.Matchday,
-                mb.BadgeType.ToString(),
-                BadgeService.GetEmoji(mb.BadgeType),
-                mb.BadgeType.ToString(),
-                mb.PointsInMatchday,
-                BadgeService.GetPhrase(mb.BadgeType, mb.UserId, phraseIndex[(mb.Phase, mb.Matchday)]),
-                mb.AwardedAt
-            )).ToList(),
-            accumulativeBadges.Select(ab => new AccumulativeBadgeDto(
-                ab.BadgeType.ToString(),
-                BadgeService.GetAccumulativeEmoji(ab.BadgeType),
-                ab.BadgeType.ToString(),
-                ab.AwardedAt
-            )).ToList()
+            userId, user.Username, user.FullName(), user.AvatarUrl, totalPoints, rank,
+            matchdayBadges, accumulativeBadges
         ));
     }
 

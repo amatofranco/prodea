@@ -49,6 +49,7 @@ public static class ServiceRegistrationExtensions
     {
         services.AddScoped<JwtService>();
         services.AddScoped<BadgeService>();
+        services.AddScoped<TournamentRankingService>();
         services.AddScoped<EmailService>();
         services.AddScoped<EspnBracketService>();
         services.AddScoped<FixtureService>();
