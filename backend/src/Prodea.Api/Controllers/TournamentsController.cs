@@ -395,11 +395,17 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
             .GroupBy(cp => cp.UserId)
             .ToDictionary(g => g.Key, g => g.Max(cp => cp.PointsEarned));
 
-        var lastBadges = await db.MatchdayBadges
+        var allBadges = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == tournamentId && mb.Phase != "")
-            .GroupBy(mb => mb.UserId)
-            .Select(g => g.OrderByDescending(mb => mb.AwardedAt).First())
             .ToListAsync();
+
+        var lastBadges = allBadges
+            .GroupBy(mb => mb.UserId)
+            .Select(g => g
+                .OrderByDescending(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
+                .ThenByDescending(mb => mb.Matchday)
+                .First())
+            .ToList();
 
         return (
             points.ToDictionary(p => p.UserId, p => p.Total),
