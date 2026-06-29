@@ -29,6 +29,8 @@ const ACCUMULATIVE_LABELS = {
   ElFantasma: 'El Fantasma',
   TripleMufa: 'Triple Mufa',
   TibiezaTotal: 'Tibieza Total',
+  GoleadorSerial: 'Goleador Serial',
+  RusticoTotal: 'Rústico Total',
 }
 
 const ACCUMULATIVE_DESCRIPTIONS = {
@@ -38,6 +40,8 @@ const ACCUMULATIVE_DESCRIPTIONS = {
   ElFantasma: 'Olvidó cargar predicciones más de 3 veces',
   TripleMufa: '3 jornadas consecutivas siendo El Mufa',
   TibiezaTotal: '3 jornadas consecutivas siendo El Tibio',
+  GoleadorSerial: '3 jornadas consecutivas siendo El Goleador',
+  RusticoTotal: '3 jornadas consecutivas siendo El Rústico',
 }
 
 export default function ProfilePage() {

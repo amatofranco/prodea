@@ -58,6 +58,8 @@ public class BadgeService(ProdeaDbContext db)
         [AccumulativeBadgeType.ElFantasma] = "👻",
         [AccumulativeBadgeType.TripleMufa] = "💀🔥",
         [AccumulativeBadgeType.TibiezaTotal] = "🌡️",
+        [AccumulativeBadgeType.GoleadorSerial] = "⚽",
+        [AccumulativeBadgeType.RusticoTotal] = "⛏️",
     };
 
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
@@ -405,6 +407,14 @@ public class BadgeService(ProdeaDbContext db)
             bool tibiezaTotal = userBadges.Count >= 3 &&
                 userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Tibio);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.TibiezaTotal, tibiezaTotal);
+
+            bool goleadorSerial = userBadges.Count >= 3 &&
+                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Goleador);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.GoleadorSerial, goleadorSerial);
+
+            bool rusticoTotal = userBadges.Count >= 3 &&
+                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Rustico);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.RusticoTotal, rusticoTotal);
         }
 
         await db.SaveChangesAsync();
