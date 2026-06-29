@@ -36,7 +36,7 @@ export const BADGE_TAGS = {
   Goleador:      'Más goles cargados',
   Rustico:       'Menos goles cargados',
   Tambaleante:   'Penúltimo de la fecha',
-  Tibio:         'Mitad de tabla',
+  Tibio:         'Ni fu ni fa en la fecha',
   Payaso:        '0 puntos',
   Dormido:       'Sin predicciones',
   Ultimo:        'Último del torneo',
