@@ -241,9 +241,6 @@ public class BadgeService(ProdeaDbContext db)
 
     // ── Recálculo ──────────────────────────────────────────────────────
 
-    public Task SendCardNotificationsPublicAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
-        => SendCardNotificationsAsync(phase, matchday, userTournamentMap, push);
-
     public async Task RecalculateAllBadgesAsync(int tournamentId)
     {
         await db.MatchdayBadges.Where(mb => mb.TournamentId == tournamentId).ExecuteDeleteAsync();
@@ -270,6 +267,24 @@ public class BadgeService(ProdeaDbContext db)
         var participants = await GetParticipantsAsync(tournamentId);
         if (participants.Count <= 1) return;
 
+        var (ranking, totalPointsMap) = await BuildTournamentRankingAsync(tournamentId, participants);
+        var assigned = new HashSet<int>();
+
+        for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
+            await OverrideFinalBadgeAsync(tournamentId, ranking[i], PodiumTypes[i], totalPointsMap, assigned);
+
+        if (ranking.Count >= 4)
+            await OverrideFinalBadgeAsync(tournamentId, ranking[^1], MatchdayBadgeType.Ultimo, totalPointsMap, assigned);
+        if (ranking.Count >= 5)
+            await OverrideFinalBadgeAsync(tournamentId, ranking[^2], MatchdayBadgeType.Penultimo, totalPointsMap, assigned);
+
+        await AwardGoalExtremesBadgesAsync(tournamentId, participants, assigned, totalPointsMap);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<(List<int> Ranking, Dictionary<int, int> TotalPoints)> BuildTournamentRankingAsync(
+        int tournamentId, List<int> participants)
+    {
         var startingMatchDate = await GetStartingMatchDateAsync(tournamentId);
 
         var points = await db.Predictions
@@ -287,33 +302,36 @@ public class BadgeService(ProdeaDbContext db)
         var pointsMap = points.ToDictionary(p => p.UserId, p => p.Total);
         var champMap = championPoints.ToDictionary(c => c.UserId, c => c.Max);
 
+        var totalPointsMap = participants.ToDictionary(
+            uid => uid,
+            uid => pointsMap.GetValueOrDefault(uid, 0) + champMap.GetValueOrDefault(uid, 0));
+
         var ranking = participants
-            .OrderByDescending(uid => pointsMap.GetValueOrDefault(uid, 0) + champMap.GetValueOrDefault(uid, 0))
+            .OrderByDescending(uid => totalPointsMap[uid])
             .ToList();
 
-        var assigned = new HashSet<int>();
+        return (ranking, totalPointsMap);
+    }
 
-        async Task OverrideFinalBadge(int userId, MatchdayBadgeType type)
-        {
-            var totalPoints = pointsMap.GetValueOrDefault(userId, 0) + champMap.GetValueOrDefault(userId, 0);
+    private async Task OverrideFinalBadgeAsync(
+        int tournamentId, int userId, MatchdayBadgeType type,
+        Dictionary<int, int> totalPointsMap, HashSet<int> assigned)
+    {
+        var finalBadge = await db.MatchdayBadges.FirstOrDefaultAsync(mb =>
+            mb.UserId == userId && mb.TournamentId == tournamentId && mb.Phase == "Final" && mb.Matchday == 0);
+        if (finalBadge == null) return;
 
-            var finalBadge = await db.MatchdayBadges.FirstOrDefaultAsync(mb =>
-                mb.UserId == userId && mb.TournamentId == tournamentId && mb.Phase == "Final" && mb.Matchday == 0);
-            if (finalBadge == null) return;
+        finalBadge.BadgeType = type;
+        finalBadge.PointsInMatchday = totalPointsMap.GetValueOrDefault(userId, 0);
+        finalBadge.AwardedAt = DateTime.UtcNow;
+        assigned.Add(userId);
+    }
 
-            finalBadge.BadgeType = type;
-            finalBadge.PointsInMatchday = totalPoints;
-            finalBadge.AwardedAt = DateTime.UtcNow;
-            assigned.Add(userId);
-        }
-
-        for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
-            await OverrideFinalBadge(ranking[i], PodiumTypes[i]);
-
-        if (ranking.Count >= 4)
-            await OverrideFinalBadge(ranking[^1], MatchdayBadgeType.Ultimo);
-        if (ranking.Count >= 5)
-            await OverrideFinalBadge(ranking[^2], MatchdayBadgeType.Penultimo);
+    private async Task AwardGoalExtremesBadgesAsync(
+        int tournamentId, List<int> participants,
+        HashSet<int> assigned, Dictionary<int, int> totalPointsMap)
+    {
+        var startingMatchDate = await GetStartingMatchDateAsync(tournamentId);
 
         var goals = await db.Predictions
             .Where(p => participants.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
@@ -321,20 +339,17 @@ public class BadgeService(ProdeaDbContext db)
             .Select(g => new { UserId = g.Key, Goals = g.Sum(p => p.PredictedHomeScore + p.PredictedAwayScore) })
             .ToListAsync();
 
-        if (goals.Count > 0)
-        {
-            var maxGoals = goals.Max(g => g.Goals);
-            var maxHolders = goals.Where(g => g.Goals == maxGoals).ToList();
-            if (maxHolders.Count == 1 && !assigned.Contains(maxHolders[0].UserId))
-                await OverrideFinalBadge(maxHolders[0].UserId, MatchdayBadgeType.GoleadorTorneo);
+        if (goals.Count == 0) return;
 
-            var minGoals = goals.Min(g => g.Goals);
-            var minHolders = goals.Where(g => g.Goals == minGoals).ToList();
-            if (minHolders.Count == 1 && !assigned.Contains(minHolders[0].UserId))
-                await OverrideFinalBadge(minHolders[0].UserId, MatchdayBadgeType.RusticoTorneo);
-        }
+        var maxGoals = goals.Max(g => g.Goals);
+        var maxHolders = goals.Where(g => g.Goals == maxGoals).ToList();
+        if (maxHolders.Count == 1 && !assigned.Contains(maxHolders[0].UserId))
+            await OverrideFinalBadgeAsync(tournamentId, maxHolders[0].UserId, MatchdayBadgeType.GoleadorTorneo, totalPointsMap, assigned);
 
-        await db.SaveChangesAsync();
+        var minGoals = goals.Min(g => g.Goals);
+        var minHolders = goals.Where(g => g.Goals == minGoals).ToList();
+        if (minHolders.Count == 1 && !assigned.Contains(minHolders[0].UserId))
+            await OverrideFinalBadgeAsync(tournamentId, minHolders[0].UserId, MatchdayBadgeType.RusticoTorneo, totalPointsMap, assigned);
     }
 
     // ── Acumulativos ───────────────────────────────────────────────────
@@ -367,8 +382,6 @@ public class BadgeService(ProdeaDbContext db)
 
             bool neverLast = tournamentFinished && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
             await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElMuro, neverLast);
-
-
         }
 
         await db.SaveChangesAsync();
@@ -395,6 +408,9 @@ public class BadgeService(ProdeaDbContext db)
     }
 
     // ── Notificaciones ─────────────────────────────────────────────────
+
+    public Task SendCardNotificationsPublicAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
+        => SendCardNotificationsAsync(phase, matchday, userTournamentMap, push);
 
     private static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
     {
