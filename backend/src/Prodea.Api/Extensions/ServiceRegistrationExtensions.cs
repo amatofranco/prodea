@@ -53,6 +53,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<EspnBracketService>();
         services.AddScoped<FixtureService>();
         services.AddScoped<MatchFinalizationService>();
+        services.AddSingleton<EspnApiClient>();
         services.AddSingleton<PollingStatusService>();
         services.AddHostedService<FootballDataService>();
         services.AddHostedService<BackupService>();

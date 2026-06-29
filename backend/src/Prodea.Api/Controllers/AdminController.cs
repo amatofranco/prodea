@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +17,7 @@ public class AdminController(
     ProdeaDbContext db,
     FixtureService fixtureService,
     PollingStatusService pollingStatus,
-    IHttpClientFactory httpClientFactory,
+    EspnApiClient espn,
     IHubContext<TournamentHub> hub,
     MatchFinalizationService finalizationService) : ControllerBase
 {
@@ -205,96 +204,32 @@ public class AdminController(
     }
 
     [HttpPost("matches/{id}/fetch-goals")]
-    public async Task<IActionResult> FetchGoals(int id)
+    public async Task<IActionResult> FetchGoals(int id, CancellationToken ct)
     {
         var match = await db.Matches.FindAsync(id);
         if (match == null) return NotFound(new { message = "Partido no encontrado" });
 
-        var espnClient = httpClientFactory.CreateClient("Espn");
         var edtDate = match.MatchDate.AddHours(-4).Date;
-        var scoreboardJson = await espnClient.GetStringAsync($"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={edtDate:yyyyMMdd}");
+        var events = await espn.FetchScoreboardAsync(edtDate, ct);
+        var espnEvent = EspnApiClient.FindMatch(events, match);
 
-        string? espnEventId = null;
-        using (var doc = JsonDocument.Parse(scoreboardJson))
-        {
-            if (doc.RootElement.TryGetProperty("events", out var events))
-            {
-                foreach (var evt in events.EnumerateArray())
-                {
-                    var evtDate = evt.GetProperty("date").GetDateTime();
-                    if (Math.Abs((evtDate - match.MatchDate).TotalHours) > 4) continue;
-
-                    var comps = evt.GetProperty("competitions")[0].GetProperty("competitors");
-                    string? homeTeam = null, awayTeam = null;
-                    foreach (var c in comps.EnumerateArray())
-                    {
-                        var name = EspnTeamMapping.Map(c.GetProperty("team").GetProperty("displayName").GetString() ?? "");
-                        if (c.GetProperty("homeAway").GetString() == "home") homeTeam = name;
-                        else awayTeam = name;
-                    }
-
-                    if (string.Equals(homeTeam, match.HomeTeam, StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(awayTeam, match.AwayTeam, StringComparison.OrdinalIgnoreCase))
-                    {
-                        espnEventId = evt.GetProperty("id").GetString();
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (espnEventId == null)
+        if (espnEvent == null)
             return NotFound(new { message = $"Partido no encontrado en ESPN para {edtDate:yyyy-MM-dd}" });
 
-        var summaryJson = await espnClient.GetStringAsync($"/apis/site/v2/sports/soccer/fifa.world/summary?event={espnEventId}");
-
-        var goals = new List<object>();
-        using (var doc = JsonDocument.Parse(summaryJson))
-        {
-            if (doc.RootElement.TryGetProperty("keyEvents", out var keyEvents) && keyEvents.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var evt in keyEvents.EnumerateArray())
-                {
-                    if (!evt.TryGetProperty("scoringPlay", out var sp) || !sp.GetBoolean()) continue;
-                    if (!evt.TryGetProperty("type", out var typeObj)) continue;
-                    if (!typeObj.TryGetProperty("type", out var typeStr)) continue;
-                    var typeString = typeStr.GetString() ?? "";
-                    var isGoal    = typeString.StartsWith("goal", StringComparison.OrdinalIgnoreCase);
-                    var isPen     = typeString.StartsWith("penalty---scored", StringComparison.OrdinalIgnoreCase);
-                    var isOwnGoal = typeString.Equals("own-goal", StringComparison.OrdinalIgnoreCase);
-                    if (!isGoal && !isPen && !isOwnGoal) continue;
-
-                    var scorer = "?";
-                    if (evt.TryGetProperty("participants", out var parts) && parts.GetArrayLength() > 0)
-                        scorer = parts[0].GetProperty("athlete").GetProperty("displayName").GetString() ?? "?";
-                    if (isPen) scorer = $"{scorer} (pen.)";
-                    else if (isOwnGoal) scorer = $"{scorer} (GEC)";
-
-                    var team = "";
-                    if (evt.TryGetProperty("team", out var teamObj))
-                        team = EspnTeamMapping.Map(teamObj.GetProperty("displayName").GetString() ?? "");
-
-                    var minute = "";
-                    if (evt.TryGetProperty("clock", out var clock) && clock.TryGetProperty("displayValue", out var dv))
-                        minute = dv.GetString() ?? "";
-
-                    goals.Add(new { scorer, team, minute });
-                }
-            }
-        }
+        var goals = await espn.FetchGoalsAsync(espnEvent.Id, ct);
 
         match.GoalsJson = goals.Count > 0 ? JsonSerializer.Serialize(goals) : null;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
 
         if (goals.Count > 0)
         {
-            var payload = new { matchId = match.Id, homeScore = match.HomeScore, awayScore = match.AwayScore, status = match.Status.ToString(), minute = match.Minute, goals };
-            var tids = await db.TournamentParticipants.Select(tp => tp.TournamentId).Distinct().ToListAsync();
+            var payload = new { matchId = match.Id, homeScore = match.HomeScore, awayScore = match.AwayScore, status = match.Status.ToString(), minute = match.Minute, goals = goals.Select(g => new { scorer = g.Scorer, team = g.Team, minute = g.Minute }) };
+            var tids = await db.TournamentParticipants.Select(tp => tp.TournamentId).Distinct().ToListAsync(ct);
             foreach (var tid in tids)
-                await hub.Clients.Group($"tournament-{tid}").SendAsync("MatchUpdated", payload);
+                await hub.Clients.Group($"tournament-{tid}").SendAsync("MatchUpdated", payload, ct);
         }
 
-        return Ok(new { message = $"{goals.Count} goles guardados para {match.HomeTeam} vs {match.AwayTeam}", espnEventId, goals });
+        return Ok(new { message = $"{goals.Count} goles guardados para {match.HomeTeam} vs {match.AwayTeam}", espnEventId = espnEvent.Id, goals });
     }
 
     [SkipAdminKey]
