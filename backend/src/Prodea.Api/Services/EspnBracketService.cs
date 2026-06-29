@@ -9,6 +9,7 @@ namespace Prodea.Api.Services;
 public class EspnBracketService(
     ProdeaDbContext db,
     IHttpClientFactory httpClientFactory,
+    EspnApiClient espn,
     ILogger<EspnBracketService> logger)
 {
     public async Task<int> TryResolveFromEspnStandingsAsync(List<Match> tbdMatches)
@@ -89,69 +90,42 @@ public class EspnBracketService(
         var stillTbd = tbdMatches
             .Where(m => m.ExternalId.HasValue && (m.HomeTeam == "TBD" || m.AwayTeam == "TBD"))
             .ToList();
-
         if (stillTbd.Count == 0) return 0;
 
         try
         {
             var byKickoff = new Dictionary<string, Match>();
             foreach (var m in stillTbd)
-            {
-                var key = m.MatchDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
-                byKickoff.TryAdd(key, m);
-            }
+                byKickoff.TryAdd(FormatKickoffKey(m.MatchDate), m);
 
-            var dates = stillTbd
-                .Select(m => m.MatchDate.ToUniversalTime().ToString("yyyyMMdd"))
-                .Distinct()
-                .ToList();
+            var eventsByKickoff = await FetchEventsByKickoffAsync(stillTbd.Select(m => m.MatchDate));
 
-            var client = httpClientFactory.CreateClient("Espn");
             int updated = 0;
-
-            foreach (var date in dates)
+            foreach (var (key, ev) in eventsByKickoff)
             {
-                var response = await client.GetAsync(
-                    $"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={date}");
-                if (!response.IsSuccessStatusCode) continue;
+                if (!byKickoff.TryGetValue(key, out var match)) continue;
+                var comp = ev.Competitions.FirstOrDefault();
+                if (comp == null) continue;
 
-                var json = await response.Content.ReadAsStringAsync();
-                var scoreboard = JsonSerializer.Deserialize<EspnScoreboardResponse>(json, JsonOptions);
-                if (scoreboard?.Events == null) continue;
+                var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+                var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
 
-                foreach (var ev in scoreboard.Events)
+                if (match.HomeTeam == "TBD"
+                    && homeComp != null
+                    && EspnTeamMapping.EspnToSpanish.ContainsKey(homeComp.Team.DisplayName))
                 {
-                    if (ev.Date == null || ev.Competitions is not { Count: > 0 }) continue;
-                    if (!DateTime.TryParse(ev.Date, null,
-                        System.Globalization.DateTimeStyles.RoundtripKind, out var evDate))
-                        continue;
+                    match.HomeTeam = EspnTeamMapping.Map(homeComp.Team.DisplayName);
+                    match.HomeTeamLabel = null;
+                    updated++;
+                }
 
-                    var evKey = evDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
-                    if (!byKickoff.TryGetValue(evKey, out var match)) continue;
-
-                    var comp = ev.Competitions[0];
-                    if (comp.Competitors is not { Count: >= 2 }) continue;
-
-                    var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
-                    var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
-
-                    if (match.HomeTeam == "TBD"
-                        && homeComp?.Team?.DisplayName != null
-                        && EspnTeamMapping.EspnToSpanish.ContainsKey(homeComp.Team.DisplayName))
-                    {
-                        match.HomeTeam = EspnTeamMapping.Map(homeComp.Team.DisplayName);
-                        match.HomeTeamLabel = null;
-                        updated++;
-                    }
-
-                    if (match.AwayTeam == "TBD"
-                        && awayComp?.Team?.DisplayName != null
-                        && EspnTeamMapping.EspnToSpanish.ContainsKey(awayComp.Team.DisplayName))
-                    {
-                        match.AwayTeam = EspnTeamMapping.Map(awayComp.Team.DisplayName);
-                        match.AwayTeamLabel = null;
-                        updated++;
-                    }
+                if (match.AwayTeam == "TBD"
+                    && awayComp != null
+                    && EspnTeamMapping.EspnToSpanish.ContainsKey(awayComp.Team.DisplayName))
+                {
+                    match.AwayTeam = EspnTeamMapping.Map(awayComp.Team.DisplayName);
+                    match.AwayTeamLabel = null;
+                    updated++;
                 }
             }
 
@@ -178,56 +152,31 @@ public class EspnBracketService(
 
         var byKickoff = new Dictionary<string, int>();
         foreach (var m in knockoutMatches)
+            byKickoff.TryAdd(FormatKickoffKey(m.UtcDate), m.ExternalId);
+
+        try
         {
-            var key = m.UtcDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
-            byKickoff.TryAdd(key, m.ExternalId);
+            var eventsByKickoff = await FetchEventsByKickoffAsync(
+                knockoutMatches.Select(m => m.UtcDate));
+
+            foreach (var (key, ev) in eventsByKickoff)
+            {
+                if (!byKickoff.TryGetValue(key, out var externalId)) continue;
+                var comp = ev.Competitions.FirstOrDefault();
+                if (comp == null) continue;
+
+                var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+                var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
+
+                var (homeTeam, homeLabel) = ParseEspnBracketTeam(homeComp?.Team.DisplayName);
+                var (awayTeam, awayLabel) = ParseEspnBracketTeam(awayComp?.Team.DisplayName);
+
+                result[externalId] = new EspnBracketData(homeTeam, awayTeam, homeLabel, awayLabel);
+            }
         }
-
-        var dates = knockoutMatches
-            .Select(m => m.UtcDate.ToUniversalTime().ToString("yyyyMMdd"))
-            .Distinct()
-            .ToList();
-
-        var client = httpClientFactory.CreateClient("Espn");
-
-        foreach (var date in dates)
+        catch (Exception ex)
         {
-            try
-            {
-                var response = await client.GetAsync(
-                    $"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={date}");
-                if (!response.IsSuccessStatusCode) continue;
-
-                var json = await response.Content.ReadAsStringAsync();
-                var scoreboard = JsonSerializer.Deserialize<EspnScoreboardResponse>(json, JsonOptions);
-                if (scoreboard?.Events == null) continue;
-
-                foreach (var ev in scoreboard.Events)
-                {
-                    if (ev.Date == null || ev.Competitions is not { Count: > 0 }) continue;
-                    if (!DateTime.TryParse(ev.Date, null,
-                        System.Globalization.DateTimeStyles.RoundtripKind, out var evDate))
-                        continue;
-
-                    var evKey = evDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
-                    if (!byKickoff.TryGetValue(evKey, out var externalId)) continue;
-
-                    var comp = ev.Competitions[0];
-                    if (comp.Competitors is not { Count: >= 2 }) continue;
-
-                    var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
-                    var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
-
-                    var (homeTeam, homeLabel) = ParseEspnBracketTeam(homeComp?.Team?.DisplayName);
-                    var (awayTeam, awayLabel) = ParseEspnBracketTeam(awayComp?.Team?.DisplayName);
-
-                    result[externalId] = new EspnBracketData(homeTeam, awayTeam, homeLabel, awayLabel);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Error al obtener bracket ESPN para fecha {Date}", date);
-            }
+            logger.LogWarning(ex, "Error al obtener bracket ESPN");
         }
 
         logger.LogInformation("Knockout bracket desde ESPN: {Count}/{Total} partidos mapeados",
@@ -235,7 +184,29 @@ public class EspnBracketService(
         return result;
     }
 
-    // Slot label generado por Wc2026Bracket: "1º Grupo A", "2º Grupo J", etc.
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    private async Task<Dictionary<string, EspnApiClient.EspnEvent>> FetchEventsByKickoffAsync(
+        IEnumerable<DateTime> matchDates)
+    {
+        var dates = matchDates
+            .Select(d => d.ToUniversalTime().Date)
+            .Distinct()
+            .ToList();
+
+        var result = new Dictionary<string, EspnApiClient.EspnEvent>();
+        foreach (var date in dates)
+        {
+            var events = await espn.FetchScoreboardAsync(date, CancellationToken.None);
+            foreach (var ev in events)
+                result.TryAdd(FormatKickoffKey(ev.Date), ev);
+        }
+        return result;
+    }
+
+    private static string FormatKickoffKey(DateTime dt) =>
+        dt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
+
     private static readonly Regex SlotLabelRegex = new(@"^([12])º Grupo ([A-L])$");
 
     private static bool TryResolveSlot(string? label, Dictionary<string, Dictionary<int, string>> rankByGroup, out string team)
@@ -313,6 +284,8 @@ public class EspnBracketService(
         return (translated, null);
     }
 
+    // ── DTOs ────────────────────────────────────────────────────────────
+
     public record EspnBracketData(string HomeTeam, string AwayTeam, string? HomeLabel, string? AwayLabel);
 
     private record EspnStandingsResponse(List<EspnGroupNode>? Children);
@@ -321,12 +294,6 @@ public class EspnBracketService(
     private record EspnStandingsEntry(EspnTeamRef? Team, EspnNote? Note);
     private record EspnTeamRef(string? DisplayName);
     private record EspnNote(int? Rank);
-
-    private record EspnScoreboardResponse(List<EspnScoreboardEvent>? Events);
-    private record EspnScoreboardEvent(string? Date, List<EspnScoreboardCompetition>? Competitions);
-    private record EspnScoreboardCompetition(List<EspnScoreboardCompetitor>? Competitors);
-    private record EspnScoreboardCompetitor(string? HomeAway, EspnScoreboardTeam? Team);
-    private record EspnScoreboardTeam(string? DisplayName);
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 }
