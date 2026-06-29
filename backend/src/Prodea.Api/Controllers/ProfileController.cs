@@ -43,15 +43,20 @@ public class ProfileController(ProdeaDbContext db) : AuthorizedControllerBase
 
         int rank = allPoints.FindIndex(x => x.UserId == userId) + 1;
 
-        var matchdayBadges = await db.MatchdayBadges
+        var matchdayBadgesRaw = await db.MatchdayBadges
             .Where(mb => mb.TournamentId == tournamentId && mb.UserId == userId && mb.Phase != "")
-            .OrderByDescending(mb => mb.AwardedAt)
             .ToListAsync();
+
+        var matchdayBadges = matchdayBadgesRaw
+            .OrderByDescending(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
+            .ThenByDescending(mb => mb.Matchday)
+            .ToList();
 
         // Assign occurrence index per badge type (chronological, oldest = 0) for unique phrase selection
         var occurrenceCounts = new Dictionary<MatchdayBadgeType, int>();
         var phraseIndex = matchdayBadges
-            .OrderBy(mb => mb.AwardedAt)
+            .OrderBy(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
+            .ThenBy(mb => mb.Matchday)
             .ToDictionary(
                 mb => (mb.Phase, mb.Matchday),
                 mb =>
