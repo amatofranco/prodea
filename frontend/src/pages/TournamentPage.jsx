@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Share2, ChevronLeft, ChevronRight, Wifi, Lock, X, Pencil, ImageDown, LogOut, MoreVertical, Bell, Calendar } from 'lucide-react'
-import QRCode from 'qrcode'
 import { api } from '../services/api'
 import { useTournamentStore } from '../store/tournamentStore'
 import { useAuthStore } from '../store/authStore'
@@ -10,8 +9,10 @@ import { joinTournament, leaveTournament, onMatchUpdated } from '../services/sig
 import { BadgePill } from '../components/BadgePill'
 import ApiStatusBanner from '../components/ApiStatusBanner'
 import ChampionPickBanner from '../components/ChampionPickBanner'
-import { getTeam, getFlagUrl } from '../data/teamsData'
 import InstallBanner from '../components/InstallBanner'
+import TournamentMatchCard from '../components/TournamentMatchCard'
+import MatchPredictionsSheet from '../components/MatchPredictionsSheet'
+import { shareInviteImage } from '../utils/shareInviteImage'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const MAX_DESC = 150
@@ -28,205 +29,6 @@ const TAB_LABELS = {
 }
 function getPhaseKey(m) {
   return m.phase === 'Group' ? `group-${m.matchday ?? 1}` : m.phase
-}
-
-function FlagImg({ name, label, size = 40 }) {
-  const { flag } = getTeam(name)
-  const url = getFlagUrl(flag)
-  const display = name !== 'TBD' ? name : (label ?? name)
-  return (
-    <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-      <div className="rounded-md overflow-hidden bg-[#2A2A3E]" style={{ width: size, height: Math.round(size * 0.67) }}>
-        {url
-          ? <img src={url} alt={display} loading="lazy" className="w-full h-full object-cover opacity-85" />
-          : <div className="w-full h-full flex items-center justify-center text-[#8A8A9A] text-xs">?</div>
-        }
-      </div>
-      <p className="text-[9px] text-white font-medium text-center leading-tight" style={{ maxWidth: size + 8, wordBreak: 'break-word' }}>
-        {display === 'TBD' && !label ? 'Por confirmar' : display}
-      </p>
-    </div>
-  )
-}
-
-function TournamentMatchCard({ match, onTap }) {
-  const isFinished = match.status === 'Finished'
-  const isLive = match.status === 'InProgress'
-  const pred = match.userPrediction
-
-  return (
-    <div
-      onClick={() => isFinished && onTap(match)}
-      className={`p-3 rounded-2xl border transition-colors ${
-        isLive
-          ? 'bg-[#FF6B35]/5 border-[#FF6B35]/40'
-          : isFinished
-          ? 'bg-[#1A1A2E] border-[#F59E0B]/20 border-l-2 border-l-[#F59E0B]/60 cursor-pointer active:border-[#00FF87]'
-          : 'bg-[#1A1A2E] border-[#2A2A3E]'
-      }`}
-    >
-      {isLive && (
-        <span className="flex items-center gap-1 text-[10px] text-[#FF6B35] font-bold uppercase mb-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-          {match.livePhase ?? 'EN VIVO'}
-          {!match.livePhase && (match.minuteDisplay || match.minute != null) && ` · ${match.minuteDisplay ?? `${match.minute}'`}`}
-        </span>
-      )}
-
-      <div className="flex items-center justify-between gap-2">
-        <FlagImg name={match.homeTeam} label={match.homeTeamLabel} />
-        <div className="flex flex-col items-center shrink-0 px-1">
-          {isFinished || isLive ? (
-            <span className="text-xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-              {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
-            </span>
-          ) : (
-            <>
-              <span className="text-xs text-[#8A8A9A]">
-                {new Date(match.matchDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
-              </span>
-              <span className="text-xs text-[#8A8A9A]">
-                {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </>
-          )}
-          {isFinished
-            ? <span className="text-[9px] text-[#F59E0B]/80 font-semibold uppercase mt-0.5">Final</span>
-            : <span className="text-[9px] text-[#3A3A4E] font-semibold mt-0.5">VS</span>
-          }
-        </div>
-        <FlagImg name={match.awayTeam} label={match.awayTeamLabel} />
-      </div>
-
-<div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-between">
-        {pred ? (
-          <span className="text-xs text-[#8A8A9A]">
-            Predicción: <span className="text-[#00FF87] font-bold">{pred.predictedHomeScore} – {pred.predictedAwayScore}</span>
-            {pred.predictedPenaltyWinner && (
-              <span className="text-[#F59E0B]">
-                {' · Pasa: '}{pred.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
-              </span>
-            )}
-            {isFinished && (
-              <span className={`ml-2 font-bold ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-                +{pred.pointsEarned} pts
-              </span>
-            )}
-          </span>
-        ) : (
-          <span className="text-xs text-[#8A8A9A]">{isFinished ? 'Sin predicción' : 'Sin predicción cargada'}</span>
-        )}
-        {isFinished && (
-          <span className="text-[10px] text-[#00FF87] font-semibold shrink-0 ml-2">Ver todos →</span>
-        )}
-      </div>
-
-      {match.phase === 'Final' && (
-        <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex items-center justify-between">
-          {match.userChampionPick ? (
-            <span className="text-xs text-[#8A8A9A]">
-              🏆 Campeón elegido: <span className="text-[#F59E0B] font-bold">{match.userChampionPick}</span>
-              {isFinished && (
-                <span className={`ml-2 font-bold ${match.userChampionPickPoints > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-                  +{match.userChampionPickPoints ?? 0} pts
-                </span>
-              )}
-            </span>
-          ) : (
-            <span className="text-xs text-[#8A8A9A]">🏆 Sin campeón elegido</span>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
-  const pointColor = (pts) => pts === 3 ? 'text-[#00FF87]' : pts === 1 ? 'text-[#F59E0B]' : 'text-[#8A8A9A]'
-  const pointBg   = (pts) => pts === 3 ? 'bg-[#00FF87]/10 border-[#00FF87]/30' : pts === 1 ? 'bg-[#F59E0B]/10 border-[#F59E0B]/30' : 'bg-[#1A1A2E] border-[#2A2A3E]'
-
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60" onClick={onClose}>
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-[#0D0D0D] rounded-t-3xl overflow-hidden"
-        style={{ maxHeight: '80vh' }}
-      >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-[#2A2A3E]" />
-        </div>
-
-        {/* Match header */}
-        <div className="flex items-center justify-between px-5 pb-3">
-          <div className="flex items-center gap-2">
-            <FlagImg name={match.homeTeam} label={match.homeTeamLabel} size={28} />
-            <span className="text-white font-bold text-lg" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-              {match.homeScore} – {match.awayScore}
-            </span>
-            <FlagImg name={match.awayTeam} label={match.awayTeamLabel} size={28} />
-          </div>
-          <button onClick={onClose} className="text-[#8A8A9A] active:text-white p-1">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="h-px bg-[#1A1A2E] mx-5" />
-
-        {/* Predictions list */}
-        <div className="overflow-y-auto px-5 py-3 flex flex-col gap-2" style={{ maxHeight: 'calc(80vh - 120px)' }}>
-          {loading ? (
-            [1, 2, 3].map((i) => (
-              <div key={i} className="h-14 rounded-2xl bg-[#1A1A2E] animate-pulse" />
-            ))
-          ) : predictions.map((p, i) => (
-            <div key={p.userId} className={`flex items-center gap-3 p-3 rounded-2xl border ${pointBg(p.pointsEarned)}`}>
-              <span className="text-[#8A8A9A] text-xs w-4 text-center font-bold">{i + 1}</span>
-              <div className="w-8 h-8 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                {(p.fullName ?? p.username)[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-white text-sm font-medium truncate block">{p.fullName ?? p.username}</span>
-                {match.phase === 'Final' && (
-                  <span className="text-[9px] text-[#8A8A9A] truncate block">
-                    🏆 {p.championPick ?? 'Sin elegir'}
-                  </span>
-                )}
-              </div>
-              {p.predictedHomeScore != null ? (
-                <div className="flex flex-col items-end">
-                  <span className="text-white font-bold text-sm" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-                    {p.predictedHomeScore} – {p.predictedAwayScore}
-                  </span>
-                  {p.predictedPenaltyWinner && (
-                    <span className="text-[9px] text-[#F59E0B]">
-                      Pasa: {p.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <span className="text-[#8A8A9A] text-xs italic">Sin pred</span>
-              )}
-              <div className="flex flex-col items-end w-16">
-                <span className={`text-sm font-bold text-right ${pointColor(p.pointsEarned)}`}>
-                  +{p.pointsEarned} pts
-                </span>
-                {match.phase === 'Final' && p.championPick && (
-                  <span className={`text-[9px] font-semibold ${p.championPickPoints > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
-                    +{p.championPickPoints ?? 0} camp.
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-    </div>
-  )
 }
 
 function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
@@ -271,7 +73,7 @@ export default function TournamentPage() {
   const [matches, setMatches] = useState([])
   const [activeTab, setActiveTab] = useState('tabla')
   const [phaseTab, setPhaseTab] = useState(null)
-  const [predSheet, setPredSheet] = useState(null) // { match, predictions, loading }
+  const [predSheet, setPredSheet] = useState(null)
   const [editingDesc, setEditingDesc] = useState(false)
   const [descDraft, setDescDraft] = useState('')
   const [showShareMenu, setShowShareMenu] = useState(false)
@@ -285,6 +87,10 @@ export default function TournamentPage() {
   const { showModal: showPushBanner, subscribe: subscribePush, dismiss: dismissPush } = usePushNotifications()
   const phaseBarRef = useRef(null)
 
+  function getInviteLink() {
+    return `${window.location.origin}/join/${tournament?.inviteLink}`
+  }
+
   async function saveDescription() {
     const updated = await api.updateTournament(id, { description: descDraft.trim() || null })
     setTournament(t => ({ ...t, description: updated.description }))
@@ -295,8 +101,6 @@ export default function TournamentPage() {
     if (!startDateDraft) return
     setSavingStartDate(true)
     try {
-      // Si elige "hoy", mandamos el instante exacto en vez de la medianoche, así no
-      // se incluyen partidos de hoy que ya terminaron antes de este momento.
       const dateToSend = startDateDraft === todayStr() ? new Date().toISOString() : startDateDraft
       const updated = await api.updateTournament(id, { description: tournament?.description ?? null, startingMatchDate: dateToSend })
       setTournament(t => ({ ...t, startingMatchDate: updated.startingMatchDate }))
@@ -352,7 +156,6 @@ export default function TournamentPage() {
     return () => { off(); leaveTournament(id) }
   }, [id])
 
-  // Auto-select active phase
   useEffect(() => {
     if (matches.length === 0) return
     const live = matches.find((m) => m.status === 'InProgress')
@@ -380,10 +183,6 @@ export default function TournamentPage() {
     }
   }
 
-  function getInviteLink() {
-    return `${window.location.origin}/join/${tournament?.inviteLink}`
-  }
-
   function shareText() {
     const link = getInviteLink()
     navigator.share({
@@ -394,86 +193,9 @@ export default function TournamentPage() {
     setShowShareMenu(false)
   }
 
-  async function shareImage() {
+  async function handleShareImage() {
     setShowShareMenu(false)
-    const link = getInviteLink()
-    const W = 800, H = 800
-    const canvas = document.createElement('canvas')
-    canvas.width = W
-    canvas.height = H
-    const ctx = canvas.getContext('2d')
-
-    // Fondo
-    ctx.fillStyle = '#0D0D0D'
-    ctx.fillRect(0, 0, W, H)
-
-    // Borde verde
-    ctx.strokeStyle = '#00FF87'
-    ctx.lineWidth = 6
-    ctx.roundRect(20, 20, W - 40, H - 40, 24)
-    ctx.stroke()
-
-    // "Unite al torneo"
-    ctx.fillStyle = '#8A8A9A'
-    ctx.font = '500 28px Arial'
-    ctx.textAlign = 'center'
-    ctx.fillText('¡Unite al torneo!', W / 2, 100)
-
-    // Nombre del torneo
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = 'bold 60px Arial Black, Arial'
-    ctx.textAlign = 'center'
-    const name = tournament?.name ?? ''
-    ctx.fillText(name.length > 20 ? name.slice(0, 20) + '…' : name, W / 2, 175)
-
-    // QR
-    const qrDataUrl = await QRCode.toDataURL(link, {
-      width: 320, margin: 2,
-      color: { dark: '#FFFFFF', light: '#111111' },
-    })
-    const qrImg = new Image()
-    qrImg.src = qrDataUrl
-    await new Promise((r) => { qrImg.onload = r })
-    const qrSize = 320
-    ctx.drawImage(qrImg, (W - qrSize) / 2, 230, qrSize, qrSize)
-
-    // Instrucción
-    ctx.fillStyle = '#8A8A9A'
-    ctx.font = '24px Arial'
-    ctx.fillText('Escaneá para unirte', W / 2, 590)
-
-    // Divider
-    ctx.strokeStyle = '#2A2A3E'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(60, 620)
-    ctx.lineTo(W - 60, 620)
-    ctx.stroke()
-
-    // Wordmark
-    const wordmark = new Image()
-    wordmark.src = '/logo-wordmark.png'
-    await new Promise((r) => { wordmark.onload = r; wordmark.onerror = r })
-    const wmH = 70
-    const wmW = wordmark.naturalWidth * (wmH / wordmark.naturalHeight)
-    ctx.drawImage(wordmark, (W - wmW) / 2, 648, wmW, wmH)
-
-    // URL
-    ctx.fillStyle = '#8A8A9A'
-    ctx.font = '22px Arial'
-    ctx.fillText('prodea.app', W / 2, 738)
-
-    canvas.toBlob(async (blob) => {
-      const file = new File([blob], 'torneo-prodea.png', { type: 'image/png' })
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: tournament?.name })
-      } else {
-        const a = document.createElement('a')
-        a.href = URL.createObjectURL(blob)
-        a.download = 'torneo-prodea.png'
-        a.click()
-      }
-    }, 'image/png')
+    await shareInviteImage(tournament?.name, getInviteLink())
   }
 
   if (loading) {
@@ -525,7 +247,7 @@ export default function TournamentPage() {
                   </button>
                   <div className="h-px bg-[#2A2A3E]" />
                   <button
-                    onClick={shareImage}
+                    onClick={handleShareImage}
                     className="flex items-center w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
                     <ImageDown size={16} className="text-[#00FF87] shrink-0" />
