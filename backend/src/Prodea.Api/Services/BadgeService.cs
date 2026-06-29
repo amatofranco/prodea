@@ -6,6 +6,8 @@ namespace Prodea.Api.Services;
 
 public class BadgeService(ProdeaDbContext db)
 {
+    // ── Datos estáticos (frases, emojis) ───────────────────────────────
+
     private static readonly Dictionary<MatchdayBadgeType, string[]> Phrases = new()
     {
         [MatchdayBadgeType.Crack] = ["Jugás a otra cosa", "¿Sos DT o qué?", "Messi te manda saludos", "El grupo te odia un poquito", "Pedí aumento en el laburo, porque acá sobrás"],
@@ -62,6 +64,19 @@ public class BadgeService(ProdeaDbContext db)
         [AccumulativeBadgeType.RusticoTotal] = "⛏️",
     };
 
+    private static readonly (AccumulativeBadgeType Badge, MatchdayBadgeType Required)[] StreakRules =
+    [
+        (AccumulativeBadgeType.RachaInfernal, MatchdayBadgeType.Crack),
+        (AccumulativeBadgeType.TripleMufa, MatchdayBadgeType.Mufa),
+        (AccumulativeBadgeType.PecheadaTotal, MatchdayBadgeType.PechoFrio),
+        (AccumulativeBadgeType.TibiezaTotal, MatchdayBadgeType.Tibio),
+        (AccumulativeBadgeType.GoleadorSerial, MatchdayBadgeType.Goleador),
+        (AccumulativeBadgeType.RusticoTotal, MatchdayBadgeType.Rustico),
+    ];
+
+    private static readonly MatchdayBadgeType[] PodiumTypes =
+        [MatchdayBadgeType.Campeon, MatchdayBadgeType.Subcampeon, MatchdayBadgeType.TercerPuesto];
+
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
     public static string GetAccumulativeEmoji(AccumulativeBadgeType type) => AccumulativeEmojis[type];
 
@@ -78,129 +93,157 @@ public class BadgeService(ProdeaDbContext db)
         return options[indices[occurrenceIndex % options.Length]];
     }
 
-    // matchday: 1/2/3 para grupos; 0 para fases eliminatorias.
-    // Devuelve los userIds que recibieron un badge nuevo (no actualizado) en este torneo,
-    // para que el caller pueda deduplicar notificaciones entre torneos.
+    // ── Motes de fecha ─────────────────────────────────────────────────
+
+    private record PlayerStats(int TotalPoints, int ExactCount, bool HasAnyPrediction, bool AnyWinnerCorrect);
+
+    private record MatchdayContext(
+        int ParticipantCount,
+        int MaxPoints, int MinPoints,
+        int? SecondPoints, int? PenultimoPoints,
+        Dictionary<int, int> PredictedGoals,
+        int MaxPredictedGoals, int GoleadorCount,
+        int MinPredictedGoals, int RusticoCount);
+
     public async Task<HashSet<int>> AssignMatchdayBadgesAsync(int tournamentId, MatchPhase phase, int matchday)
     {
         var newlyBadgedUserIds = new HashSet<int>();
 
-        var participants = await db.TournamentParticipants
-            .Where(tp => tp.TournamentId == tournamentId)
-            .Select(tp => tp.UserId)
-            .ToListAsync();
-
-        // Con un solo participante no hay nadie contra quien compararse — no tiene
-        // sentido asignar ningún mote de fecha.
+        var participants = await GetParticipantsAsync(tournamentId);
         if (participants.Count <= 1) return newlyBadgedUserIds;
 
-        var startingMatchDate = await db.Tournaments
-            .Where(t => t.Id == tournamentId)
-            .Select(t => t.StartingMatchDate)
-            .FirstOrDefaultAsync();
-
-        var jornada = await db.Matches
-            .Where(m => m.Phase == phase && (matchday == 0 ? m.Matchday == null : m.Matchday == matchday)
-                && m.MatchDate >= startingMatchDate)
-            .ToListAsync();
-
-        if (jornada.Count == 0) return newlyBadgedUserIds;
-        if (jornada.Any(m => m.Status != MatchStatus.Finished)) return newlyBadgedUserIds;
+        var jornada = await GetJornadaMatchesAsync(tournamentId, phase, matchday);
+        if (jornada.Count == 0 || jornada.Any(m => m.Status != MatchStatus.Finished))
+            return newlyBadgedUserIds;
 
         var matchIds = jornada.Select(m => m.Id).ToList();
-
         var predictions = await db.Predictions
             .Where(p => participants.Contains(p.UserId) && matchIds.Contains(p.MatchId))
             .Include(p => p.Match)
             .ToListAsync();
 
-        var playerStats = new Dictionary<int, (int TotalPoints, int ExactCount, bool HasAnyPrediction, bool AnyWinnerCorrect)>();
-        var playerPredictedGoals = new Dictionary<int, int>();
-
-        foreach (var userId in participants)
-        {
-            var userPreds = predictions.Where(p => p.UserId == userId).ToList();
-            int totalPoints = userPreds.Sum(p => p.PointsEarned);
-            int exactCount = userPreds.Count(p => p.PointsEarned == 3);
-            bool anyWinnerCorrect = userPreds.Any(p => p.PointsEarned > 0);
-            playerStats[userId] = (totalPoints, exactCount, userPreds.Count > 0, anyWinnerCorrect);
-            playerPredictedGoals[userId] = userPreds.Sum(p => p.PredictedHomeScore + p.PredictedAwayScore);
-        }
-
-        int maxPoints = playerStats.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Max();
-        int minPoints = playerStats.Values.Where(s => s.HasAnyPrediction).Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
-        var distinctPoints = playerStats.Values
-            .Where(s => s.HasAnyPrediction)
-            .Select(s => s.TotalPoints)
-            .Distinct().OrderByDescending(p => p).ToList();
-        int? secondPoints = distinctPoints.Count >= 2 ? distinctPoints[1] : (int?)null;
-        int? penultimoPoints = distinctPoints.Count >= 3 ? distinctPoints[^2] : (int?)null;
-
-        int maxPredictedGoals = playerPredictedGoals.Values.DefaultIfEmpty(0).Max();
-        int goleadorCount = maxPredictedGoals > 0 ? playerPredictedGoals.Values.Count(g => g == maxPredictedGoals) : 0;
-        var goalsWithPreds = playerPredictedGoals.Where(kv => playerStats.TryGetValue(kv.Key, out var s) && s.HasAnyPrediction).ToList();
-        int minPredictedGoals = goalsWithPreds.Count > 0 ? goalsWithPreds.Min(kv => kv.Value) : 0;
-        int rusticoCount = goalsWithPreds.Count > 0 ? goalsWithPreds.Count(kv => kv.Value == minPredictedGoals) : 0;
-
+        var (statsMap, goalsMap) = ComputePlayerStats(participants, predictions);
+        var ctx = BuildMatchdayContext(participants.Count, statsMap, goalsMap);
         var phaseStr = phase.ToString();
 
         foreach (var userId in participants)
         {
-            var stats = playerStats.TryGetValue(userId, out var s) ? s : (TotalPoints: 0, ExactCount: 0, HasAnyPrediction: false, AnyWinnerCorrect: false);
+            var stats = statsMap.GetValueOrDefault(userId, new(0, 0, false, false));
+            var badge = DetermineBadge(userId, stats, ctx);
 
-            var badge = stats switch
-            {
-                { HasAnyPrediction: false }                                                            => MatchdayBadgeType.Dormido,
-                { TotalPoints: var p } when p == maxPoints && maxPoints > 0 && participants.Count > 1  => MatchdayBadgeType.Crack,
-                { TotalPoints: var p } when p == minPoints && participants.Count > 1                   => MatchdayBadgeType.Mufa,
-                { ExactCount: >= 4 }                                                                   => MatchdayBadgeType.Adivino,
-                { ExactCount: >= 3 }                                                                   => MatchdayBadgeType.Francotirador,
-                _ when secondPoints.HasValue && stats.TotalPoints == secondPoints.Value => MatchdayBadgeType.PechoFrio,
-                _ when goleadorCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == maxPredictedGoals => MatchdayBadgeType.Goleador,
-                _ when rusticoCount == 1 && playerPredictedGoals.GetValueOrDefault(userId) == minPredictedGoals  => MatchdayBadgeType.Rustico,
-                _ when penultimoPoints.HasValue && stats.TotalPoints == penultimoPoints.Value => MatchdayBadgeType.Tambaleante,
-                { AnyWinnerCorrect: false }                                                            => MatchdayBadgeType.Payaso,
-                _                                                                                      => MatchdayBadgeType.Tibio,
-            };
-
-            var existing = await db.MatchdayBadges
-                .FirstOrDefaultAsync(mb => mb.UserId == userId && mb.TournamentId == tournamentId
-                    && mb.Phase == phaseStr && mb.Matchday == matchday);
-
-            if (existing != null)
-            {
-                existing.BadgeType = badge;
-                existing.PointsInMatchday = stats.TotalPoints;
-                existing.AwardedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                newlyBadgedUserIds.Add(userId);
-                db.MatchdayBadges.Add(new MatchdayBadge
-                {
-                    UserId = userId,
-                    TournamentId = tournamentId,
-                    Phase = phaseStr,
-                    Matchday = matchday,
-                    BadgeType = badge,
-                    PointsInMatchday = stats.TotalPoints,
-                });
-            }
+            bool isNew = await UpsertMatchdayBadgeAsync(
+                tournamentId, userId, phaseStr, matchday, badge, stats.TotalPoints);
+            if (isNew) newlyBadgedUserIds.Add(userId);
         }
 
         await db.SaveChangesAsync();
         await UpdateAccumulativeBadgesAsync(tournamentId);
-
         return newlyBadgedUserIds;
     }
 
-    // userTournamentMap: userId -> tournamentId a usar para el deep link de la notificación
-    // (un usuario puede estar en varios torneos; se manda una sola notificación igual).
+    private static (Dictionary<int, PlayerStats> Stats, Dictionary<int, int> Goals) ComputePlayerStats(
+        List<int> participants, List<Prediction> predictions)
+    {
+        var stats = new Dictionary<int, PlayerStats>();
+        var goals = new Dictionary<int, int>();
+
+        foreach (var userId in participants)
+        {
+            var userPreds = predictions.Where(p => p.UserId == userId).ToList();
+            stats[userId] = new PlayerStats(
+                TotalPoints: userPreds.Sum(p => p.PointsEarned),
+                ExactCount: userPreds.Count(p => p.PointsEarned == 3),
+                HasAnyPrediction: userPreds.Count > 0,
+                AnyWinnerCorrect: userPreds.Any(p => p.PointsEarned > 0));
+            goals[userId] = userPreds.Sum(p => p.PredictedHomeScore + p.PredictedAwayScore);
+        }
+
+        return (stats, goals);
+    }
+
+    private static MatchdayContext BuildMatchdayContext(
+        int participantCount, Dictionary<int, PlayerStats> statsMap, Dictionary<int, int> goalsMap)
+    {
+        int maxPoints = statsMap.Values.Select(s => s.TotalPoints).DefaultIfEmpty(0).Max();
+        int minPoints = statsMap.Values.Where(s => s.HasAnyPrediction)
+            .Select(s => s.TotalPoints).DefaultIfEmpty(0).Min();
+
+        var distinctPoints = statsMap.Values
+            .Where(s => s.HasAnyPrediction)
+            .Select(s => s.TotalPoints)
+            .Distinct().OrderByDescending(p => p).ToList();
+        int? secondPoints = distinctPoints.Count >= 2 ? distinctPoints[1] : null;
+        int? penultimoPoints = distinctPoints.Count >= 3 ? distinctPoints[^2] : null;
+
+        int maxGoals = goalsMap.Values.DefaultIfEmpty(0).Max();
+        int goleadorCount = maxGoals > 0 ? goalsMap.Values.Count(g => g == maxGoals) : 0;
+
+        var goalsWithPreds = goalsMap
+            .Where(kv => statsMap.TryGetValue(kv.Key, out var s) && s.HasAnyPrediction).ToList();
+        int minGoals = goalsWithPreds.Count > 0 ? goalsWithPreds.Min(kv => kv.Value) : 0;
+        int rusticoCount = goalsWithPreds.Count > 0 ? goalsWithPreds.Count(kv => kv.Value == minGoals) : 0;
+
+        return new MatchdayContext(participantCount, maxPoints, minPoints,
+            secondPoints, penultimoPoints, goalsMap, maxGoals, goleadorCount, minGoals, rusticoCount);
+    }
+
+    private static MatchdayBadgeType DetermineBadge(int userId, PlayerStats stats, MatchdayContext ctx) => stats switch
+    {
+        { HasAnyPrediction: false }
+            => MatchdayBadgeType.Dormido,
+        { TotalPoints: var p } when p == ctx.MaxPoints && ctx.MaxPoints > 0 && ctx.ParticipantCount > 1
+            => MatchdayBadgeType.Crack,
+        { TotalPoints: var p } when p == ctx.MinPoints && ctx.ParticipantCount > 1
+            => MatchdayBadgeType.Mufa,
+        { ExactCount: >= 4 }
+            => MatchdayBadgeType.Adivino,
+        { ExactCount: >= 3 }
+            => MatchdayBadgeType.Francotirador,
+        _ when ctx.SecondPoints.HasValue && stats.TotalPoints == ctx.SecondPoints.Value
+            => MatchdayBadgeType.PechoFrio,
+        _ when ctx.GoleadorCount == 1 && ctx.PredictedGoals.GetValueOrDefault(userId) == ctx.MaxPredictedGoals
+            => MatchdayBadgeType.Goleador,
+        _ when ctx.RusticoCount == 1 && ctx.PredictedGoals.GetValueOrDefault(userId) == ctx.MinPredictedGoals
+            => MatchdayBadgeType.Rustico,
+        _ when ctx.PenultimoPoints.HasValue && stats.TotalPoints == ctx.PenultimoPoints.Value
+            => MatchdayBadgeType.Tambaleante,
+        { AnyWinnerCorrect: false }
+            => MatchdayBadgeType.Payaso,
+        _ => MatchdayBadgeType.Tibio,
+    };
+
+    private async Task<bool> UpsertMatchdayBadgeAsync(
+        int tournamentId, int userId, string phase, int matchday, MatchdayBadgeType badge, int points)
+    {
+        var existing = await db.MatchdayBadges
+            .FirstOrDefaultAsync(mb => mb.UserId == userId && mb.TournamentId == tournamentId
+                && mb.Phase == phase && mb.Matchday == matchday);
+
+        if (existing != null)
+        {
+            existing.BadgeType = badge;
+            existing.PointsInMatchday = points;
+            existing.AwardedAt = DateTime.UtcNow;
+            return false;
+        }
+
+        db.MatchdayBadges.Add(new MatchdayBadge
+        {
+            UserId = userId,
+            TournamentId = tournamentId,
+            Phase = phase,
+            Matchday = matchday,
+            BadgeType = badge,
+            PointsInMatchday = points,
+        });
+        return true;
+    }
+
+    // ── Recálculo ──────────────────────────────────────────────────────
+
     public Task SendCardNotificationsPublicAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
         => SendCardNotificationsAsync(phase, matchday, userTournamentMap, push);
 
-    // Recalcula todos los motes del torneo desde cero — usar cuando cambia StartingMatchDate,
-    // ya que los motes ya asignados no se actualizan solos al mover el corte de fechas.
     public async Task RecalculateAllBadgesAsync(int tournamentId)
     {
         await db.MatchdayBadges.Where(mb => mb.TournamentId == tournamentId).ExecuteDeleteAsync();
@@ -220,26 +263,14 @@ public class BadgeService(ProdeaDbContext db)
     public async Task RecalculateAccumulativeBadgesAsync(int tournamentId) =>
         await UpdateAccumulativeBadgesAsync(tournamentId);
 
-    private static readonly MatchdayBadgeType[] PodiumTypes =
-        [MatchdayBadgeType.Campeon, MatchdayBadgeType.Subcampeon, MatchdayBadgeType.TercerPuesto];
+    // ── Motes de fin de torneo ─────────────────────────────────────────
 
-    // Se llama al terminar la Final del Mundial: calcula la tabla general final del torneo
-    // (misma fórmula que el leaderboard) y pisa el MatchdayBadge de la fecha "Final" del podio
-    // con Campeón/Subcampeón/Tercer puesto, reemplazando el mote que les hubiera tocado por
-    // su desempeño puntual en ese partido.
     public async Task AwardTournamentResultBadgesAsync(int tournamentId)
     {
-        var participants = await db.TournamentParticipants
-            .Where(tp => tp.TournamentId == tournamentId)
-            .Select(tp => tp.UserId)
-            .ToListAsync();
-
+        var participants = await GetParticipantsAsync(tournamentId);
         if (participants.Count <= 1) return;
 
-        var startingMatchDate = await db.Tournaments
-            .Where(t => t.Id == tournamentId)
-            .Select(t => t.StartingMatchDate)
-            .FirstOrDefaultAsync();
+        var startingMatchDate = await GetStartingMatchDateAsync(tournamentId);
 
         var points = await db.Predictions
             .Where(p => participants.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
@@ -279,14 +310,11 @@ public class BadgeService(ProdeaDbContext db)
         for (int i = 0; i < PodiumTypes.Length && i < ranking.Count; i++)
             await OverrideFinalBadge(ranking[i], PodiumTypes[i]);
 
-        // Último/Penúltimo del torneo: solo si no se solapan con el podio (3 primeros).
         if (ranking.Count >= 4)
             await OverrideFinalBadge(ranking[^1], MatchdayBadgeType.Ultimo);
         if (ranking.Count >= 5)
             await OverrideFinalBadge(ranking[^2], MatchdayBadgeType.Penultimo);
 
-        // Goleador/Rústico del torneo: goles predichos en total (todas las fechas), solo si
-        // hay un único dueño del máximo/mínimo y no tiene ya un mote de puntos más importante.
         var goals = await db.Predictions
             .Where(p => participants.Contains(p.UserId) && p.Match.MatchDate >= startingMatchDate)
             .GroupBy(p => p.UserId)
@@ -309,6 +337,65 @@ public class BadgeService(ProdeaDbContext db)
         await db.SaveChangesAsync();
     }
 
+    // ── Acumulativos ───────────────────────────────────────────────────
+
+    private async Task UpdateAccumulativeBadgesAsync(int tournamentId)
+    {
+        var participants = await GetParticipantsAsync(tournamentId);
+
+        var allBadges = await db.MatchdayBadges
+            .Where(mb => mb.TournamentId == tournamentId)
+            .OrderBy(mb => mb.AwardedAt)
+            .ToListAsync();
+
+        bool tournamentFinished = !await db.Matches
+            .AnyAsync(m => m.Status != MatchStatus.Finished);
+
+        foreach (var userId in participants)
+        {
+            var userBadges = allBadges.Where(b => b.UserId == userId).OrderBy(b => b.AwardedAt).ToList();
+
+            foreach (var (accType, requiredType) in StreakRules)
+            {
+                bool hasStreak = userBadges.Count >= 3 &&
+                    userBadges.TakeLast(3).All(b => b.BadgeType == requiredType);
+                await UpsertAccumulativeBadge(tournamentId, userId, accType, hasStreak);
+            }
+
+            int dormidoCount = userBadges.Count(b => b.BadgeType == MatchdayBadgeType.Dormido);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElFantasma, dormidoCount > 3);
+
+            bool neverLast = tournamentFinished && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElMuro, neverLast);
+
+
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private async Task UpsertAccumulativeBadge(int tournamentId, int userId, AccumulativeBadgeType type, bool condition)
+    {
+        var existing = await db.AccumulativeBadges
+            .FirstOrDefaultAsync(ab => ab.UserId == userId && ab.TournamentId == tournamentId && ab.BadgeType == type);
+
+        if (condition && existing == null)
+        {
+            db.AccumulativeBadges.Add(new AccumulativeBadge
+            {
+                UserId = userId,
+                TournamentId = tournamentId,
+                BadgeType = type,
+            });
+        }
+        else if (!condition && existing != null)
+        {
+            db.AccumulativeBadges.Remove(existing);
+        }
+    }
+
+    // ── Notificaciones ─────────────────────────────────────────────────
+
     private static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
     {
         MatchPhase.Group => $"Fecha {matchday}",
@@ -321,8 +408,6 @@ public class BadgeService(ProdeaDbContext db)
         _ => phase.ToString(),
     };
 
-    // userTournamentMap: userId -> tournamentId a usar para el deep link. Un solo push por
-    // usuario aunque esté en varios torneos que terminaron la misma fecha/fase.
     private async Task SendCardNotificationsAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
     {
         var jornada = JornadaLabel(phase, matchday);
@@ -364,79 +449,26 @@ public class BadgeService(ProdeaDbContext db)
         }
     }
 
-    private async Task UpdateAccumulativeBadgesAsync(int tournamentId)
-    {
-        var participants = await db.TournamentParticipants
+    // ── Helpers ─────────────────────────────────────────────────────────
+
+    private async Task<List<int>> GetParticipantsAsync(int tournamentId) =>
+        await db.TournamentParticipants
             .Where(tp => tp.TournamentId == tournamentId)
             .Select(tp => tp.UserId)
             .ToListAsync();
 
-        var allBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == tournamentId)
-            .OrderBy(mb => mb.AwardedAt)
-            .ToListAsync();
+    private async Task<DateTime> GetStartingMatchDateAsync(int tournamentId) =>
+        await db.Tournaments
+            .Where(t => t.Id == tournamentId)
+            .Select(t => t.StartingMatchDate)
+            .FirstOrDefaultAsync();
 
-        int totalJornadas = allBadges.Select(b => new { b.Phase, b.Matchday }).Distinct().Count();
-
-        bool tournamentFinished = !await db.Matches
-            .AnyAsync(m => m.Status != MatchStatus.Finished);
-
-        foreach (var userId in participants)
-        {
-            var userBadges = allBadges.Where(b => b.UserId == userId).OrderBy(b => b.AwardedAt).ToList();
-            var dormidoCount = userBadges.Count(b => b.BadgeType == MatchdayBadgeType.Dormido);
-
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElFantasma, dormidoCount > 3);
-
-            bool rachaInfernal = userBadges.Count >= 3 &&
-                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Crack);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.RachaInfernal, rachaInfernal);
-
-            bool neverLast = tournamentFinished && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElMuro, neverLast);
-
-            bool enCaidaLibre = userBadges.Count >= 3 &&
-                userBadges[^3].PointsInMatchday > userBadges[^2].PointsInMatchday &&
-                userBadges[^2].PointsInMatchday > userBadges[^1].PointsInMatchday;
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.PecheadaTotal, enCaidaLibre);
-
-            bool tripleMufa = userBadges.Count >= 3 &&
-                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Mufa);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.TripleMufa, tripleMufa);
-
-            bool tibiezaTotal = userBadges.Count >= 3 &&
-                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Tibio);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.TibiezaTotal, tibiezaTotal);
-
-            bool goleadorSerial = userBadges.Count >= 3 &&
-                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Goleador);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.GoleadorSerial, goleadorSerial);
-
-            bool rusticoTotal = userBadges.Count >= 3 &&
-                userBadges.TakeLast(3).All(b => b.BadgeType == MatchdayBadgeType.Rustico);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.RusticoTotal, rusticoTotal);
-        }
-
-        await db.SaveChangesAsync();
-    }
-
-    private async Task UpsertAccumulativeBadge(int tournamentId, int userId, AccumulativeBadgeType type, bool condition)
+    private async Task<List<Match>> GetJornadaMatchesAsync(int tournamentId, MatchPhase phase, int matchday)
     {
-        var existing = await db.AccumulativeBadges
-            .FirstOrDefaultAsync(ab => ab.UserId == userId && ab.TournamentId == tournamentId && ab.BadgeType == type);
-
-        if (condition && existing == null)
-        {
-            db.AccumulativeBadges.Add(new AccumulativeBadge
-            {
-                UserId = userId,
-                TournamentId = tournamentId,
-                BadgeType = type,
-            });
-        }
-        else if (!condition && existing != null)
-        {
-            db.AccumulativeBadges.Remove(existing);
-        }
+        var startingMatchDate = await GetStartingMatchDateAsync(tournamentId);
+        return await db.Matches
+            .Where(m => m.Phase == phase && (matchday == 0 ? m.Matchday == null : m.Matchday == matchday)
+                && m.MatchDate >= startingMatchDate)
+            .ToListAsync();
     }
 }

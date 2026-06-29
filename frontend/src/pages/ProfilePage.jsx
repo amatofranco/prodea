@@ -34,7 +34,7 @@ const ACCUMULATIVE_LABELS = {
 }
 
 const ACCUMULATIVE_DESCRIPTIONS = {
-  PecheadaTotal: '3 fechas consecutivas bajando puntos',
+  PecheadaTotal: '3 jornadas consecutivas siendo Pecho Frío',
   RachaInfernal: '3 jornadas consecutivas siendo El Crack',
   ElMuro: 'Nunca fue último en toda la competencia',
   ElFantasma: 'Olvidó cargar predicciones más de 3 veces',
