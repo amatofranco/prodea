@@ -7,29 +7,7 @@ namespace Prodea.Api.Services;
 
 public class BadgeService(ProdeaDbContext db)
 {
-    // ── Datos estáticos (frases, emojis) ───────────────────────────────
-
-    private static readonly Dictionary<MatchdayBadgeType, string[]> Phrases = new()
-    {
-        [MatchdayBadgeType.MVP] = ["Jugás a otra cosa", "¿Sos DT o qué?", "Messi te manda saludos", "El grupo te odia un poquito", "Pedí aumento en el laburo, porque acá sobrás"],
-        [MatchdayBadgeType.Jinx] = ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
-        [MatchdayBadgeType.Sniper] = ["Más preciso que un cirujano", "Cuando apuntás, no fallás", "La mira calibrada", "El VAR te consulta a vos", "Tenés el GPS de los goles"],
-        [MatchdayBadgeType.Oracle] = ["¿Bola de cristal o qué?", "Cuatro exactos. Brujo confirmado.", "Clarividencia pura y dura", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
-        [MatchdayBadgeType.Choker] = ["Llegaste hasta la puerta pero no entraste", "Tan cerca, tan lejos", "El podio te vio de afuera", "Segundo es el primero de los perdedores", "El técnico te sacó justo cuando arrancabas"],
-        [MatchdayBadgeType.Goalscorer] = ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
-        [MatchdayBadgeType.Miser] = ["El arquero agradeció tus predicciones", "Con el cuchillo entre los dientes", "Bilardo estaría orgulloso", "Economista del gol", "Predijiste con el freno de mano puesto"],
-        [MatchdayBadgeType.Wobbler] = ["Sobreviviste de milagro", "En zona de descenso", "Peleando la promoción", "Por lo menos no sos último", "A un paso de la derrota"],
-        [MatchdayBadgeType.Clown] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
-        [MatchdayBadgeType.Sleeper] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
-        [MatchdayBadgeType.Lukewarm] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
-        [MatchdayBadgeType.Champion] = ["Ya sabés cuánto pesa la copa. ¡Felicitaciones!"],
-        [MatchdayBadgeType.RunnerUp] = ["Lo importante es competir... dijo nunca nadie. Te acompañamos en el sentimiento"],
-        [MatchdayBadgeType.ThirdPlace] = ["Entraste al podio. Algo es algo."],
-        [MatchdayBadgeType.LastPlace] = ["Por ahí en 4 años das menos vergüenza"],
-        [MatchdayBadgeType.SecondToLast] = ["Al borde del papelón... menos mal"],
-        [MatchdayBadgeType.TournamentGoalscorer] = ["El optimista de los resultados"],
-        [MatchdayBadgeType.TournamentMiser] = ["Campeón en austeridad"],
-    };
+    // ── Datos estáticos (emojis) ────────────────────────────────────────
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
     {
@@ -81,19 +59,6 @@ public class BadgeService(ProdeaDbContext db)
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
     public static string GetAccumulativeEmoji(AccumulativeBadgeType type) => AccumulativeEmojis[type];
 
-    public static string GetPhrase(MatchdayBadgeType type, int userId, int occurrenceIndex)
-    {
-        var options = Phrases[type];
-        var indices = Enumerable.Range(0, options.Length).ToArray();
-        var rng = new Random(HashCode.Combine(userId, (int)type));
-        for (int i = indices.Length - 1; i > 0; i--)
-        {
-            int j = rng.Next(i + 1);
-            (indices[i], indices[j]) = (indices[j], indices[i]);
-        }
-        return options[indices[occurrenceIndex % options.Length]];
-    }
-
     // ── Profile badges ──────────────────────────────────────────────────
 
     public async Task<(List<MatchdayBadgeDto> Matchday, List<AccumulativeBadgeDto> Accumulative)>
@@ -109,7 +74,7 @@ public class BadgeService(ProdeaDbContext db)
             .ToList();
 
         var occurrenceCounts = new Dictionary<MatchdayBadgeType, int>();
-        var phraseIndex = badges
+        var occurrenceIndex = badges
             .OrderBy(mb => Enum.TryParse<MatchPhase>(mb.Phase, out var p) ? (int)p : -1)
             .ThenBy(mb => mb.Matchday)
             .ToDictionary(
@@ -124,7 +89,7 @@ public class BadgeService(ProdeaDbContext db)
         var matchdayDtos = badges.Select(mb => new MatchdayBadgeDto(
             mb.Phase, mb.Matchday, mb.BadgeType.ToString(),
             GetEmoji(mb.BadgeType), mb.BadgeType.ToString(), mb.PointsInMatchday,
-            GetPhrase(mb.BadgeType, mb.UserId, phraseIndex[(mb.Phase, mb.Matchday)]),
+            occurrenceIndex[(mb.Phase, mb.Matchday)],
             mb.AwardedAt
         )).ToList();
 

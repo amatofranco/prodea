@@ -75,14 +75,14 @@ public class EspnBracketService(
             if (updated > 0)
             {
                 await db.SaveChangesAsync();
-                logger.LogInformation("Equipos knockout actualizados vía ESPN standings: {Count}", updated);
+                logger.LogInformation("Knockout teams updated via ESPN standings: {Count}", updated);
             }
 
             return updated;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Error al sincronizar standings vía ESPN");
+            logger.LogWarning(ex, "Error syncing standings via ESPN");
             return 0;
         }
     }
@@ -134,14 +134,14 @@ public class EspnBracketService(
             if (updated > 0)
             {
                 await db.SaveChangesAsync();
-                logger.LogInformation("Equipos knockout actualizados vía ESPN scoreboard: {Count}", updated);
+                logger.LogInformation("Knockout teams updated via ESPN scoreboard: {Count}", updated);
             }
 
             return updated;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Error al resolver equipos vía ESPN scoreboard");
+            logger.LogWarning(ex, "Error resolving teams via ESPN scoreboard");
             return 0;
         }
     }

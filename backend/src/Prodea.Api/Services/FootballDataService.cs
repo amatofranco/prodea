@@ -55,7 +55,7 @@ public class FootballDataService(
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error sincronizando equipos knockout");
+                    logger.LogError(ex, "Error syncing knockout teams");
                 }
             }
 
@@ -138,7 +138,7 @@ public class FootballDataService(
         }
 
         if (espnEvents.Count > 0)
-            logger.LogInformation("ESPN: {Count} eventos encontrados para {Dates}",
+            logger.LogInformation("ESPN: {Count} events found for {Dates}",
                 espnEvents.Count, string.Join(", ", espnDates.Select(d => d.ToString("yyyy-MM-dd"))));
 
         return espnEvents;
@@ -193,7 +193,7 @@ public class FootballDataService(
             match.Status = MatchStatus.InProgress;
             match.StartedAt = DateTime.UtcNow;
             changed = true;
-            logger.LogInformation("ESPN detectó inicio: {Home} vs {Away} [{Status}]", match.HomeTeam, match.AwayTeam, statusName);
+            logger.LogInformation("ESPN detected match start: {Home} vs {Away} [{Status}]", match.HomeTeam, match.AwayTeam, statusName);
         }
 
         var (liveHome, liveAway, _, _, _) = EspnApiClient.ExtractScore(espnEvent, match);
@@ -253,7 +253,7 @@ public class FootballDataService(
                 var response = await client.GetAsync($"{MatchPath}{match.ExternalId}", ct);
                 if (!response.IsSuccessStatusCode)
                 {
-                    logger.LogWarning("FootballData API returned {Status} para partido {ExternalId}", response.StatusCode, match.ExternalId);
+                    logger.LogWarning("FootballData API returned {Status} for match {ExternalId}", response.StatusCode, match.ExternalId);
                     if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                         return MatchPollResult.RateLimited;
                     continue;
@@ -271,7 +271,7 @@ public class FootballDataService(
             }
             catch (HttpRequestException ex)
             {
-                logger.LogError(ex, "HTTP error consultando partido {ExternalId}", match.ExternalId);
+                logger.LogError(ex, "HTTP error fetching match {ExternalId}", match.ExternalId);
             }
 
             if (attempt < MaxLiveStatusAttempts)
@@ -339,7 +339,7 @@ public class FootballDataService(
         if (winner != null) match.Winner = winner;
 
         await db.SaveChangesAsync(ct);
-        logger.LogInformation("Partido finalizado: {Home} {HS}-{AS} {Away}", match.HomeTeam, homeScore, awayScore, match.AwayTeam);
+        logger.LogInformation("Match finished: {Home} {HS}-{AS} {Away}", match.HomeTeam, homeScore, awayScore, match.AwayTeam);
 
         await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
 

@@ -25,12 +25,12 @@ public class PushNotificationService(IConfiguration config, ILogger<PushNotifica
         }
         catch (WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone || ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            logger.LogInformation("Suscripción expirada para endpoint {Endpoint}", sub.Endpoint);
+            logger.LogInformation("Expired subscription for endpoint {Endpoint}", sub.Endpoint);
             throw new ExpiredSubscriptionException();
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Error enviando push a {Endpoint}", sub.Endpoint);
+            logger.LogWarning(ex, "Error sending push to {Endpoint}", sub.Endpoint);
             throw;
         }
     }

@@ -21,7 +21,7 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
                 $"{ScoreboardPath}?dates={dateStr}", ct);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("ESPN API returned {Status} para fecha {Date}", response.StatusCode, dateStr);
+                logger.LogWarning("ESPN API returned {Status} for date {Date}", response.StatusCode, dateStr);
                 return [];
             }
             var json = await response.Content.ReadAsStringAsync(ct);
@@ -30,7 +30,7 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Error consultando ESPN scoreboard");
+            logger.LogWarning(ex, "Error fetching ESPN scoreboard");
             return [];
         }
     }
@@ -109,7 +109,7 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Error obteniendo goles ESPN para evento {EventId}", eventId);
+            logger.LogWarning(ex, "Error fetching ESPN goals for event {EventId}", eventId);
             return [];
         }
     }

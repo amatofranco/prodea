@@ -59,14 +59,14 @@ public class FixtureService(
             if (updated > 0)
             {
                 await db.SaveChangesAsync();
-                logger.LogInformation("Equipos knockout actualizados: {Count}", updated);
+                logger.LogInformation("Knockout teams updated: {Count}", updated);
             }
 
             return updatedFromEspn + updatedFromScoreboard + updated;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Error al sincronizar equipos knockout");
+            logger.LogWarning(ex, "Error syncing knockout teams");
             return updatedFromEspn + updatedFromScoreboard;
         }
     }
@@ -91,14 +91,14 @@ public class FixtureService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "No se pudo obtener el fixture de football-data.org, usando seed local");
+                logger.LogWarning(ex, "Failed to fetch fixture from football-data.org, falling back to local seed");
                 incoming = WorldCup2026Seed.GetGroupStageMatches();
                 source = "seed local (fallback)";
             }
         }
         else
         {
-            logger.LogWarning("FootballData:ApiKey no configurado, usando seed local");
+            logger.LogWarning("FootballData:ApiKey not configured, using local seed");
             incoming = WorldCup2026Seed.GetGroupStageMatches();
             source = "seed local (sin API key)";
         }
@@ -163,7 +163,7 @@ public class FixtureService(
 
         var json = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<FdMatchesResponse>(json, JsonOptions)
-            ?? throw new InvalidOperationException("Respuesta vacía de football-data.org");
+            ?? throw new InvalidOperationException("Empty response from football-data.org");
 
         var stages = result.Matches.Select(m => $"{m.Stage}(group={m.Group})").Distinct();
         logger.LogInformation("Stages API: {Stages}", string.Join(", ", stages));

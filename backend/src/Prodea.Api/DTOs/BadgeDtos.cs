@@ -7,7 +7,7 @@ public record MatchdayBadgeDto(
     string BadgeEmoji,
     string BadgeName,
     int PointsInMatchday,
-    string RandomPhrase,
+    int OccurrenceIndex,
     DateTime AwardedAt
 );
 
