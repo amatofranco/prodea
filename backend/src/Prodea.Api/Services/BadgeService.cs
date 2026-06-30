@@ -459,31 +459,31 @@ public class BadgeService(ProdeaDbContext db)
     public Task SendCardNotificationsPublicAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
         => SendCardNotificationsAsync(phase, matchday, userTournamentMap, push);
 
-    public static string JornadaLabel(MatchPhase phase, int matchday) => phase switch
+    public static string MatchdayLabel(MatchPhase phase, int matchday) => phase switch
     {
-        MatchPhase.Group => $"Fecha {matchday}",
-        MatchPhase.R32 => "Dieciseisavos",
-        MatchPhase.R16 => "Octavos",
-        MatchPhase.QF => "Cuartos",
-        MatchPhase.SF => "Semis",
-        MatchPhase.ThirdPlace => "3er Puesto",
+        MatchPhase.Group => $"Matchday {matchday}",
+        MatchPhase.R32 => "Round of 32",
+        MatchPhase.R16 => "Round of 16",
+        MatchPhase.QF => "Quarter-finals",
+        MatchPhase.SF => "Semi-finals",
+        MatchPhase.ThirdPlace => "Third Place",
         MatchPhase.Final => "Final",
         _ => phase.ToString(),
     };
 
     private async Task SendCardNotificationsAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
     {
-        var jornada = JornadaLabel(phase, matchday);
-        var termino = phase switch
+        var matchdayLabel = MatchdayLabel(phase, matchday);
+        var finished = phase switch
         {
-            MatchPhase.Group      => $"Terminó la Fecha {matchday}.",
-            MatchPhase.R32        => "Terminaron los Dieciseisavos.",
-            MatchPhase.R16        => "Terminaron los Octavos.",
-            MatchPhase.QF         => "Terminaron los Cuartos.",
-            MatchPhase.SF         => "Terminaron las Semis.",
-            MatchPhase.ThirdPlace => "Terminó el 3er Puesto.",
-            MatchPhase.Final      => "Terminó la Final.",
-            _                     => $"Terminó {jornada}.",
+            MatchPhase.Group      => $"Matchday {matchday} is over.",
+            MatchPhase.R32        => "Round of 32 is over.",
+            MatchPhase.R16        => "Round of 16 is over.",
+            MatchPhase.QF         => "Quarter-finals are over.",
+            MatchPhase.SF         => "Semi-finals are over.",
+            MatchPhase.ThirdPlace => "Third Place match is over.",
+            MatchPhase.Final      => "The Final is over.",
+            _                     => $"{matchdayLabel} is over.",
         };
         var subscriptions = await db.PushSubscriptions
             .Where(s => userTournamentMap.Keys.Contains(s.UserId))
@@ -496,13 +496,13 @@ public class BadgeService(ProdeaDbContext db)
             {
                 await push.SendToUserAsync(
                     sub,
-                    "🃏 ¡Llegó tu Carta!",
-                    $"{termino} Fijate cómo te fue y compartila.",
+                    "🃏 Your Card is here!",
+                    $"{finished} Check how you did and share it.",
                     $"/torneos/{userTournamentMap[sub.UserId]}/perfil/{sub.UserId}"
                 );
             }
             catch (ExpiredSubscriptionException) { expired.Add(sub); }
-            catch { /* error de red — no interrumpe el flujo */ }
+            catch { /* network error — don't interrupt flow */ }
         }
 
         if (expired.Count > 0)

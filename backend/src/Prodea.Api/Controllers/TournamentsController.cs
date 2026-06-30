@@ -289,7 +289,7 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
                     .ThenBy(mb => loadTimeMap.GetValueOrDefault((mb.UserId, mb.Phase, mb.Matchday), DateTime.MaxValue))
                     .First();
                 var phase = Enum.Parse<MatchPhase>(winner.Phase);
-                var label = BadgeService.JornadaLabel(phase, winner.Matchday);
+                var label = BadgeService.MatchdayLabel(phase, winner.Matchday);
                 return new JornadaWinnerDto(winner.Phase, winner.Matchday, label, winner.UserId, winner.User.Username, winner.User.FullName(), winner.PointsInMatchday);
             })
             .OrderBy(w => w.Phase)
