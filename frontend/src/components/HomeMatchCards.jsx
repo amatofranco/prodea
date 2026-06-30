@@ -1,4 +1,5 @@
 import { Lock } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
 function FlagOnly({ name, label }) {
@@ -28,6 +29,7 @@ function teamDisplay(match, side) {
 }
 
 export function LiveCard({ match, compact = false }) {
+  const { t } = useTranslation()
   const pred = match.userPrediction
   const homeDisplay = teamDisplay(match, 'home')
   const awayDisplay = teamDisplay(match, 'away')
@@ -38,7 +40,7 @@ export function LiveCard({ match, compact = false }) {
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse flex-shrink-0" />
           <span className="text-xs font-bold text-[#FF6B35]">
-            {match.livePhase ?? match.minuteDisplay ?? (match.minute != null ? `${match.minute}'` : 'En vivo')}
+            {match.livePhase ?? match.minuteDisplay ?? (match.minute != null ? `${match.minute}'` : t('home.live'))}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -77,7 +79,7 @@ export function LiveCard({ match, compact = false }) {
     <div className="p-4 rounded-2xl bg-[#FF6B35]/10 border border-[#FF6B35]/40">
       <div className="flex items-center justify-center gap-2 mb-3">
         <span className="w-2 h-2 rounded-full bg-[#FF6B35] animate-pulse" />
-        <span className="text-sm font-bold text-[#FF6B35] uppercase tracking-wider">En vivo</span>
+        <span className="text-sm font-bold text-[#FF6B35] uppercase tracking-wider">{t('home.live')}</span>
         {(match.livePhase != null || match.minuteDisplay != null || match.minute != null) && (
           <span className="text-sm font-bold text-[#FF6B35]">
             · {match.livePhase ?? match.minuteDisplay ?? `${match.minute}'`}
@@ -145,6 +147,7 @@ export function LiveCard({ match, compact = false }) {
 }
 
 export function FinishedCard({ match }) {
+  const { t } = useTranslation()
   const pred = match.userPrediction
   const home = match.homeScore ?? 0
   const away = match.awayScore ?? 0
@@ -162,7 +165,7 @@ export function FinishedCard({ match }) {
           <span className="text-2xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
             {home}–{away}
           </span>
-          <span className="text-[8px] uppercase tracking-wider text-[#3A3A4E] font-semibold">Final</span>
+          <span className="text-[8px] uppercase tracking-wider text-[#3A3A4E] font-semibold">{t('matches.final')}</span>
         </div>
         <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
           <FlagOnly name={match.awayTeam} label={match.awayTeamLabel} />
@@ -208,6 +211,7 @@ export function PlaceholderCard({ match }) {
 }
 
 export function UpcomingCard({ match, navigate }) {
+  const { t } = useTranslation()
   const hasPred = !!match.userPrediction
   const matchDate = new Date(match.matchDate)
   const now = new Date()
@@ -216,10 +220,10 @@ export function UpcomingCard({ match, navigate }) {
   const canPredict = teamsConfirmed && !isLocked
   const isToday = matchDate.toDateString() === now.toDateString()
   const isTomorrow = matchDate.toDateString() === new Date(now.getTime() + 86400000).toDateString()
-  const dayLabel = isToday ? 'Hoy' : isTomorrow ? 'Mañana' : matchDate.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+  const dayLabel = isToday ? t('matches.today') : isTomorrow ? t('matches.tomorrow') : matchDate.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
   const timeLabel = matchDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-  const homeDisplay = match.homeTeam !== 'TBD' ? match.homeTeam : (match.homeTeamLabel ?? 'Por confirmar')
-  const awayDisplay = match.awayTeam !== 'TBD' ? match.awayTeam : (match.awayTeamLabel ?? 'Por confirmar')
+  const homeDisplay = match.homeTeam !== 'TBD' ? match.homeTeam : (match.homeTeamLabel ?? t('matches.teamsToConfirm'))
+  const awayDisplay = match.awayTeam !== 'TBD' ? match.awayTeam : (match.awayTeamLabel ?? t('matches.teamsToConfirm'))
 
   return (
     <div
@@ -243,9 +247,9 @@ export function UpcomingCard({ match, navigate }) {
         }
       </div>
       <div className="mt-2.5 pt-2.5 border-t border-[#2A2A3E] flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">Predicción</span>
+        <span className="text-[9px] uppercase tracking-wider text-[#8A8A9A] font-semibold">{t('matches.prediction')}</span>
         {!teamsConfirmed ? (
-          <span className="text-xs font-semibold text-[#8A8A9A]">Equipos por confirmar</span>
+          <span className="text-xs font-semibold text-[#8A8A9A]">{t('matches.teamsToConfirm')}</span>
         ) : hasPred ? (
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-[#00FF87]">
@@ -256,7 +260,7 @@ export function UpcomingCard({ match, navigate }) {
         ) : isLocked ? (
           <Lock size={13} className="text-[#8A8A9A]" />
         ) : (
-          <span className="text-xs font-bold text-[#FF6B35]">Predecir →</span>
+          <span className="text-xs font-bold text-[#FF6B35]">{t('matches.predict')}</span>
         )}
       </div>
     </div>

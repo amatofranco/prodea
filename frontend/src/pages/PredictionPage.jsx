@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, Check, Zap, Bell, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { api } from '../services/api'
@@ -46,6 +47,7 @@ function FlagCard({ name }) {
 }
 
 function MatchCountdown({ matchDate, className = 'text-sm' }) {
+  const { t } = useTranslation()
   const [diff, setDiff] = useState(0)
   useEffect(() => {
     function tick() { setDiff(Math.max(0, new Date(matchDate) - Date.now())) }
@@ -55,7 +57,7 @@ function MatchCountdown({ matchDate, className = 'text-sm' }) {
   }, [matchDate])
 
   if (diff <= PREDICTION_CLOSE_BEFORE_MS)
-    return <span className={`text-red-400 font-semibold ${className}`}>Cerradas</span>
+    return <span className={`text-red-400 font-semibold ${className}`}>{t('predictions.closed')}</span>
 
   const remaining = diff - PREDICTION_CLOSE_BEFORE_MS
   const h = Math.floor(remaining / 3600000)
@@ -71,6 +73,7 @@ function MatchCountdown({ matchDate, className = 'text-sm' }) {
 }
 
 function TurboCountdown({ onComplete, onSkip, resetKey, compact = false }) {
+  const { t } = useTranslation()
   const [progress, setProgress] = useState(1)
   const [display, setDisplay] = useState(TURBO_COUNTDOWN_SECS)
   const doneRef = useRef(false)
@@ -155,17 +158,18 @@ function TurboCountdown({ onComplete, onSkip, resetKey, compact = false }) {
         </svg>
         <div className="absolute flex flex-col items-center leading-none select-none">
           <span className="text-4xl font-black text-[#FF6B35] tabular-nums">{display}</span>
-          <span className="text-[10px] text-[#8A8A9A] mt-0.5">seg</span>
+          <span className="text-[10px] text-[#8A8A9A] mt-0.5">{t('predictions.sec')}</span>
         </div>
       </button>
       <button onClick={onSkip} className="text-xs font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60">
-        Confirmar ya →
+        {t('predictions.confirmNow')}
       </button>
     </motion.div>
   )
 }
 
 export default function PredictionPage() {
+  const { t } = useTranslation()
   const { matchId } = useParams()
   const navigate = useNavigate()
 
@@ -330,8 +334,8 @@ export default function PredictionPage() {
   if (loading) return <div className="flex-1 bg-[#0D0D0D]" />
 
   const resultLabel =
-    home > away ? `Gana ${match.homeTeam}` :
-    away > home ? `Gana ${match.awayTeam}` : 'Empate'
+    home > away ? t('predictions.wins', { team: match.homeTeam }) :
+    away > home ? t('predictions.wins', { team: match.awayTeam }) : t('predictions.draw')
 
   return (
     <div className="flex flex-col min-h-full bg-[#0D0D0D]">
@@ -345,13 +349,13 @@ export default function PredictionPage() {
             <p className="flex-1 text-center text-base font-bold text-white leading-tight">
               {match.homeTeam !== 'TBD'
                 ? match.homeTeam
-                : match.homeTeamLabel ?? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>}
+                : match.homeTeamLabel ?? <span className="text-[#8A8A9A] italic text-sm">{t('predictions.toBeConfirmed')}</span>}
             </p>
             <span className="text-[#8A8A9A] text-sm font-light flex-shrink-0">vs</span>
             <p className="flex-1 text-center text-base font-bold text-white leading-tight">
               {match.awayTeam !== 'TBD'
                 ? match.awayTeam
-                : match.awayTeamLabel ?? <span className="text-[#8A8A9A] italic text-sm">Por confirmar</span>}
+                : match.awayTeamLabel ?? <span className="text-[#8A8A9A] italic text-sm">{t('predictions.toBeConfirmed')}</span>}
             </p>
           </div>
         </div>
@@ -365,7 +369,7 @@ export default function PredictionPage() {
             disabled={!prevMatch}
             className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
           >
-            <ChevronLeft size={15} /> Anterior
+            <ChevronLeft size={15} /> {t('predictions.previous')}
           </button>
 
           <button
@@ -384,7 +388,7 @@ export default function PredictionPage() {
               />
             )}
             <Zap size={13} className={turboMode ? 'fill-white' : ''} />
-            {turboMode ? 'Turbo ON' : 'Modo Turbo'}
+            {turboMode ? t('predictions.turboOn') : t('predictions.turboMode')}
           </button>
 
           <button
@@ -392,7 +396,7 @@ export default function PredictionPage() {
             disabled={!nextMatch}
             className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-xs font-bold disabled:opacity-20 active:scale-95 transition-transform"
           >
-            Siguiente <ChevronRight size={15} />
+            {t('predictions.next')} <ChevronRight size={15} />
           </button>
         </div>
       )}
@@ -406,12 +410,12 @@ export default function PredictionPage() {
             {new Date(match.matchDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
             {!isLocked && match.status === 'Scheduled' && (
               <span className="text-[#8A8A9A] font-normal">
-                {' · Cierra en '}
+                {` · ${t('predictions.closesIn')} `}
                 <MatchCountdown matchDate={match.matchDate} className="text-xs" />
               </span>
             )}
             {turboMode && pendingCount > 0 && (
-              <span className="text-[#FF6B35]"> · {pendingCount} por predecir</span>
+              <span className="text-[#FF6B35]"> · {pendingCount} {t('predictions.toPredictCount')}</span>
             )}
           </p>
         </div>
@@ -434,31 +438,31 @@ export default function PredictionPage() {
           {turboComplete ? (
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
               <p className="text-5xl mb-4">🎉</p>
-              <p className="text-white font-bold text-xl">¡Todo listo!</p>
-              <p className="text-[#8A8A9A] text-sm mt-1">No quedan partidos por predecir</p>
+              <p className="text-white font-bold text-xl">{t('predictions.allDone')}</p>
+              <p className="text-[#8A8A9A] text-sm mt-1">{t('predictions.noMoreMatches')}</p>
             </motion.div>
           ) : isLocked ? (
             <div className="text-center w-full">
               <p className="text-[#FF6B35] font-semibold text-lg">
-                {!teamsConfirmed ? 'Equipos por confirmar' : 'Predicciones cerradas'}
+                {!teamsConfirmed ? t('matches.teamsToConfirm') : t('predictions.predictionsClosed')}
               </p>
               <p className="text-[#8A8A9A] text-sm mt-1">
                 {!teamsConfirmed
-                  ? 'Podrás predecir cuando se definan los cruces'
+                  ? t('predictions.teamsToConfirmDesc')
                   : isPastDeadline && match?.status === 'Scheduled'
-                  ? 'Las predicciones cerraron 15 minutos antes del partido'
-                  : 'El partido ya empezó o terminó'}
+                  ? t('predictions.closedDesc')
+                  : t('predictions.matchStartedOrFinished')}
               </p>
               {match.userPrediction && (
                 <>
                   <div className="mt-4 p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] w-full">
-                    <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-1">Predicción</p>
+                    <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-1">{t('matches.prediction')}</p>
                     <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                       {match.userPrediction.predictedHomeScore} – {match.userPrediction.predictedAwayScore}
                     </p>
                     {match.userPrediction.predictedPenaltyWinner && (
                       <p className="text-[#F59E0B] text-xs mt-1">
-                        Pasa de ronda: {match.userPrediction.predictedPenaltyWinner === 'home'
+                        {t('predictions.advances')} {match.userPrediction.predictedPenaltyWinner === 'home'
                           ? match.homeTeam
                           : match.awayTeam}
                       </p>
@@ -496,7 +500,7 @@ export default function PredictionPage() {
               {isKnockout && isDraw && (
                 <div className={`w-full md:max-w-lg rounded-2xl bg-[#1A1A2E] overflow-hidden border ${triedSubmit && needsPenaltyWinner ? 'border-[#FF6B35]' : 'border-[#F59E0B]/40'}`}>
                   <p className="text-center text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] pt-2 pb-1">
-                    ¿Quién pasa de ronda? {triedSubmit && needsPenaltyWinner && <span className="text-[#FF6B35]">· Obligatorio</span>}
+                    {t('predictions.whoAdvances')} {triedSubmit && needsPenaltyWinner && <span className="text-[#FF6B35]">· {t('predictions.required')}</span>}
                   </p>
                   <div className="flex">
                     <button
@@ -532,11 +536,11 @@ export default function PredictionPage() {
                 </p>
                 {isKnockout && isDraw ? (
                   <p className="text-[#8A8A9A] text-xs mt-0.5">
-                    Exacto en 120': <span className="text-[#00FF87] font-semibold">+3 pts</span>
-                    {' · '}Quién pasa si hay penales: <span className="text-[#00FF87] font-semibold">+2 pts adicionales</span>
+                    {t('predictions.exactIn120')} <span className="text-[#00FF87] font-semibold">+3 pts</span>
+                    {' · '}{t('predictions.penaltyPick')} <span className="text-[#00FF87] font-semibold">{t('predictions.additionalPts', { pts: 2 })}</span>
                   </p>
                 ) : (
-                  <p className="text-[#8A8A9A] text-xs mt-0.5">{resultLabel} · Si acertás exacto → <span className="text-[#00FF87] font-semibold">+3 pts</span></p>
+                  <p className="text-[#8A8A9A] text-xs mt-0.5">{resultLabel} · {t('predictions.ifExact')} <span className="text-[#00FF87] font-semibold">+3 pts</span></p>
                 )}
               </div>
 
@@ -544,14 +548,14 @@ export default function PredictionPage() {
 
               {showTurboCountdown ? (
                 <button onClick={handleSubmit} className="text-sm font-semibold text-[#FF6B35] underline underline-offset-2 active:opacity-60">
-                  Confirmar ya →
+                  {t('predictions.confirmNow')}
                 </button>
               ) : justSaved && turboMode ? (
                 <motion.div
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-2 text-[#00FF87] font-semibold text-sm"
                 >
-                  <Check size={16} /> Guardado · cargando siguiente...
+                  <Check size={16} /> {t('predictions.savedLoadingNext')}
                 </motion.div>
               ) : (
                 <button
@@ -562,7 +566,7 @@ export default function PredictionPage() {
                   } disabled:opacity-50`}
                 >
                   {saved && <Check size={18} />}
-                  {saving ? 'Guardando...' : justSaved ? 'Predicción guardada' : saved ? 'Actualizar predicción' : 'Confirmar predicción'}
+                  {saving ? t('predictions.saving') : justSaved ? t('predictions.saved') : saved ? t('predictions.update') : t('predictions.confirm')}
                 </button>
               )}
 
@@ -575,12 +579,12 @@ export default function PredictionPage() {
                     className="w-full md:max-w-lg md:mx-auto flex items-center gap-3 p-3 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/20"
                   >
                     <Bell size={16} className="text-[#00FF87] shrink-0" />
-                    <p className="flex-1 text-[#8A8A9A] text-xs leading-snug">Avisate cuando terminen los partidos</p>
+                    <p className="flex-1 text-[#8A8A9A] text-xs leading-snug">{t('predictions.pushBanner')}</p>
                     <button
                       onClick={() => { subscribePush(); dismissPush() }}
                       className="shrink-0 px-3 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95"
                     >
-                      Activar
+                      {t('tournaments.activate')}
                     </button>
                     <button onClick={dismissPush} className="text-[#8A8A9A] active:opacity-60">
                       <X size={14} />
