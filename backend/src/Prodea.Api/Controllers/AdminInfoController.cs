@@ -15,12 +15,12 @@ public class AdminInfoController(ProdeaDbContext db, BadgeService badgeService, 
     [HttpPost("push/test")]
     public async Task<IActionResult> TestPush([FromBody] TestPushRequest? request = null)
     {
-        var title = request?.Title ?? "🔔 Notificación de prueba";
-        var body = request?.Body ?? "El sistema de push notifications está funcionando.";
+        var title = request?.Title ?? "🔔 Test notification";
+        var body = request?.Body ?? "Push notification system is working.";
         var url = request?.Url ?? "/";
 
         var sent = await pushService.BroadcastAsync(db, title, body, url);
-        return Ok(new { message = $"Enviado a {sent} suscriptor(es)." });
+        return Ok(new { message = $"Sent to {sent} subscriber(s)." });
     }
 
     [HttpPost("push/test-card")]
@@ -33,12 +33,12 @@ public class AdminInfoController(ProdeaDbContext db, BadgeService badgeService, 
             .ToListAsync();
 
         if (participants.Count == 0)
-            return BadRequest(new { message = "El torneo no tiene participantes." });
+            return BadRequest(new { message = "Tournament has no participants." });
 
         var userTournamentMap = participants.ToDictionary(uid => uid, _ => request.TournamentId);
         await badgeService.SendCardNotificationsPublicAsync(phase, request.Matchday, userTournamentMap, pushService);
 
-        return Ok(new { message = $"Notificación de card enviada a {participants.Count} participante(s)." });
+        return Ok(new { message = $"Card notification sent to {participants.Count} participant(s)." });
     }
 
     [HttpGet("users")]
@@ -68,7 +68,7 @@ public class AdminInfoController(ProdeaDbContext db, BadgeService badgeService, 
     public async Task<IActionResult> DeleteUser(int id)
     {
         var user = await db.Users.FindAsync(id);
-        if (user == null) return NotFound(new { message = "Usuario no encontrado" });
+        if (user == null) return NotFound(new { message = "User not found" });
 
         await db.Predictions.Where(p => p.UserId == id).ExecuteDeleteAsync();
         await db.TournamentParticipants.Where(tp => tp.UserId == id).ExecuteDeleteAsync();
@@ -79,7 +79,7 @@ public class AdminInfoController(ProdeaDbContext db, BadgeService badgeService, 
         db.Users.Remove(user);
         await db.SaveChangesAsync();
 
-        return Ok(new { message = $"Usuario {user.Username} ({user.FirstName} {user.LastName}) eliminado." });
+        return Ok(new { message = $"User {user.Username} ({user.FirstName} {user.LastName}) deleted." });
     }
 
     [HttpGet("tournaments/{id}/accumulative-badges")]
@@ -104,7 +104,7 @@ public class AdminInfoController(ProdeaDbContext db, BadgeService badgeService, 
     {
         // ExecuteDeleteAsync evita fallar con valores de BadgeType obsoletos en el enum
         var count = await db.AccumulativeBadges.Where(ab => ab.TournamentId == id).ExecuteDeleteAsync();
-        return Ok(new { message = $"{count} motes acumulativos eliminados." });
+        return Ok(new { message = $"{count} accumulative badges deleted." });
     }
 
     [HttpGet("tournaments/{id}/predicted-goals")]

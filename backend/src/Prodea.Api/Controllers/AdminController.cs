@@ -40,17 +40,17 @@ public class AdminController(
     public async Task<IActionResult> SeedFixture([FromQuery] bool force = false)
     {
         var (count, source) = await fixtureService.ImportAsync(force);
-        if (count == 0 && source == "ya cargado")
-            return Conflict(new { message = "Fixture ya cargado. Usá ?force=true para reimportar." });
+        if (count == 0 && source == "already loaded")
+            return Conflict(new { message = "Fixture already loaded. Use ?force=true to reimport." });
 
-        return Ok(new { message = $"{count} partidos cargados", source });
+        return Ok(new { message = $"{count} matches loaded", source });
     }
 
     [HttpPost("sync-knockout-teams")]
     public async Task<IActionResult> SyncKnockoutTeams()
     {
         var updated = await fixtureService.UpdateKnockoutTeamNamesAsync();
-        return Ok(new { message = $"{updated} partido(s) de knockout actualizados desde football-data.org" });
+        return Ok(new { message = $"{updated} knockout match(es) updated from football-data.org" });
     }
 
     [HttpGet("backups")]
@@ -68,11 +68,11 @@ public class AdminController(
     public async Task<IActionResult> RestoreBackup(int id)
     {
         var backup = await db.PredictionBackups.FindAsync(id);
-        if (backup == null) return NotFound(new { message = "Backup no encontrado" });
+        if (backup == null) return NotFound(new { message = "Backup not found" });
 
         var payload = JsonSerializer.Deserialize<BackupPayload>(backup.JsonData, JsonOptions);
         if (payload?.Predictions == null)
-            return UnprocessableEntity(new { message = "JSON del backup no válido" });
+            return UnprocessableEntity(new { message = "Invalid backup JSON" });
 
         var existingKeys = await db.Predictions
             .Select(p => new { p.UserId, p.MatchId })
@@ -101,7 +101,7 @@ public class AdminController(
 
         return Ok(new
         {
-            message  = $"{toRestore.Count} predicciones restauradas",
+            message  = $"{toRestore.Count} predictions restored",
             restored = toRestore.Count,
             skipped  = payload.Predictions.Count - toRestore.Count,
             backupDate = backup.CreatedAt,
@@ -112,7 +112,7 @@ public class AdminController(
     public async Task<IActionResult> SimulateMatch(int id, [FromBody] SimulateMatchRequest request)
     {
         var match = await db.Matches.FindAsync(id);
-        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+        if (match == null) return NotFound(new { message = "Match not found" });
 
         var wasFinished = match.Status == MatchStatus.Finished;
 
@@ -140,7 +140,7 @@ public class AdminController(
 
         return Ok(new
         {
-            message   = $"Partido {id} actualizado",
+            message   = $"Match {id} updated",
             matchId   = match.Id,
             homeTeam  = match.HomeTeam,
             awayTeam  = match.AwayTeam,
@@ -155,19 +155,19 @@ public class AdminController(
     public async Task<IActionResult> DeleteMatch(int id)
     {
         var match = await db.Matches.FindAsync(id);
-        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+        if (match == null) return NotFound(new { message = "Match not found" });
 
         db.Matches.Remove(match);
         await db.SaveChangesAsync();
 
-        return Ok(new { message = $"Partido {id} eliminado" });
+        return Ok(new { message = $"Match {id} deleted" });
     }
 
     [HttpPost("matches/{id}/finalize")]
     public async Task<IActionResult> FinalizeMatch(int id, [FromBody] FinalizeMatchRequest request)
     {
         var match = await db.Matches.FindAsync(id);
-        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+        if (match == null) return NotFound(new { message = "Match not found" });
 
         match.HomeScore = request.HomeScore;
         match.AwayScore = request.AwayScore;
@@ -190,7 +190,7 @@ public class AdminController(
 
         return Ok(new
         {
-            message      = $"Partido {id} finalizado con scoring",
+            message      = $"Match {id} finalized with scoring",
             matchId      = match.Id,
             homeTeam     = match.HomeTeam,
             awayTeam     = match.AwayTeam,
@@ -207,14 +207,14 @@ public class AdminController(
     public async Task<IActionResult> FetchGoals(int id, CancellationToken ct)
     {
         var match = await db.Matches.FindAsync(id);
-        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+        if (match == null) return NotFound(new { message = "Match not found" });
 
         var edtDate = match.MatchDate.AddHours(-4).Date;
         var events = await espn.FetchScoreboardAsync(edtDate, ct);
         var espnEvent = EspnApiClient.FindMatch(events, match);
 
         if (espnEvent == null)
-            return NotFound(new { message = $"Partido no encontrado en ESPN para {edtDate:yyyy-MM-dd}" });
+            return NotFound(new { message = $"Match not found in ESPN for {edtDate:yyyy-MM-dd}" });
 
         var goals = await espn.FetchGoalsAsync(espnEvent.Id, ct);
 
@@ -229,7 +229,7 @@ public class AdminController(
                 await hub.Clients.Group($"tournament-{tid}").SendAsync("MatchUpdated", payload, ct);
         }
 
-        return Ok(new { message = $"{goals.Count} goles guardados para {match.HomeTeam} vs {match.AwayTeam}", espnEventId = espnEvent.Id, goals });
+        return Ok(new { message = $"{goals.Count} goals saved for {match.HomeTeam} vs {match.AwayTeam}", espnEventId = espnEvent.Id, goals });
     }
 
     [SkipAdminKey]

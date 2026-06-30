@@ -25,7 +25,7 @@ public class AdminTestController(
             .ToListAsync();
 
         if (matches.Count == 0)
-            return NotFound(new { message = $"No hay partidos para {request.Phase} matchday {request.Matchday}" });
+            return NotFound(new { message = $"No matches found for {request.Phase} matchday {request.Matchday}" });
 
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == request.TournamentId)
@@ -33,7 +33,7 @@ public class AdminTestController(
             .ToListAsync();
 
         if (participants.Count == 0)
-            return BadRequest(new { message = "El torneo no tiene participantes" });
+            return BadRequest(new { message = "Tournament has no participants" });
 
         var rng = new Random(request.Seed ?? Environment.TickCount);
 
@@ -112,7 +112,7 @@ public class AdminTestController(
 
         return Ok(new
         {
-            message = $"Jornada simulada: {matches.Count} partidos, {participants.Count} participantes, {predCount} predicciones nuevas",
+            message = $"Matchday simulated: {matches.Count} matches, {participants.Count} participants, {predCount} new predictions",
             matches = matches.Count,
             participants = participants.Count,
             predictionsCreated = predCount,
@@ -157,7 +157,7 @@ public class AdminTestController(
         foreach (var pm in phaseMatchdays)
             await badgeService.AssignMatchdayBadgesAsync(tournamentId, pm.Phase, pm.Matchday);
 
-        return Ok(new { message = $"Recalculado: {predsUpdated} predicciones, {phaseMatchdays.Count} jornadas con badges." });
+        return Ok(new { message = $"Recalculated: {predsUpdated} predictions, {phaseMatchdays.Count} matchdays with badges." });
     }
 
     [HttpPost("recalculate-badges/{tournamentId}")]
@@ -176,7 +176,7 @@ public class AdminTestController(
             matchdayCount++;
         }
 
-        return Ok(new { message = $"Badges recalculados para torneo {tournamentId}: {matchdayCount} jornadas/fases procesadas." });
+        return Ok(new { message = $"Badges recalculated for tournament {tournamentId}: {matchdayCount} matchdays/phases processed." });
     }
 
     [HttpPost("finalize-group-stage")]
@@ -213,7 +213,7 @@ public class AdminTestController(
         }
         await db.SaveChangesAsync();
 
-        return Ok(new { message = $"{matches.Count} partidos finalizados, {predsUpdated} predicciones recalculadas." });
+        return Ok(new { message = $"{matches.Count} matches finalized, {predsUpdated} predictions recalculated." });
     }
 
     [HttpPost("cleanup-production")]
@@ -222,8 +222,8 @@ public class AdminTestController(
         if (env.IsProduction())
             return NotFound();
 
-        if (confirm != "si")
-            return BadRequest(new { message = "Agregá ?confirm=si para confirmar la limpieza." });
+        if (confirm != "yes")
+            return BadRequest(new { message = "Add ?confirm=yes to confirm cleanup." });
 
         await db.MatchdayBadges.ExecuteDeleteAsync();
         await db.AccumulativeBadges.ExecuteDeleteAsync();
@@ -241,7 +241,7 @@ public class AdminTestController(
 
         return Ok(new
         {
-            message = "Producción limpia.",
+            message = "Production cleaned.",
             usersDeleted = deletedUsers,
             matchesReimported = matchCount,
             fixtureSource = source,
@@ -262,7 +262,7 @@ public class AdminTestController(
         await db.ChampionPicks
             .ExecuteUpdateAsync(s => s.SetProperty(cp => cp.PointsEarned, 0));
 
-        return Ok(new { message = $"Simulación reseteada: fixture re-importado desde {source} ({matchCount} partidos), predicciones a 0 pts, badges eliminados." });
+        return Ok(new { message = $"Simulation reset: fixture reimported from {source} ({matchCount} matches), predictions reset to 0 pts, badges deleted." });
     }
 
     public record SimulateMatchdayRequest(int TournamentId, string Phase, int Matchday, int? Seed = null, bool Force = false);

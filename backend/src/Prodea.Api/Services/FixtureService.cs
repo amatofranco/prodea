@@ -72,7 +72,7 @@ public class FixtureService(
     public async Task<(int count, string source)> ImportAsync(bool force = false)
     {
         var hasMatches = await db.Matches.AnyAsync();
-        if (hasMatches && !force) return (0, "ya cargado");
+        if (hasMatches && !force) return (0, "already loaded");
 
         var hasApiData = hasMatches && await db.Matches.AnyAsync(m => m.ExternalId != null);
 
