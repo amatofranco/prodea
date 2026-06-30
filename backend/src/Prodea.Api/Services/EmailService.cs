@@ -6,6 +6,8 @@ namespace Prodea.Api.Services;
 
 public class EmailService(IConfiguration config, IHttpClientFactory httpClientFactory, ILogger<EmailService> logger)
 {
+    private const string ResendEndpoint = "https://api.resend.com/emails";
+
     private readonly string _adminEmail = config["Admin:Email"] ?? throw new InvalidOperationException("Admin:Email not configured");
     private readonly string _frontendUrl = config["Frontend:Url"] ?? "http://localhost:5173";
 
@@ -94,7 +96,7 @@ public class EmailService(IConfiguration config, IHttpClientFactory httpClientFa
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync("https://api.resend.com/emails", content);
+        var response = await client.PostAsync(ResendEndpoint, content);
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync();

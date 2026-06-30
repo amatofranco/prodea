@@ -12,12 +12,14 @@ public class EspnBracketService(
     EspnApiClient espn,
     ILogger<EspnBracketService> logger)
 {
+    private const string StandingsPath = "/apis/v2/sports/soccer/fifa.world/standings";
+
     public async Task<int> TryResolveFromEspnStandingsAsync(List<Match> tbdMatches)
     {
         try
         {
             var client = httpClientFactory.CreateClient("Espn");
-            var response = await client.GetAsync("/apis/v2/sports/soccer/fifa.world/standings");
+            var response = await client.GetAsync(StandingsPath);
             if (!response.IsSuccessStatusCode) return 0;
 
             var json = await response.Content.ReadAsStringAsync();

@@ -13,6 +13,8 @@ public class FixtureService(
     ILogger<FixtureService> logger,
     EspnBracketService espnBracket)
 {
+    private const string WcMatchesPath = "/v4/competitions/WC/matches";
+
     public async Task<int> UpdateKnockoutTeamNamesAsync()
     {
         var tbdMatches = await db.Matches
@@ -30,7 +32,7 @@ public class FixtureService(
         try
         {
             var client = httpClientFactory.CreateClient("FootballData");
-            var response = await client.GetAsync("/v4/competitions/WC/matches");
+            var response = await client.GetAsync(WcMatchesPath);
             if (!response.IsSuccessStatusCode) return updatedFromEspn;
 
             var json = await response.Content.ReadAsStringAsync();
@@ -156,7 +158,7 @@ public class FixtureService(
     private async Task<List<Match>> FetchFromApiAsync()
     {
         var client = httpClientFactory.CreateClient("FootballData");
-        var response = await client.GetAsync("/v4/competitions/WC/matches");
+        var response = await client.GetAsync(WcMatchesPath);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();

@@ -6,6 +6,9 @@ namespace Prodea.Api.Services;
 
 public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApiClient> logger)
 {
+    private const string ScoreboardPath = "/apis/site/v2/sports/soccer/fifa.world/scoreboard";
+    private const string SummaryPath    = "/apis/site/v2/sports/soccer/fifa.world/summary";
+
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     public async Task<List<EspnEvent>> FetchScoreboardAsync(DateTime utcDate, CancellationToken ct)
@@ -15,7 +18,7 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
             var client = httpClientFactory.CreateClient("Espn");
             var dateStr = utcDate.ToString("yyyyMMdd");
             var response = await client.GetAsync(
-                $"/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={dateStr}", ct);
+                $"{ScoreboardPath}?dates={dateStr}", ct);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("ESPN API returned {Status} para fecha {Date}", response.StatusCode, dateStr);
@@ -78,7 +81,7 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
         {
             var client = httpClientFactory.CreateClient("Espn");
             var response = await client.GetAsync(
-                $"/apis/site/v2/sports/soccer/fifa.world/summary?event={eventId}", ct);
+                $"{SummaryPath}?event={eventId}", ct);
             if (!response.IsSuccessStatusCode) return [];
 
             var json = await response.Content.ReadAsStringAsync(ct);

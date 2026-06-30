@@ -18,6 +18,8 @@ public class FootballDataService(
     EspnApiClient espn)
     : BackgroundService
 {
+    private const string WcMatchesPath = "/v4/competitions/WC/matches";
+    private const string MatchPath     = "/v4/matches/";
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan LivePollingInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan FastPollingInterval = TimeSpan.FromMinutes(1);
@@ -248,7 +250,7 @@ public class FootballDataService(
         {
             try
             {
-                var response = await client.GetAsync($"/v4/matches/{match.ExternalId}", ct);
+                var response = await client.GetAsync($"{MatchPath}{match.ExternalId}", ct);
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.LogWarning("FootballData API returned {Status} para partido {ExternalId}", response.StatusCode, match.ExternalId);
