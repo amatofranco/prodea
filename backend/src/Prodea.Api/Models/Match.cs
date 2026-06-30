@@ -44,6 +44,8 @@ public class Match
     public bool ResultNotificationSent { get; set; } = false;
     public string? GoalsJson { get; set; }
     public string? LivePhase { get; set; }
+    public int? HomePenaltyScore { get; set; }
+    public int? AwayPenaltyScore { get; set; }
 
     public ICollection<Prediction> Predictions { get; set; } = [];
 }

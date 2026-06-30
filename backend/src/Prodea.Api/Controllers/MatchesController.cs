@@ -51,7 +51,9 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
                 goals,
                 m.LivePhase,
                 isFinal ? myChampionPick?.CountryName : null,
-                isFinal && myChampionPick != null ? myChampionPick.PointsEarned : null
+                isFinal && myChampionPick != null ? myChampionPick.PointsEarned : null,
+                m.HomePenaltyScore,
+                m.AwayPenaltyScore
             );
         }));
     }

@@ -28,9 +28,14 @@ export default function TournamentMatchCard({ match, onTap }) {
         <FlagImg name={match.homeTeam} label={match.homeTeamLabel} />
         <div className="flex flex-col items-center shrink-0 px-1">
           {isFinished || isLive ? (
-            <span className="text-xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-              {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
-            </span>
+            <div className="flex flex-col items-center">
+              <span className="text-xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
+              </span>
+              {match.homePenaltyScore != null && match.awayPenaltyScore != null && (
+                <span className="text-[9px] text-[#F59E0B] font-semibold">({match.homePenaltyScore}-{match.awayPenaltyScore} pen.)</span>
+              )}
+            </div>
           ) : (
             <>
               <span className="text-xs text-[#8A8A9A]">

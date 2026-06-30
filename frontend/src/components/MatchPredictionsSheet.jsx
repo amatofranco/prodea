@@ -26,9 +26,14 @@ export default function MatchPredictionsSheet({ match, predictions, loading, onC
         <div className="flex items-center justify-between px-5 pb-3">
           <div className="flex items-center gap-2">
             <FlagImg name={match.homeTeam} label={match.homeTeamLabel} size={28} />
-            <span className="text-white font-bold text-lg" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-              {match.homeScore} – {match.awayScore}
-            </span>
+            <div className="flex flex-col items-center">
+              <span className="text-white font-bold text-lg" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                {match.homeScore} – {match.awayScore}
+              </span>
+              {match.homePenaltyScore != null && match.awayPenaltyScore != null && (
+                <span className="text-[9px] text-[#F59E0B] font-semibold -mt-1">({match.homePenaltyScore}-{match.awayPenaltyScore} pen.)</span>
+              )}
+            </div>
             <FlagImg name={match.awayTeam} label={match.awayTeamLabel} size={28} />
           </div>
           <button onClick={onClose} className="text-[#8A8A9A] active:text-white p-1">

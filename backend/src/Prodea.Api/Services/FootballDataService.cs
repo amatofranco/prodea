@@ -149,16 +149,19 @@ public class FootballDataService(
         logger.LogDebug("ESPN match {Home} vs {Away}: {Status}", match.HomeTeam, match.AwayTeam, statusName);
 
         var isFinal = statusName is "STATUS_FULL_TIME" or "STATUS_FINAL" or "STATUS_FINAL_OT"
-                                    or "STATUS_FINAL_PENALTIES" or "STATUS_AWARDED";
+                                    or "STATUS_FINAL_PENALTIES" or "STATUS_FINAL_PEN"
+                                    or "STATUS_FINAL_AGG" or "STATUS_FINAL_AET" or "STATUS_AWARDED";
         var isLive = !isFinal && statusName is not ("STATUS_SCHEDULED" or "STATUS_POSTPONED"
                                     or "STATUS_CANCELED" or "STATUS_ABANDONED" or "STATUS_SUSPENDED");
 
         if (isFinal)
         {
-            var (homeScore, awayScore, winner) = EspnApiClient.ExtractScore(espnEvent, match);
+            var (homeScore, awayScore, winner, homePen, awayPen) = EspnApiClient.ExtractScore(espnEvent, match);
             var goals = await espn.FetchGoalsAsync(espnEvent.Id, ct);
             if (goals.Count > 0)
                 match.GoalsJson = JsonSerializer.Serialize(goals);
+            match.HomePenaltyScore = homePen;
+            match.AwayPenaltyScore = awayPen;
             await FinalizeMatchCoreAsync(db, push, match, homeScore, awayScore, winner, goals, ct);
             return MatchPollResult.Processed;
         }
@@ -191,7 +194,7 @@ public class FootballDataService(
             logger.LogInformation("ESPN detectó inicio: {Home} vs {Away} [{Status}]", match.HomeTeam, match.AwayTeam, statusName);
         }
 
-        var (liveHome, liveAway, _) = EspnApiClient.ExtractScore(espnEvent, match);
+        var (liveHome, liveAway, _, _, _) = EspnApiClient.ExtractScore(espnEvent, match);
         if (match.HomeScore != liveHome || match.AwayScore != liveAway)
         {
             match.HomeScore = liveHome;
@@ -381,6 +384,8 @@ public class FootballDataService(
             minuteDisplay,
             goals = broadcastGoals?.Select(g => new { scorer = g.Scorer, team = g.Team, minute = g.Minute }).ToList(),
             livePhase,
+            homePenaltyScore = match.HomePenaltyScore,
+            awayPenaltyScore = match.AwayPenaltyScore,
         };
 
         foreach (var tid in tournamentIds)

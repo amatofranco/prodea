@@ -40,7 +40,9 @@ public record MatchWithPredictionDto(
     List<GoalDto>? Goals = null,
     string? LivePhase = null,
     string? UserChampionPick = null,
-    int? UserChampionPickPoints = null
+    int? UserChampionPickPoints = null,
+    int? HomePenaltyScore = null,
+    int? AwayPenaltyScore = null
 );
 
 public record PredictionDto(

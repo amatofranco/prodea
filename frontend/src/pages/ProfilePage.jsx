@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, Award, X, Share2 } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
@@ -17,34 +18,17 @@ function SmallFlag({ name }) {
   )
 }
 
-function jornadaLabel(phase, matchday) {
-  if (phase === 'Group') return `Fecha ${matchday}`
-  return { R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', ThirdPlace: '3er Puesto', Final: 'Final' }[phase] ?? phase
-}
-
-const ACCUMULATIVE_LABELS = {
-  PecheadaTotal: 'Pecheada Total',
-  RachaInfernal: 'Crack Total',
-  ElMuro: 'El Muro',
-  ElFantasma: 'El Fantasma',
-  TripleMufa: 'Triple Mufa',
-  TibiezaTotal: 'Tibieza Total',
-  GoleadorSerial: 'Goleador Serial',
-  RusticoTotal: 'Rústico Total',
-}
-
-const ACCUMULATIVE_DESCRIPTIONS = {
-  PecheadaTotal: '3 jornadas consecutivas siendo Pecho Frío',
-  RachaInfernal: '3 jornadas consecutivas siendo El Crack',
-  ElMuro: 'Nunca fue último en toda la competencia',
-  ElFantasma: 'Olvidó cargar predicciones más de 3 veces',
-  TripleMufa: '3 jornadas consecutivas siendo El Mufa',
-  TibiezaTotal: '3 jornadas consecutivas siendo El Tibio',
-  GoleadorSerial: '3 jornadas consecutivas siendo El Goleador',
-  RusticoTotal: '3 jornadas consecutivas siendo El Rústico',
+function useJornadaLabel() {
+  const { t } = useTranslation()
+  return (phase, matchday) => {
+    if (phase === 'Group') return t('phases.Group', { matchday })
+    return t(`phases.${phase}`, phase)
+  }
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslation()
+  const jornadaLabel = useJornadaLabel()
   const { tournamentId, userId } = useParams()
   const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.user)
@@ -91,22 +75,22 @@ export default function ProfilePage() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-base md:text-3xl font-bold text-white">
-              {displayName} {isMe && <span className="text-[#8A8A9A] text-xs md:text-base font-normal">(vos)</span>}
+              {displayName} {isMe && <span className="text-[#8A8A9A] text-xs md:text-base font-normal">({t('tournaments.you')})</span>}
             </h1>
-            <p className="text-[#8A8A9A] text-sm">#{profile.rank} en el torneo</p>
+            <p className="text-[#8A8A9A] text-sm">#{profile.rank} {t('profile.inTournament')}</p>
           </div>
           <div className="ml-auto flex items-start gap-3 shrink-0">
             <div className="text-right">
               <p className="text-2xl md:text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                 {profile.totalPoints}
               </p>
-              <p className="text-[#8A8A9A] text-xs">puntos totales</p>
+              <p className="text-[#8A8A9A] text-xs">{t('profile.totalPoints')}</p>
             </div>
             <div className="text-right">
               <p className="text-2xl md:text-4xl font-bold text-[#00FF87]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                 {exactCount}
               </p>
-              <p className="text-[#8A8A9A] text-xs leading-tight">resultados<br />exactos</p>
+              <p className="text-[#8A8A9A] text-xs leading-tight">{t('profile.exactResults')}</p>
             </div>
           </div>
         </div>
@@ -125,17 +109,17 @@ export default function ProfilePage() {
                       : 'bg-[#2A2A3E] text-white'
                   }`}
                 >
-                  {EMOJIS[b.badgeType]} {ACCUMULATIVE_LABELS[b.badgeType] || b.badgeType}
+                  {EMOJIS[b.badgeType]} {t(`accBadges.${b.badgeType}`, b.badgeType)}
                 </button>
               ))}
             </div>
             {selectedAccBadge && (
               <div className="mt-2 px-3 py-2 rounded-xl bg-[#2A2A3E] border border-[#3A3A5E]">
                 <p className="text-white text-xs font-semibold">
-                  {EMOJIS[selectedAccBadge]} {ACCUMULATIVE_LABELS[selectedAccBadge]}
+                  {EMOJIS[selectedAccBadge]} {t(`accBadges.${selectedAccBadge}`, selectedAccBadge)}
                 </p>
                 <p className="text-[#8A8A9A] text-xs mt-0.5">
-                  {ACCUMULATIVE_DESCRIPTIONS[selectedAccBadge]}
+                  {t(`accBadges.${selectedAccBadge}_desc`, '')}
                 </p>
               </div>
             )}
@@ -146,8 +130,8 @@ export default function ProfilePage() {
       {/* Tab switcher */}
       <div className="flex gap-2 px-4 pt-4">
         {[
-          { key: 'jornadas', label: 'Historial de jornadas' },
-          { key: 'pronosticos', label: 'Pronósticos' },
+          { key: 'jornadas', label: t('profile.matchdayHistory') },
+          { key: 'pronosticos', label: t('profile.forecasts') },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -168,7 +152,7 @@ export default function ProfilePage() {
           {profile.matchdayBadges.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-center">
               <Award size={36} className="text-[#2A2A3E]" />
-              <p className="text-[#8A8A9A] text-sm">Todavía no hay jornadas terminadas</p>
+              <p className="text-[#8A8A9A] text-sm">{t('profile.noMatchdays')}</p>
             </div>
           ) : (
             profile.matchdayBadges.map((b) => (
@@ -197,7 +181,7 @@ export default function ProfilePage() {
                     className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
                   >
                     <Share2 size={11} />
-                    Carta
+                    {t('profile.card')}
                   </button>
                 </div>
               </div>
@@ -211,7 +195,7 @@ export default function ProfilePage() {
           {predictions.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-center">
               <Award size={36} className="text-[#2A2A3E]" />
-              <p className="text-[#8A8A9A] text-sm">Todavía no hay pronósticos finalizados</p>
+              <p className="text-[#8A8A9A] text-sm">{t('profile.noForecasts')}</p>
             </div>
           ) : (
             predictions.map((m) => {
@@ -225,9 +209,14 @@ export default function ProfilePage() {
                     <span className="text-[11px] text-white truncate">{homeName}</span>
                     <SmallFlag name={m.homeTeam} />
                   </div>
-                  <span className="text-sm font-bold text-white shrink-0" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
-                    {m.homeScore}–{m.awayScore}
-                  </span>
+                  <div className="flex flex-col items-center shrink-0">
+                    <span className="text-sm font-bold text-white" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
+                      {m.homeScore}–{m.awayScore}
+                    </span>
+                    {m.homePenaltyScore != null && m.awayPenaltyScore != null && (
+                      <span className="text-[7px] text-[#F59E0B] font-semibold leading-tight">({m.homePenaltyScore}-{m.awayPenaltyScore} pen.)</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 flex-1 min-w-0">
                     <SmallFlag name={m.awayTeam} />
                     <span className="text-[11px] text-white truncate">{awayName}</span>

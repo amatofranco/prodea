@@ -37,7 +37,9 @@ public class PredictionsController(ProdeaDbContext db) : AuthorizedControllerBas
                 pred == null ? null : new PredictionDto(pred.Id, pred.PredictedHomeScore, pred.PredictedAwayScore, pred.PointsEarned, pred.PredictedPenaltyWinner),
                 m.Minute,
                 goals,
-                m.LivePhase
+                m.LivePhase,
+                HomePenaltyScore: m.HomePenaltyScore,
+                AwayPenaltyScore: m.AwayPenaltyScore
             );
         }));
     }

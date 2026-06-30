@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Target, Lock } from 'lucide-react'
 import { api } from '../services/api'
@@ -9,26 +10,24 @@ import { getTeam, getFlagUrl } from '../data/teamsData'
 
 const PHASE_ORDER = ['group-1', 'group-2', 'group-3', 'R32', 'R16', 'QF', 'SF', 'ThirdPlace', 'Final']
 
-const TAB_LABELS = {
-  'group-1': 'Fecha 1',
-  'group-2': 'Fecha 2',
-  'group-3': 'Fecha 3',
-  R32: 'Dieciseisavos',
-  R16: 'Octavos',
-  QF: 'Cuartos',
-  SF: 'Semis',
-  ThirdPlace: '3er Puesto',
-  Final: 'Final',
+function useTabLabels() {
+  const { t } = useTranslation()
+  return {
+    'group-1': t('phases.Group', { matchday: 1 }),
+    'group-2': t('phases.Group', { matchday: 2 }),
+    'group-3': t('phases.Group', { matchday: 3 }),
+    R32: t('phases.R32'), R16: t('phases.R16'), QF: t('phases.QF'), SF: t('phases.SF'),
+    ThirdPlace: t('phases.ThirdPlace'), Final: t('phases.Final'),
+  }
 }
 
-const PHASE_LABELS = {
-  Group: 'Fase de Grupos',
-  R32: 'Dieciseisavos de Final',
-  R16: 'Octavos de Final',
-  QF: 'Cuartos de Final',
-  SF: 'Semifinales',
-  ThirdPlace: 'Tercer Puesto',
-  Final: 'Final',
+function usePhaseLabels() {
+  const { t } = useTranslation()
+  return {
+    Group: t('phasesLong.Group'), R32: t('phasesLong.R32'), R16: t('phasesLong.R16'),
+    QF: t('phasesLong.QF'), SF: t('phasesLong.SF'),
+    ThirdPlace: t('phasesLong.ThirdPlace'), Final: t('phasesLong.Final'),
+  }
 }
 
 function getTabKey(match) {
@@ -37,6 +36,7 @@ function getTabKey(match) {
 }
 
 function TeamFlag({ name, label }) {
+  const { t } = useTranslation()
   const isTbd = name === 'TBD'
   const { flag } = getTeam(name)
   const flagUrl = getFlagUrl(flag)
@@ -51,7 +51,7 @@ function TeamFlag({ name, label }) {
         )}
       </div>
       {isTbd && !label ? (
-        <p className="text-[10px] text-[#8A8A9A] text-center leading-tight italic" style={{ maxWidth: 64 }}>Por confirmar</p>
+        <p className="text-[10px] text-[#8A8A9A] text-center leading-tight italic" style={{ maxWidth: 64 }}>{t('predictions.toBeConfirmed')}</p>
       ) : (
         <p className="text-[10px] font-semibold text-white text-center leading-tight" style={{ maxWidth: 64, wordBreak: 'break-word' }}>{displayName}</p>
       )}
@@ -60,6 +60,7 @@ function TeamFlag({ name, label }) {
 }
 
 function MatchCard({ match, navigate }) {
+  const { t } = useTranslation()
   const isLive = match.status === 'InProgress'
   const isFinished = match.status === 'Finished'
   const teamsConfirmed = match.homeTeam !== 'TBD' && match.awayTeam !== 'TBD'
@@ -83,7 +84,7 @@ function MatchCard({ match, navigate }) {
       {isLive && (
         <span className="absolute top-2 right-2 flex items-center gap-1 text-[10px] text-[#FF6B35] font-bold uppercase">
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-          EN VIVO
+          {t('home.live').toUpperCase()}
         </span>
       )}
       {pastDeadline && !isLive && !isFinished && (
@@ -95,9 +96,14 @@ function MatchCard({ match, navigate }) {
 
         <div className="flex flex-col items-center shrink-0 px-1">
           {isFinished || isLive ? (
-            <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
-              {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
-            </span>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
+                {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
+              </span>
+              {match.homePenaltyScore != null && match.awayPenaltyScore != null && (
+                <span className="text-[9px] text-[#F59E0B] font-semibold">({match.homePenaltyScore}-{match.awayPenaltyScore} pen.)</span>
+              )}
+            </div>
           ) : (
             <div className="flex flex-col items-center">
               <span className="text-xs text-[#8A8A9A]">
@@ -109,7 +115,7 @@ function MatchCard({ match, navigate }) {
             </div>
           )}
           {isFinished
-            ? <span className="text-[9px] text-[#F59E0B]/80 font-semibold uppercase tracking-wider mt-1">Final</span>
+            ? <span className="text-[9px] text-[#F59E0B]/80 font-semibold uppercase tracking-wider mt-1">{t('matches.final')}</span>
             : <span className="text-[10px] text-[#3A3A4E] font-semibold mt-1">VS</span>
           }
         </div>
@@ -120,13 +126,13 @@ function MatchCard({ match, navigate }) {
       {pred ? (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex flex-col items-center gap-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#8A8A9A]">Predicción:</span>
+            <span className="text-xs text-[#8A8A9A]">{t('matches.prediction')}:</span>
             <span className="text-xs font-bold text-[#00FF87]">
               {pred.predictedHomeScore} – {pred.predictedAwayScore}
             </span>
             {pred.predictedPenaltyWinner && (
               <span className="text-xs text-[#F59E0B]">
-                · Pasa: {pred.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
+                · {t('predictions.advances')} {pred.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
               </span>
             )}
             {isFinished && (
@@ -138,15 +144,15 @@ function MatchCard({ match, navigate }) {
         </div>
       ) : canPredict ? (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex justify-center">
-          <span className="text-xs text-[#FF6B35] font-semibold">Tocar para predecir →</span>
+          <span className="text-xs text-[#FF6B35] font-semibold">{t('predictions.tapToPredict')}</span>
         </div>
       ) : !teamsConfirmed ? (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex justify-center">
-          <span className="text-xs text-[#8A8A9A]">Equipos por confirmar</span>
+          <span className="text-xs text-[#8A8A9A]">{t('matches.teamsToConfirm')}</span>
         </div>
       ) : pastDeadline && match.status === 'Scheduled' ? (
         <div className="mt-2 pt-2 border-t border-[#2A2A3E] flex justify-center">
-          <span className="text-xs text-[#8A8A9A]">Predicciones cerradas</span>
+          <span className="text-xs text-[#8A8A9A]">{t('predictions.predictionsClosed')}</span>
         </div>
       ) : null}
     </div>
@@ -154,6 +160,7 @@ function MatchCard({ match, navigate }) {
 }
 
 function ChampionPickEntry({ navigate, myPick, isLocked }) {
+  const { t } = useTranslation()
   const flagUrl = myPick ? getFlagUrl(getTeam(myPick).flag) : null
   return (
     <div
@@ -167,17 +174,20 @@ function ChampionPickEntry({ navigate, myPick, isLocked }) {
         }
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-sm">🏆 Campeón del Torneo</p>
-        <p className="text-[#8A8A9A] text-xs truncate">{myPick ?? 'Sin candidato elegido'}</p>
+        <p className="text-white font-semibold text-sm">🏆 {t('predictions.championPick')}</p>
+        <p className="text-[#8A8A9A] text-xs truncate">{myPick ?? t('predictions.noChampionPick')}</p>
       </div>
       <span className="text-[#F59E0B] text-xs font-semibold shrink-0">
-        {isLocked ? 'Ver →' : myPick ? 'Cambiar →' : 'Elegir →'}
+        {isLocked ? t('predictions.view') : myPick ? t('predictions.change') : t('predictions.choose')}
       </span>
     </div>
   )
 }
 
 export default function PredictionsPage() {
+  const { t } = useTranslation()
+  const tabLabels = useTabLabels()
+  const phaseLabels = usePhaseLabels()
   const navigate = useNavigate()
   const [matches, setMatches] = useState([])
   const [tournaments, setTournaments] = useState([])
@@ -247,9 +257,9 @@ export default function PredictionsPage() {
       <div className="px-4 pt-12 md:pt-6 pb-4 bg-[#1A1A2E]">
         <div className="flex items-center gap-2 mb-1">
           <Target size={22} className="text-[#00FF87]" />
-          <h1 className="text-xl font-bold text-white">Predicciones</h1>
+          <h1 className="text-xl font-bold text-white">{t('predictions.title')}</h1>
         </div>
-        <p className="text-[#8A8A9A] text-xs">Cargá tus resultados antes de cada partido</p>
+        <p className="text-[#8A8A9A] text-xs">{t('predictions.subtitle')}</p>
       </div>
 
       {/* Champion pick — entrada única global */}
@@ -281,7 +291,7 @@ export default function PredictionsPage() {
                   : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
               }`}
             >
-              {TAB_LABELS[tab] ?? tab}
+              {tabLabels[tab] ?? tab}
               {hasLive && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#FF6B35]" />
               )}
@@ -294,8 +304,7 @@ export default function PredictionsPage() {
       {scheduledCount > 0 && (
         <div className="px-4 py-2 bg-[#0D0D0D]">
           <p className="text-xs text-[#8A8A9A]">
-            <span className="text-[#00FF87] font-semibold">{predCount}</span> de{' '}
-            <span className="font-semibold text-white">{scheduledCount}</span> partidos pendientes con predicción
+            <span className="text-[#00FF87] font-semibold">{predCount}</span> / <span className="font-semibold text-white">{scheduledCount}</span> {t('matches.prediction').toLowerCase()}
           </p>
         </div>
       )}
@@ -313,7 +322,7 @@ export default function PredictionsPage() {
           >
             {currentPhase && (
               <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-1">
-                {PHASE_LABELS[currentPhase]}
+                {phaseLabels[currentPhase]}
               </p>
             )}
             {visible.map((m) => (

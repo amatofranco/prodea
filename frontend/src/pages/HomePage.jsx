@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Zap } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
@@ -13,6 +14,7 @@ const LIVE_POLL_MS = 60_000
 const IS_TESTING = import.meta.env.VITE_APP_ENV === 'testing'
 
 export default function HomePage() {
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const [matches, setMatches] = useState([])
   const [tournaments, setTournaments] = useState([])
@@ -77,6 +79,8 @@ export default function HomePage() {
                 goals: update.goals !== undefined ? update.goals : m.goals,
                 livePhase: update.livePhase !== undefined ? update.livePhase : m.livePhase,
                 minuteDisplay: update.minuteDisplay !== undefined ? update.minuteDisplay : m.minuteDisplay,
+                homePenaltyScore: update.homePenaltyScore !== undefined ? update.homePenaltyScore : m.homePenaltyScore,
+                awayPenaltyScore: update.awayPenaltyScore !== undefined ? update.awayPenaltyScore : m.awayPenaltyScore,
               }
             : m
         )
@@ -140,7 +144,7 @@ export default function HomePage() {
         </div>
         <div className="md:flex md:items-end md:justify-between">
           <div>
-            <p className="text-[#8A8A9A] text-sm md:text-base md:tracking-widest md:uppercase md:mb-1">Hola,</p>
+            <p className="text-[#8A8A9A] text-sm md:text-base md:tracking-widest md:uppercase md:mb-1">{t('home.hello')}</p>
             <h2 className="text-2xl md:text-3xl font-bold text-white">
               {user?.firstName ?? user?.username}
             </h2>
@@ -164,8 +168,8 @@ export default function HomePage() {
             >
               <img src="/trophy.svg" alt="" className="h-9 w-auto shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡El mundial terminó!</p>
-                <p className="text-white font-semibold text-sm">Ver quién ganó el prode →</p>
+                <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">{t('home.worldCupEnded')}</p>
+                <p className="text-white font-semibold text-sm">{t('home.seeWinner')}</p>
               </div>
             </div>
           </div>
@@ -174,19 +178,19 @@ export default function HomePage() {
         {isEmpty && (
           <div className="flex flex-col items-center justify-center gap-3 py-24 px-5 text-center">
             <Zap size={40} className="text-[#2A2A3E]" />
-            <p className="text-[#8A8A9A] text-sm">No hay partidos activos por ahora.</p>
+            <p className="text-[#8A8A9A] text-sm">{t('home.noMatches')}</p>
           </div>
         )}
 
         <div className="px-5 md:px-0 mb-5">
           <h3 className="text-[#FF6B35] text-xs uppercase tracking-widest mb-2 font-semibold flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full bg-[#FF6B35] ${liveMatches.length > 0 ? 'animate-pulse' : 'opacity-30'}`} />
-            En vivo
+            {t('home.live')}
           </h3>
           {liveMatches.length === 0 ? (
             <div className="p-4 rounded-2xl border border-[#FF6B35]/20 border-dashed flex items-center gap-3">
               <span className="text-xl">📡</span>
-              <p className="text-sm font-semibold text-[#8A8A9A]">Sin partidos en vivo ahora</p>
+              <p className="text-sm font-semibold text-[#8A8A9A]">{t('home.noLive')}</p>
             </div>
           ) : liveMatches.length === 1
             ? liveMatches.map((m) => <LiveCard key={m.id} match={m} />)
@@ -199,7 +203,7 @@ export default function HomePage() {
         </div>
 
         <div className="mb-5 px-5 md:px-0">
-          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Últimos resultados</h3>
+          <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">{t('home.latestResults')}</h3>
           <div
             className="md:hidden flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -228,7 +232,7 @@ export default function HomePage() {
 
         {upcomingMatches.length > 0 && (
           <div className="px-5 md:px-0">
-            <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">Próximos partidos</h3>
+            <h3 className="text-[#8A8A9A] text-xs uppercase tracking-widest mb-2 font-semibold">{t('home.upcoming')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {upcomingMatches.map((m) => <UpcomingCard key={m.id} match={m} navigate={navigate} />)}
             </div>

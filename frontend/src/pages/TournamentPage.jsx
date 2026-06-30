@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Share2, ChevronLeft, ChevronRight, Wifi, Lock, X, Pencil, ImageDown, LogOut, MoreVertical, Bell, Calendar } from 'lucide-react'
 import { api } from '../services/api'
@@ -22,16 +23,20 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 const PHASE_ORDER = ['group-1', 'group-2', 'group-3', 'R32', 'R16', 'QF', 'SF', 'ThirdPlace', 'Final']
-const TAB_LABELS = {
-  'group-1': 'Fecha 1', 'group-2': 'Fecha 2', 'group-3': 'Fecha 3',
-  R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis',
-  ThirdPlace: '3er Puesto', Final: 'Final',
+function useTabLabels() {
+  const { t } = useTranslation()
+  return {
+    'group-1': t('phases.Group', { matchday: 1 }), 'group-2': t('phases.Group', { matchday: 2 }), 'group-3': t('phases.Group', { matchday: 3 }),
+    R32: t('phases.R32'), R16: t('phases.R16'), QF: t('phases.QF'), SF: t('phases.SF'),
+    ThirdPlace: t('phases.ThirdPlace'), Final: t('phases.Final'),
+  }
 }
 function getPhaseKey(m) {
   return m.phase === 'Group' ? `group-${m.matchday ?? 1}` : m.phase
 }
 
 function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
+  const { t } = useTranslation()
   const isTournamentFinished = matches.some(m => m.phase === 'Final' && m.status === 'Finished')
   if (!isTournamentFinished || leaderboard.length === 0) return null
 
@@ -41,7 +46,7 @@ function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
   return (
     <div className="mx-4 mb-1 p-4 rounded-2xl bg-gradient-to-br from-[#F59E0B]/20 to-[#FF6B35]/10 border border-[#F59E0B]/50">
       <p className="text-[#F59E0B] text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-1.5">
-        <img src="/trophy.svg" alt="" className="h-3 w-auto" /> Campeón del Mundo
+        <img src="/trophy.svg" alt="" className="h-3 w-auto" /> {t('tournaments.champion')}
       </p>
       <div className="flex items-center gap-3">
         <div className="w-14 h-14 rounded-full bg-[#F59E0B] flex items-center justify-center text-black font-bold text-2xl shrink-0">
@@ -49,13 +54,13 @@ function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-xl leading-tight truncate">{winner.fullName ?? winner.username}</p>
-          <p className="text-[#F59E0B] text-sm font-semibold">{winner.totalPoints} puntos</p>
+          <p className="text-[#F59E0B] text-sm font-semibold">{winner.totalPoints} {t('common.points')}</p>
         </div>
         <img src="/trophy.svg" alt="" className="h-12 w-auto" />
       </div>
       {isMe && (
         <p className="mt-3 text-center text-[#00FF87] text-sm font-bold">
-          🎉 ¡Ganaste el prode!
+          {t('tournaments.youWon')}
         </p>
       )}
     </div>
@@ -63,6 +68,8 @@ function ChampionProdeaBanner({ leaderboard, matches, currentUserId }) {
 }
 
 export default function TournamentPage() {
+  const { t } = useTranslation()
+  const tabLabels = useTabLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
@@ -156,6 +163,8 @@ export default function TournamentPage() {
                 goals: update.goals !== undefined ? update.goals : m.goals,
                 livePhase: update.livePhase !== undefined ? update.livePhase : m.livePhase,
                 minuteDisplay: update.minuteDisplay !== undefined ? update.minuteDisplay : m.minuteDisplay,
+                homePenaltyScore: update.homePenaltyScore !== undefined ? update.homePenaltyScore : m.homePenaltyScore,
+                awayPenaltyScore: update.awayPenaltyScore !== undefined ? update.awayPenaltyScore : m.awayPenaltyScore,
               }
             : m
         )
@@ -216,7 +225,7 @@ export default function TournamentPage() {
     const link = getInviteLink()
     navigator.share({
       title: 'Prodea',
-      text: `¡Te invito al torneo *${tournament?.name}* en Prodea!`,
+      text: t('tournaments.inviteText', { name: tournament?.name }),
       url: link,
     }).catch(() => {})
     setShowShareMenu(false)
@@ -254,14 +263,14 @@ export default function TournamentPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-white truncate">{tournament?.name}</h1>
-            <p className="text-[#8A8A9A] text-xs">{leaderboard.length} participantes</p>
+            <p className="text-[#8A8A9A] text-xs">{leaderboard.length} {t('common.participants')}</p>
           </div>
           <div className="relative">
             <button
               onClick={() => setShowShareMenu((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00FF87]/10 text-[#00FF87] text-xs font-semibold"
             >
-              <Share2 size={14} /> Invitar
+              <Share2 size={14} /> {t('tournaments.invite')}
             </button>
             {showShareMenu && (
               <>
@@ -272,7 +281,7 @@ export default function TournamentPage() {
                     className="flex items-center w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
                     <Share2 size={16} className="text-[#00FF87] shrink-0" />
-                    <span className="flex-1 text-center">Compartir invitación</span>
+                    <span className="flex-1 text-center">{t('tournaments.shareInvite')}</span>
                   </button>
                   <div className="h-px bg-[#2A2A3E]" />
                   <button
@@ -280,7 +289,7 @@ export default function TournamentPage() {
                     className="flex items-center w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E]"
                   >
                     <ImageDown size={16} className="text-[#00FF87] shrink-0" />
-                    <span className="flex-1 text-center leading-tight">Compartir<br />QR</span>
+                    <span className="flex-1 text-center leading-tight">{t('tournaments.shareQR')}</span>
                   </button>
                 </div>
               </>
@@ -307,7 +316,7 @@ export default function TournamentPage() {
                       className="flex items-center w-full px-4 py-3 text-sm text-white font-semibold active:bg-[#2A2A3E] border-b border-[#2A2A3E]"
                     >
                       <Calendar size={16} className="shrink-0" />
-                      <span className="flex-1 text-center">Fecha de Inicio</span>
+                      <span className="flex-1 text-center">{t('tournaments.startDateTitle')}</span>
                     </button>
                   )}
                   <button
@@ -315,7 +324,7 @@ export default function TournamentPage() {
                     className="flex items-center w-full px-4 py-3 text-sm text-[#FF6B35] font-semibold active:bg-[#2A2A3E]"
                   >
                     <LogOut size={16} className="shrink-0" />
-                    <span className="flex-1 text-center">Salir del torneo</span>
+                    <span className="flex-1 text-center">{t('tournaments.leaveTournament')}</span>
                   </button>
                 </div>
               </>
@@ -332,20 +341,20 @@ export default function TournamentPage() {
                 rows={3}
                 autoFocus
                 className="w-full px-3 py-2.5 rounded-xl bg-[#0D0D0D] border border-[#00FF87]/40 text-white text-sm placeholder-[#8A8A9A] focus:outline-none resize-none"
-                placeholder="Premio al ganador, prenda al último..."
+                placeholder={t('tournaments.editDescPlaceholder')}
               />
               <p className="text-right text-xs text-[#8A8A9A] mt-0.5">{descDraft.length}/{MAX_DESC}</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={saveDescription} className="flex-1 py-2 rounded-xl bg-[#00FF87] text-black text-sm font-bold">Guardar</button>
-              <button onClick={() => setEditingDesc(false)} className="flex-1 py-2 rounded-xl bg-[#2A2A3E] text-[#8A8A9A] text-sm">Cancelar</button>
+              <button onClick={saveDescription} className="flex-1 py-2 rounded-xl bg-[#00FF87] text-black text-sm font-bold">{t('common.save')}</button>
+              <button onClick={() => setEditingDesc(false)} className="flex-1 py-2 rounded-xl bg-[#2A2A3E] text-[#8A8A9A] text-sm">{t('common.cancel')}</button>
             </div>
           </div>
         ) : (
           <div className="mb-3 flex items-start gap-2 group">
             {(tournament?.description || tournament?.adminUserId === user?.id) && (
               <p className={`flex-1 text-sm leading-relaxed whitespace-pre-wrap ${tournament?.description ? 'text-[#8A8A9A]' : 'text-[#2A2A3E] italic'}`}>
-                {tournament?.description || (tournament?.adminUserId === user?.id ? 'Agregá una descripción, premios o prendas...' : '')}
+                {tournament?.description || (tournament?.adminUserId === user?.id ? t('tournaments.descPlaceholder') : '')}
               </p>
             )}
             {tournament?.adminUserId === user?.id && (
@@ -363,7 +372,7 @@ export default function TournamentPage() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#FF6B35]/10 border border-[#FF6B35]/30 mb-2">
             <Wifi size={14} className="text-[#FF6B35] animate-pulse" />
             <span className="text-[#FF6B35] text-xs font-semibold">
-              {liveCount} partido{liveCount > 1 ? 's' : ''} en curso — puntos actualizándose
+              {t('tournaments.liveMatchesBanner', { count: liveCount })}
             </span>
           </div>
         )}
@@ -381,7 +390,7 @@ export default function TournamentPage() {
                   : 'bg-[#0D0D0D] text-[#8A8A9A]'
               }`}
             >
-              {tab === 'tabla' ? 'Tabla' : 'Fixture'}
+              {tab === 'tabla' ? t('tournaments.table') : t('tournaments.fixture')}
             </button>
           ))}
         </div>
@@ -397,12 +406,12 @@ export default function TournamentPage() {
             {showPushBanner && (
               <div className="mx-4 flex items-center gap-3 p-3 rounded-2xl bg-[#1A1A2E] border border-[#00FF87]/20">
                 <Bell size={16} className="text-[#00FF87] shrink-0" />
-                <p className="flex-1 text-[#8A8A9A] text-xs leading-snug">Activá las notificaciones para saber cuándo termina cada jornada</p>
+                <p className="flex-1 text-[#8A8A9A] text-xs leading-snug">{t('tournaments.pushBanner')}</p>
                 <button
                   onClick={() => { subscribePush(); dismissPush() }}
                   className="shrink-0 px-3 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95"
                 >
-                  Activar
+                  {t('tournaments.activate')}
                 </button>
                 <button onClick={dismissPush} className="text-[#8A8A9A] active:opacity-60">
                   <X size={14} />
@@ -410,7 +419,7 @@ export default function TournamentPage() {
               </div>
             )}
             <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold px-4 mb-1">
-              Tabla de posiciones
+              {t('tournaments.leaderboard')}
             </p>
             <div className="px-2 flex flex-col gap-1.5">
               {leaderboard.map((entry, i) => (
@@ -428,7 +437,7 @@ export default function TournamentPage() {
             {matchdayWinners.length > 0 && (
               <div className="px-4 mt-5">
                 <p className="text-[#8A8A9A] text-xs uppercase tracking-widest font-semibold mb-3">
-                  Ganadores por fecha
+                  {t('tournaments.matchdayWinners')}
                 </p>
                 <div className="flex flex-col gap-2">
                   {matchdayWinners.map((w) => (
@@ -474,7 +483,7 @@ export default function TournamentPage() {
                         : 'bg-[#1A1A2E] text-[#8A8A9A] border border-[#2A2A3E]'
                     }`}
                   >
-                    {TAB_LABELS[tab] ?? tab}
+                    {tabLabels[tab] ?? tab}
                     {hasLive && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#FF6B35]" />}
                   </button>
                 )
@@ -529,10 +538,10 @@ export default function TournamentPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl p-5"
             >
-              <h3 className="text-white font-bold text-lg mb-2">¿Salir del torneo?</h3>
+              <h3 className="text-white font-bold text-lg mb-2">{t('tournaments.leaveConfirmTitle')}</h3>
               <p className="text-[#8A8A9A] text-sm mb-5">
-                Vas a dejar de participar en "{tournament?.name}". Tus predicciones y motes en este torneo se van a perder y no vas a poder volver a entrar salvo que te inviten de nuevo.
-                {tournament?.adminUserId === user?.id && ' Como sos el admin, el rol pasará a otro participante (o el torneo se eliminará si sos el único).'}
+                {t('tournaments.leaveConfirmBody', { name: tournament?.name })}
+                {tournament?.adminUserId === user?.id && ` ${t('tournaments.leaveConfirmAdmin')}`}
               </p>
               <div className="flex gap-2">
                 <button
@@ -540,14 +549,14 @@ export default function TournamentPage() {
                   disabled={leaving}
                   className="flex-1 py-2.5 rounded-xl bg-[#2A2A3E] text-white text-sm font-semibold disabled:opacity-50"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleLeaveTournament}
                   disabled={leaving}
                   className="flex-1 py-2.5 rounded-xl bg-[#FF6B35] text-white text-sm font-bold disabled:opacity-50"
                 >
-                  {leaving ? 'Saliendo...' : 'Salir'}
+                  {leaving ? t('tournaments.leaving') : t('tournaments.leave')}
                 </button>
               </div>
             </motion.div>
@@ -570,9 +579,9 @@ export default function TournamentPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm bg-[#1A1A2E] border border-[#2A2A3E] rounded-2xl p-5"
             >
-              <h3 className="text-white font-bold text-lg mb-2">Fecha de Inicio</h3>
+              <h3 className="text-white font-bold text-lg mb-2">{t('tournaments.startDateTitle')}</h3>
               <p className="text-[#8A8A9A] text-sm mb-4">
-                Los puntos y motes de este torneo solo cuentan los partidos jugados a partir de esta fecha. Los partidos anteriores no afectan la tabla.
+                {t('tournaments.startDateDesc')}
               </p>
               <input
                 type="date"
@@ -586,14 +595,14 @@ export default function TournamentPage() {
                   disabled={savingStartDate}
                   className="flex-1 py-2.5 rounded-xl bg-[#2A2A3E] text-white text-sm font-semibold disabled:opacity-50"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={saveStartingMatchDate}
                   disabled={savingStartDate || !startDateDraft}
                   className="flex-1 py-2.5 rounded-xl bg-[#00FF87] text-black text-sm font-bold disabled:opacity-50"
                 >
-                  {savingStartDate ? 'Guardando...' : 'Guardar'}
+                  {savingStartDate ? t('tournaments.saving') : t('common.save')}
                 </button>
               </div>
             </motion.div>
@@ -606,6 +615,7 @@ export default function TournamentPage() {
 }
 
 function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
+  const { t } = useTranslation()
   const rankColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600']
   return (
     <motion.div
@@ -624,7 +634,7 @@ function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className={`font-semibold text-sm truncate ${isMe ? 'text-[#00FF87]' : 'text-white'}`}>
-          {entry.fullName ?? entry.username} {isMe && <span className="text-xs font-normal">(vos)</span>}
+          {entry.fullName ?? entry.username} {isMe && <span className="text-xs font-normal">({t('tournaments.you')})</span>}
         </p>
         {entry.currentBadge && <BadgePill type={entry.currentBadge} className="mt-0.5 text-[10px]" />}
       </div>

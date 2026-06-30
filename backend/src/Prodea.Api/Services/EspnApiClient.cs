@@ -53,7 +53,7 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
         });
     }
 
-    public static (int Home, int Away, string? Winner) ExtractScore(EspnEvent espnEvent, Match match)
+    public static (int Home, int Away, string? Winner, int? HomePen, int? AwayPen) ExtractScore(EspnEvent espnEvent, Match match)
     {
         var comp = espnEvent.Competitions.FirstOrDefault();
         var homeComp = comp?.Competitors.FirstOrDefault(c => c.HomeAway == "home");
@@ -66,7 +66,10 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
         if (homeComp?.Winner == true) winner = match.HomeTeam;
         else if (awayComp?.Winner == true) winner = match.AwayTeam;
 
-        return (home, away, winner);
+        int? homePen = homeComp?.ShootoutScore;
+        int? awayPen = awayComp?.ShootoutScore;
+
+        return (home, away, winner, homePen, awayPen);
     }
 
     public async Task<List<GoalInfo>> FetchGoalsAsync(string eventId, CancellationToken ct)
@@ -174,7 +177,8 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
         [property: JsonPropertyName("homeAway")] string HomeAway,
         [property: JsonPropertyName("score")] string? Score,
         [property: JsonPropertyName("winner")] bool Winner,
-        [property: JsonPropertyName("team")] EspnTeam Team
+        [property: JsonPropertyName("team")] EspnTeam Team,
+        [property: JsonPropertyName("shootoutScore")] int? ShootoutScore
     );
 
     public record EspnTeam(
