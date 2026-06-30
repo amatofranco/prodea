@@ -86,6 +86,8 @@
     "leaveTournament": "Leave tournament",
     "invite": "Invite",
     "shareQR": "Share QR",
+    "joinUs": "Join the tournament!",
+    "scanToJoin": "Scan to join",
     "leaderboard": "Leaderboard",
     "matchdayWinners": "Matchday winners",
     "champion": "World Champion",
@@ -216,7 +218,14 @@
     "noMatchdays": "No finished matchdays yet",
     "noForecasts": "No finished forecasts yet",
     "card": "Card",
-    "inTournament": "in tournament"
+    "inTournament": "in tournament",
+    "shareTextTournament": "{{name}} was \"{{label}}\" of the tournament · Prodea {{worldCup}}",
+    "shareTextMatchday": "{{name}} was \"{{label}}\" in {{jornada}} · Prodea {{worldCup}}"
+  },
+  "figurine": {
+    "totalPts": "TOTAL PTS",
+    "matchdayPts": "MATCHDAY PTS",
+    "inTable": "IN TABLE"
   },
   "accBadges": {
     "TotalChoke": "Total Choke",

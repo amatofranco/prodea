@@ -32,8 +32,8 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           text: finalResult
-            ? `${username} fue "${label}" del torneo · Prodea Mundial 2026`
-            : `${username} fue "${label}" en ${jornada} · Prodea Mundial 2026`,
+            ? t('profile.shareTextTournament', { name: username, label, worldCup: t('common.worldCup') })
+            : t('profile.shareTextMatchday', { name: username, label, jornada, worldCup: t('common.worldCup') }),
           files: [file],
         })
       } else {

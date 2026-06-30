@@ -1,4 +1,5 @@
 import QRCode from 'qrcode'
+import i18next from 'i18next'
 
 export async function shareInviteImage(tournamentName, inviteLink) {
   const W = 800, H = 800
@@ -18,7 +19,7 @@ export async function shareInviteImage(tournamentName, inviteLink) {
   ctx.fillStyle = '#8A8A9A'
   ctx.font = '500 28px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('¡Unite al torneo!', W / 2, 100)
+  ctx.fillText(i18next.t('tournaments.joinUs'), W / 2, 100)
 
   ctx.fillStyle = '#FFFFFF'
   ctx.font = 'bold 60px Arial Black, Arial'
@@ -38,7 +39,7 @@ export async function shareInviteImage(tournamentName, inviteLink) {
 
   ctx.fillStyle = '#8A8A9A'
   ctx.font = '24px Arial'
-  ctx.fillText('Escaneá para unirte', W / 2, 590)
+  ctx.fillText(i18next.t('tournaments.scanToJoin'), W / 2, 590)
 
   ctx.strokeStyle = '#2A2A3E'
   ctx.lineWidth = 1

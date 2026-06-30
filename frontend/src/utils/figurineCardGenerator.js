@@ -259,7 +259,7 @@ export async function generateCardBlob({ badge, username, tournamentName, rank }
   ctx.fillText(String(badge.pointsInMatchday), ptsCX, y)
   ctx.font = '400 10px "DM Sans", system-ui, sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,0.4)'
-  ctx.fillText(finalResult ? 'PTS TOTALES' : 'PTS JORNADA', ptsCX, y + 42)
+  ctx.fillText(finalResult ? i18next.t('figurine.totalPts') : i18next.t('figurine.matchdayPts'), ptsCX, y + 42)
 
   if (rkCX !== null) {
     ctx.font = '900 38px "Bebas Neue", "DM Sans", system-ui, sans-serif'
@@ -267,7 +267,7 @@ export async function generateCardBlob({ badge, username, tournamentName, rank }
     ctx.fillText(`#${rank}`, rkCX, y)
     ctx.font = '400 10px "DM Sans", system-ui, sans-serif'
     ctx.fillStyle = 'rgba(255,255,255,0.4)'
-    ctx.fillText('EN TABLA', rkCX, y + 42)
+    ctx.fillText(i18next.t('figurine.inTable'), rkCX, y + 42)
   }
   y += 56 + GAP
 
@@ -286,7 +286,7 @@ export async function generateCardBlob({ badge, username, tournamentName, rank }
   ctx.fillStyle = 'rgba(255,255,255,0.25)'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
-  ctx.fillText(`${tournamentName} · MUNDIAL 2026`, CX, y)
+  ctx.fillText(`${tournamentName} · ${i18next.t('common.worldCup').toUpperCase()}`, CX, y)
 
   return new Promise((resolve, reject) =>
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')

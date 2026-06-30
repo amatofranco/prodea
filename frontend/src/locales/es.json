@@ -86,6 +86,8 @@
     "leaveTournament": "Salir del torneo",
     "invite": "Invitar",
     "shareQR": "Compartir QR",
+    "joinUs": "¡Unite al torneo!",
+    "scanToJoin": "Escaneá para unirte",
     "leaderboard": "Tabla de posiciones",
     "matchdayWinners": "Ganadores por fecha",
     "champion": "Campeón del Mundo",
@@ -217,7 +219,14 @@
     "noMatchdays": "Todavía no hay jornadas terminadas",
     "noForecasts": "Todavía no hay pronósticos finalizados",
     "card": "Carta",
-    "inTournament": "en el torneo"
+    "inTournament": "en el torneo",
+    "shareTextTournament": "{{name}} fue \"{{label}}\" del torneo · Prodea {{worldCup}}",
+    "shareTextMatchday": "{{name}} fue \"{{label}}\" en {{jornada}} · Prodea {{worldCup}}"
+  },
+  "figurine": {
+    "totalPts": "PTS TOTALES",
+    "matchdayPts": "PTS JORNADA",
+    "inTable": "EN TABLA"
   },
   "accBadges": {
     "TotalChoke": "Pecheada Total",
