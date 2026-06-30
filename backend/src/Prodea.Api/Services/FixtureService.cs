@@ -169,16 +169,22 @@ public class FixtureService(
         logger.LogInformation("Stages API: {Stages}", string.Join(", ", stages));
 
         var allMatches = result.Matches.OrderBy(m => m.UtcDate).ToList();
-
-        var groupApiMatches = allMatches
-            .Where(m => m.Stage == "GROUP_STAGE" || m.Group != null)
-            .ToList();
+        var groupApiMatches = allMatches.Where(m => m.Stage == "GROUP_STAGE" || m.Group != null).ToList();
         var knockoutApiMatches = allMatches.Except(groupApiMatches).ToList();
 
-        Dictionary<int, int> groupMatchdays;
-        if (groupApiMatches.Any(m => m.Group != null))
+        var groupMatchdays = BuildGroupMatchdays(groupApiMatches);
+        var espnBracketData = await espnBracket.FetchKnockoutBracketAsync(
+            knockoutApiMatches.Select(m => (m.Id, m.UtcDate)).ToList());
+        var knockoutMatchNumbers = BuildKnockoutMatchNumbers(knockoutApiMatches);
+
+        return BuildMatchList(allMatches, groupApiMatches, groupMatchdays, espnBracketData, knockoutMatchNumbers);
+    }
+
+    private static Dictionary<int, int> BuildGroupMatchdays(List<FdMatch> groupMatches)
+    {
+        if (groupMatches.Any(m => m.Group != null))
         {
-            groupMatchdays = groupApiMatches
+            return groupMatches
                 .Where(m => m.Group != null)
                 .GroupBy(m => m.Group!)
                 .SelectMany(g =>
@@ -188,66 +194,46 @@ public class FixtureService(
                 })
                 .ToDictionary(x => x.Id, x => x.Matchday);
         }
-        else
-        {
-            var sorted = groupApiMatches.OrderBy(m => m.UtcDate).ToList();
-            int perRound = Math.Max(1, sorted.Count / 3);
-            groupMatchdays = sorted
-                .Select((m, i) => (m.Id, Matchday: Math.Min(3, i / perRound + 1)))
-                .ToDictionary(x => x.Id, x => x.Matchday);
-        }
 
-        var espnBracketData = await espnBracket.FetchKnockoutBracketAsync(
-            knockoutApiMatches.Select(m => (m.Id, m.UtcDate)).ToList());
+        var ordered = groupMatches.OrderBy(m => m.UtcDate).ToList();
+        int perRound = Math.Max(1, ordered.Count / 3);
+        return ordered
+            .Select((m, i) => (m.Id, Matchday: Math.Min(3, i / perRound + 1)))
+            .ToDictionary(x => x.Id, x => x.Matchday);
+    }
 
-        var knockoutMatchNumbers = new Dictionary<int, int>();
+    private static Dictionary<int, int> BuildKnockoutMatchNumbers(List<FdMatch> knockoutMatches)
+    {
+        var numbers = new Dictionary<int, int>();
         int r32Num = 73;
-        foreach (var m in knockoutApiMatches.Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32).OrderBy(m => m.UtcDate))
-            knockoutMatchNumbers[m.Id] = r32Num++;
+        foreach (var m in knockoutMatches.Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32).OrderBy(m => m.UtcDate))
+            numbers[m.Id] = r32Num++;
         var nonR32Map = Wc2026Bracket.BuildMatchNumberMap(
-            knockoutApiMatches
+            knockoutMatches
                 .Where(m => MapKnockoutPhase(m.Stage) != MatchPhase.R32)
                 .Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)));
         foreach (var kv in nonR32Map)
-            knockoutMatchNumbers[kv.Key] = kv.Value;
+            numbers[kv.Key] = kv.Value;
+        return numbers;
+    }
 
+    private static List<Match> BuildMatchList(
+        List<FdMatch> allMatches,
+        List<FdMatch> groupMatches,
+        Dictionary<int, int> groupMatchdays,
+        Dictionary<int, EspnBracketService.EspnBracketData> espnBracketData,
+        Dictionary<int, int> knockoutMatchNumbers)
+    {
         var matches = new List<Match>();
         int localId = 1;
 
         foreach (var m in allMatches)
         {
-            bool isGroup = groupApiMatches.Contains(m);
+            bool isGroup = groupMatches.Contains(m);
             var phase = isGroup ? MatchPhase.Group : MapKnockoutPhase(m.Stage);
-            int? matchday = isGroup
-                ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : null)
-                : null;
+            int? matchday = isGroup ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : null) : null;
 
-            string homeTeam, awayTeam;
-            string? homeLabel, awayLabel;
-
-            if (isGroup)
-            {
-                homeTeam = TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
-                awayTeam = TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
-                homeLabel = TranslateLabel(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
-                awayLabel = TranslateLabel(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
-            }
-            else if (espnBracketData.TryGetValue(m.Id, out var espnData))
-            {
-                homeTeam = espnData.HomeTeam != "TBD" ? espnData.HomeTeam
-                         : TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
-                awayTeam = espnData.AwayTeam != "TBD" ? espnData.AwayTeam
-                         : TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
-                homeLabel = espnData.HomeLabel;
-                awayLabel = espnData.AwayLabel;
-            }
-            else
-            {
-                homeTeam = TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName);
-                awayTeam = TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName);
-                var matchNum = knockoutMatchNumbers.TryGetValue(m.Id, out var mn) ? mn : 0;
-                (homeLabel, awayLabel) = Wc2026Bracket.GetSlotLabels(matchNum);
-            }
+            var (homeTeam, awayTeam, homeLabel, awayLabel) = ResolveTeams(m, isGroup, espnBracketData, knockoutMatchNumbers);
 
             matches.Add(new Match
             {
@@ -268,6 +254,38 @@ public class FixtureService(
         }
 
         return matches;
+    }
+
+    private static (string Home, string Away, string? HomeLabel, string? AwayLabel) ResolveTeams(
+        FdMatch m, bool isGroup,
+        Dictionary<int, EspnBracketService.EspnBracketData> espnBracketData,
+        Dictionary<int, int> knockoutMatchNumbers)
+    {
+        if (isGroup)
+        {
+            return (
+                TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
+                TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
+                TranslateLabel(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
+                TranslateLabel(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName));
+        }
+
+        if (espnBracketData.TryGetValue(m.Id, out var espn))
+        {
+            return (
+                espn.HomeTeam != "TBD" ? espn.HomeTeam : TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
+                espn.AwayTeam != "TBD" ? espn.AwayTeam : TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
+                espn.HomeLabel,
+                espn.AwayLabel);
+        }
+
+        var matchNum = knockoutMatchNumbers.TryGetValue(m.Id, out var mn) ? mn : 0;
+        var (homeLabel, awayLabel) = Wc2026Bracket.GetSlotLabels(matchNum);
+        return (
+            TranslateTeam(m.HomeTeam?.Name ?? m.HomeTeam?.ShortName),
+            TranslateTeam(m.AwayTeam?.Name ?? m.AwayTeam?.ShortName),
+            homeLabel,
+            awayLabel);
     }
 
     private static MatchPhase MapKnockoutPhase(string? stage) => stage switch
