@@ -451,7 +451,9 @@ export default function TournamentPage() {
                         <p className="text-white text-sm font-semibold truncate">
                           {w.fullName ?? w.username}
                         </p>
-                        <p className="text-[#8A8A9A] text-xs">{w.label}</p>
+                        <p className="text-[#8A8A9A] text-xs">
+                          {w.phase === 'Group' ? t('phases.Group', { matchday: w.matchday }) : t(`phases.${w.phase}`, w.label)}
+                        </p>
                       </div>
                       <span className="text-lg font-bold text-[#F59E0B]" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                         {w.points}<span className="text-xs text-[#8A8A9A] ml-0.5">pts</span>
