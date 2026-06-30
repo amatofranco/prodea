@@ -105,7 +105,7 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
 
         var tournamentCount = await db.TournamentParticipants.CountAsync(tp => tp.UserId == userId);
         if (tournamentCount >= MaxTournamentsPerUser)
-            return BadRequest(new { message = $"Límite alcanzado: podés estar en hasta {MaxTournamentsPerUser} torneos." });
+            return BadRequest(new { message = "max_tournaments", max = MaxTournamentsPerUser });
 
         var code = GenerateCode();
         var inviteLink = Guid.NewGuid().ToString("N")[..12];
@@ -151,17 +151,17 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
             .FirstOrDefaultAsync(t => t.Code == input || t.InviteLink == input);
 
         if (tournament == null)
-            return NotFound(new { message = "Torneo no encontrado" });
+            return NotFound(new { message = "tournament_not_found" });
 
         if (tournament.Participants.Any(p => p.UserId == userId))
-            return Conflict(new { message = "Ya sos participante de este torneo" });
+            return Conflict(new { message = "already_participant" });
 
         if (tournament.Participants.Count >= 100)
-            return BadRequest(new { message = "Este torneo ya alcanzó el límite de 100 participantes." });
+            return BadRequest(new { message = "max_participants" });
 
         var tournamentCount = await db.TournamentParticipants.CountAsync(tp => tp.UserId == userId);
         if (tournamentCount >= MaxTournamentsPerUser)
-            return BadRequest(new { message = $"Límite alcanzado: podés estar en hasta {MaxTournamentsPerUser} torneos." });
+            return BadRequest(new { message = "max_tournaments", max = MaxTournamentsPerUser });
 
         db.TournamentParticipants.Add(new TournamentParticipant
         {
@@ -189,7 +189,7 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
         if (tournament == null) return NotFound();
 
         var participant = tournament.Participants.FirstOrDefault(p => p.UserId == userId);
-        if (participant == null) return NotFound(new { message = "No sos participante de este torneo" });
+        if (participant == null) return NotFound(new { message = "not_participant" });
 
         if (tournament.AdminUserId == userId)
         {
@@ -198,7 +198,7 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
             {
                 db.Tournaments.Remove(tournament);
                 await db.SaveChangesAsync();
-                return Ok(new { message = "Saliste del torneo y, al ser el único participante, el torneo fue eliminado" });
+                return Ok(new { message = "left_tournament_deleted" });
             }
             tournament.AdminUserId = others[0].UserId;
         }
@@ -208,7 +208,7 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
         await db.AccumulativeBadges.Where(ab => ab.UserId == userId && ab.TournamentId == id).ExecuteDeleteAsync();
         await db.SaveChangesAsync();
 
-        return Ok(new { message = "Saliste del torneo" });
+        return Ok(new { message = "left_tournament" });
     }
 
     [HttpGet("{id}/leaderboard")]

@@ -425,9 +425,22 @@
     "TournamentMiser": ["Champion of austerity"]
   },
   "errors": {
+    "username_taken": "Username already taken",
+    "email_taken": "Email already registered",
+    "invalid_credentials": "Invalid credentials",
+    "invalid_google_token": "Invalid Google token",
+    "invalid_reset_link": "Recovery link is invalid or expired.",
     "tournament_not_found": "Tournament not found",
     "already_participant": "You're already a participant in this tournament",
     "max_tournaments": "Limit reached: you can be in up to {{max}} tournaments.",
+    "max_participants": "This tournament has reached the 100-participant limit.",
+    "not_participant": "You're not a participant in this tournament",
+    "match_not_found": "Match not found",
+    "teams_not_confirmed": "Teams for this match haven't been confirmed yet",
+    "predictions_closed": "Predictions are closed for this match",
+    "predictions_close_before": "Predictions close 15 minutes before the match",
+    "match_not_finished": "The match hasn't finished yet.",
+    "champion_pick_closed": "Champion pick is already closed.",
     "generic": "Something went wrong. Please try again."
   }
 }

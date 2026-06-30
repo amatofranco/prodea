@@ -24,10 +24,10 @@ public class AuthController(
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
         if (await db.Users.AnyAsync(u => u.Username == request.Username))
-            return Conflict(new { message = "El nombre de usuario ya está en uso" });
+            return Conflict(new { message = "username_taken" });
 
         if (await db.Users.AnyAsync(u => u.Email == request.Email))
-            return Conflict(new { message = "El email ya está registrado" });
+            return Conflict(new { message = "email_taken" });
 
         var user = new User
         {
@@ -55,7 +55,7 @@ public class AuthController(
 
         if (user == null || user.PasswordHash == null ||
             !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            return Unauthorized(new { message = "Credenciales inválidas" });
+            return Unauthorized(new { message = "invalid_credentials" });
 
         return Ok(new AuthResponse(
             jwtService.GenerateToken(user),
@@ -77,7 +77,7 @@ public class AuthController(
         }
         catch
         {
-            return Unauthorized(new { message = "Token de Google inválido" });
+            return Unauthorized(new { message = "invalid_google_token" });
         }
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.GoogleId == payload.Subject);
@@ -153,7 +153,7 @@ public class AuthController(
             .FirstOrDefaultAsync(t => t.Token == request.Token && !t.Used);
 
         if (resetToken == null || resetToken.ExpiresAt < DateTime.UtcNow)
-            return BadRequest(new { message = "El link de recuperación es inválido o expiró." });
+            return BadRequest(new { message = "invalid_reset_link" });
 
         resetToken.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         resetToken.Used = true;

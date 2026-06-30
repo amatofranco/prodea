@@ -23,7 +23,7 @@ export default function RegisterPage() {
       window.fbq?.('track', 'CompleteRegistration')
       window.location.replace(redirect)
     } catch (err) {
-      setError(err.message)
+      setError(t('errors.' + err.message, { ...err.data, defaultValue: t('errors.generic') }))
     }
   }
 
@@ -42,7 +42,7 @@ export default function RegisterPage() {
       window.fbq?.('track', 'CompleteRegistration')
       window.location.replace(redirect)
     } catch (err) {
-      setError(err.message)
+      setError(t('errors.' + err.message, { ...err.data, defaultValue: t('errors.generic') }))
     } finally {
       setLoading(false)
     }

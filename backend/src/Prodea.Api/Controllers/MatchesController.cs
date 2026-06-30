@@ -68,7 +68,7 @@ public class MatchesController(ProdeaDbContext db, IHubContext<TournamentHub> hu
         var match = await db.Matches.FindAsync(matchId);
         if (match == null) return NotFound();
         if (match.Status != MatchStatus.Finished)
-            return BadRequest(new { message = "El partido no terminó aún." });
+            return BadRequest(new { message = "match_not_finished" });
 
         var participants = await db.TournamentParticipants
             .Where(tp => tp.TournamentId == tournamentId)

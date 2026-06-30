@@ -104,7 +104,7 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
     setApiError(null)
     api.getTournamentChampionPick(tournamentId)
       .then(setStatus)
-      .catch((err) => setApiError(err.message || t('championBanner.errorUnknown')))
+      .catch((err) => setApiError(t('errors.' + err.message, { ...err.data, defaultValue: t('championBanner.errorUnknown') })))
       .finally(() => setLoading(false))
   }, [tournamentId, t])
 

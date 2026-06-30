@@ -426,9 +426,22 @@
     "TournamentMiser": ["Campeón en austeridad"]
   },
   "errors": {
+    "username_taken": "El nombre de usuario ya está en uso",
+    "email_taken": "El email ya está registrado",
+    "invalid_credentials": "Credenciales inválidas",
+    "invalid_google_token": "Token de Google inválido",
+    "invalid_reset_link": "El link de recuperación es inválido o expiró.",
     "tournament_not_found": "Torneo no encontrado",
     "already_participant": "Ya sos participante de este torneo",
     "max_tournaments": "Límite alcanzado: podés estar en hasta {{max}} torneos.",
+    "max_participants": "Este torneo ya alcanzó el límite de 100 participantes.",
+    "not_participant": "No sos participante de este torneo",
+    "match_not_found": "Partido no encontrado",
+    "teams_not_confirmed": "Los equipos de este partido aún no están confirmados",
+    "predictions_closed": "Las predicciones están cerradas para este partido",
+    "predictions_close_before": "Las predicciones cierran 15 minutos antes del partido",
+    "match_not_finished": "El partido no terminó aún.",
+    "champion_pick_closed": "El pick de campeón ya está cerrado.",
     "generic": "Ocurrió un error. Intentá de nuevo."
   }
 }

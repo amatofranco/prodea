@@ -77,7 +77,7 @@ public class ChampionPickController(ProdeaDbContext db) : ControllerBase
         {
             var userId = CurrentUserId;
             var (_, isLocked) = await GetLockStatusAsync();
-            if (isLocked) return BadRequest(new { message = "El pick de campeón ya está cerrado." });
+            if (isLocked) return BadRequest(new { message = "champion_pick_closed" });
 
             var existing = await db.ChampionPicks.FirstOrDefaultAsync(cp => cp.UserId == userId);
             if (existing != null)

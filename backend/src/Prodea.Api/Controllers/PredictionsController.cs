@@ -50,13 +50,13 @@ public class PredictionsController(ProdeaDbContext db) : AuthorizedControllerBas
         var userId = CurrentUserId;
 
         var match = await db.Matches.FindAsync(matchId);
-        if (match == null) return NotFound(new { message = "Partido no encontrado" });
+        if (match == null) return NotFound(new { message = "match_not_found" });
         if (match.HomeTeam == "TBD" || match.AwayTeam == "TBD")
-            return BadRequest(new { message = "Los equipos de este partido aún no están confirmados" });
+            return BadRequest(new { message = "teams_not_confirmed" });
         if (match.Status != MatchStatus.Scheduled)
-            return BadRequest(new { message = "Las predicciones están cerradas para este partido" });
+            return BadRequest(new { message = "predictions_closed" });
         if (match.MatchDate - DateTime.UtcNow < PredictionCloseBeforeKickoff)
-            return BadRequest(new { message = "Las predicciones cierran 15 minutos antes del partido" });
+            return BadRequest(new { message = "predictions_close_before" });
 
         var existing = await db.Predictions.FirstOrDefaultAsync(p => p.UserId == userId && p.MatchId == matchId);
 

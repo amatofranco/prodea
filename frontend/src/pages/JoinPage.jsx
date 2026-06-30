@@ -33,12 +33,11 @@ export default function JoinPage() {
         navigate(`/torneos/${t.id}`, { replace: true })
       })
       .catch((err) => {
-        const msg = err.message ?? ''
-        if (msg.toLowerCase().includes('ya') || msg.toLowerCase().includes('already')) {
+        if (err.message === 'already_participant') {
           setStatus('already')
         } else {
           setStatus('error')
-          setErrorMsg(msg)
+          setErrorMsg(t('errors.' + err.message, { ...err.data, defaultValue: t('errors.generic') }))
         }
       })
   }, [token])

@@ -24,7 +24,7 @@ export default function LoginPage() {
       setAuth(data.token, data.user)
       window.location.replace(redirect)
     } catch (err) {
-      setError(err.message)
+      setError(t('errors.' + err.message, { ...err.data, defaultValue: t('errors.generic') }))
     }
   }
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
       setAuth(data.token, data.user)
       window.location.replace(redirect)
     } catch (err) {
-      setError(err.message)
+      setError(t('errors.' + err.message, { ...err.data, defaultValue: t('errors.generic') }))
     } finally {
       setLoading(false)
     }

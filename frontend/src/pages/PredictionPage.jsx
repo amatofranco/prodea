@@ -325,7 +325,7 @@ export default function PredictionPage() {
         setTimeout(() => turboAdvance(), 700)
       }
     } catch (err) {
-      setError(err.message)
+      setError(t('errors.' + err.message, { ...err.data, defaultValue: t('errors.generic') }))
       submitGuard.current = false
     } finally {
       setSaving(false)
