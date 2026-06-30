@@ -19,13 +19,20 @@ public class ContactController(ProdeaDbContext db, EmailService emailService) : 
     public async Task<IActionResult> SendMessage([FromBody] ContactRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Message) || request.Message.Length > 500)
-            return BadRequest(new { message = "El mensaje debe tener entre 1 y 500 caracteres." });
+            return BadRequest(new { message = "invalid_message_length" });
 
         var user = await db.Users.FindAsync(CurrentUserId);
         if (user == null) return Unauthorized();
 
-        await emailService.SendContactMessageAsync(user.Username, user.Email, request.Message.Trim());
+        var lang = ParseLang(Request.Headers["Accept-Language"]);
+        await emailService.SendContactMessageAsync(user.Username, user.Email, request.Message.Trim(), lang);
         return Ok();
+    }
+
+    private static string ParseLang(string? acceptLanguage)
+    {
+        if (string.IsNullOrEmpty(acceptLanguage)) return "es";
+        return acceptLanguage.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? "en" : "es";
     }
 }
 

@@ -66,26 +66,30 @@ public class EmailService(IConfiguration config, IHttpClientFactory httpClientFa
         """
     );
 
-    public async Task SendContactMessageAsync(string fromUsername, string fromEmail, string message)
+    public async Task SendContactMessageAsync(string fromUsername, string fromEmail, string message, string lang = "es")
     {
         var apiKey = config["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend:ApiKey not configured");
+
+        var (subject, heading, fromLabel) = lang == "en"
+            ? ($"Contact message — {fromUsername}", "New contact message", "From:")
+            : ($"Mensaje de contacto — {fromUsername}", "Nuevo mensaje de contacto", "De:");
 
         var payload = new
         {
             from = "Prodea <noreply@prodea.app>",
             to = new[] { _adminEmail },
-            subject = $"Mensaje de contacto — {fromUsername}",
+            subject,
             html = $"""
                 <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; background: #0D0D0D; color: #fff; padding: 32px; border-radius: 12px;">
-                    <h1 style="color: #00FF87; font-size: 24px; margin-bottom: 8px;">Nuevo mensaje de contacto</h1>
-                    <p style="color: #8A8A9A; margin-bottom: 4px;">De: <strong style="color:#fff">{fromUsername}</strong> ({fromEmail})</p>
+                    <h1 style="color: #00FF87; font-size: 24px; margin-bottom: 8px;">{heading}</h1>
+                    <p style="color: #8A8A9A; margin-bottom: 4px;">{fromLabel} <strong style="color:#fff">{fromUsername}</strong> ({fromEmail})</p>
                     <div style="margin-top: 16px; padding: 16px; background: #1A1A2E; border-radius: 8px; color: #fff; white-space: pre-wrap;">{System.Net.WebUtility.HtmlEncode(message)}</div>
                 </div>
                 """
         };
 
         await PostToResendAsync(apiKey, payload);
-        logger.LogInformation("Contact message sent from {Username}", fromUsername);
+        logger.LogInformation("Contact message sent from {Username} (lang={Lang})", fromUsername, lang);
     }
 
     private async Task PostToResendAsync(string apiKey, object payload)
