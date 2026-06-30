@@ -288,19 +288,19 @@ public class FixtureService(
 
         const string winner = "Winner Group ";
         if (name.StartsWith(winner, StringComparison.OrdinalIgnoreCase))
-            return $"1º Grupo {name[winner.Length..].Trim()}";
+            return $"1st Group {name[winner.Length..].Trim()}";
 
         const string runnerUp = "Runner-up Group ";
         if (name.StartsWith(runnerUp, StringComparison.OrdinalIgnoreCase))
-            return $"2º Grupo {name[runnerUp.Length..].Trim()}";
+            return $"2nd Group {name[runnerUp.Length..].Trim()}";
 
         const string winnerMatch = "Winner Match ";
         if (name.StartsWith(winnerMatch, StringComparison.OrdinalIgnoreCase))
-            return $"G. Partido {name[winnerMatch.Length..].Trim()}";
+            return $"W. Match {name[winnerMatch.Length..].Trim()}";
 
         const string loserMatch = "Loser Match ";
         if (name.StartsWith(loserMatch, StringComparison.OrdinalIgnoreCase))
-            return $"P. Partido {name[loserMatch.Length..].Trim()}";
+            return $"L. Match {name[loserMatch.Length..].Trim()}";
 
         return null;
     }

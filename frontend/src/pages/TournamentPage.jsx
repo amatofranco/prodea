@@ -443,7 +443,7 @@ export default function TournamentPage() {
                   {matchdayWinners.map((w) => (
                     <div
                       key={`${w.phase}-${w.matchday}`}
-                      onClick={() => navigate(`/torneos/${id}/perfil/${w.userId}`)}
+                      onClick={() => navigate(`/tournaments/${id}/profile/${w.userId}`)}
                       className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] cursor-pointer active:border-[#00FF87] transition-colors"
                     >
                       <span className="text-lg">🏆</span>
@@ -625,7 +625,7 @@ function LeaderboardRow({ entry, isMe, index, tournamentId, navigate }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      onClick={() => navigate(`/torneos/${tournamentId}/perfil/${entry.userId}`)}
+      onClick={() => navigate(`/tournaments/${tournamentId}/profile/${entry.userId}`)}
       className={`flex items-center gap-2 p-2.5 rounded-2xl border cursor-pointer active:border-[#00FF87] transition-colors ${
         isMe ? 'bg-[#00FF87]/5 border-[#00FF87]/30' : 'bg-[#1A1A2E] border-[#2A2A3E]'
       }`}

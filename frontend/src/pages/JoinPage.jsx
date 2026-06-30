@@ -22,7 +22,7 @@ export default function JoinPage() {
       (t) => t.code === code || t.inviteLink === code
     )
     if (existing) {
-      navigate(`/torneos/${existing.id}`, { replace: true })
+      navigate(`/tournaments/${existing.id}`, { replace: true })
       return
     }
 
@@ -30,7 +30,7 @@ export default function JoinPage() {
       .then((t) => {
         setTournaments([...tournaments, t])
         window.fbq?.('trackCustom', 'JoinTournament')
-        navigate(`/torneos/${t.id}`, { replace: true })
+        navigate(`/tournaments/${t.id}`, { replace: true })
       })
       .catch((err) => {
         if (err.message === 'already_participant') {
@@ -77,7 +77,7 @@ export default function JoinPage() {
       <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D] gap-4 text-center">
         <p className="text-red-400 font-semibold">{t('join.errorTitle')}</p>
         <p className="text-[#8A8A9A] text-sm">{errorMsg || t('join.errorDefault')}</p>
-        <Link to="/torneos" className="text-[#00FF87] font-semibold text-sm">{t('join.goToTournaments')}</Link>
+        <Link to="/tournaments" className="text-[#00FF87] font-semibold text-sm">{t('join.goToTournaments')}</Link>
       </div>
     )
   }
@@ -86,7 +86,7 @@ export default function JoinPage() {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D] gap-4 text-center">
         <p className="text-white font-semibold">{t('join.alreadyIn')}</p>
-        <Link to="/torneos" className="text-[#00FF87] font-semibold text-sm">{t('join.viewTournaments')}</Link>
+        <Link to="/tournaments" className="text-[#00FF87] font-semibold text-sm">{t('join.viewTournaments')}</Link>
       </div>
     )
   }

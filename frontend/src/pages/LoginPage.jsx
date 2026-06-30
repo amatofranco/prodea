@@ -112,7 +112,7 @@ export default function LoginPage() {
         </p>
 
         <p className="text-center text-[#8A8A9A] text-xs mt-2">
-          <Link to="/privacidad" className="hover:text-white transition-colors">
+          <Link to="/privacy" className="hover:text-white transition-colors">
             {t('common.privacyPolicy')}
           </Link>
         </p>

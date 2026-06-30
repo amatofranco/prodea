@@ -11,12 +11,12 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
         while (!stoppingToken.IsCancellationRequested)
         {
             try { await RunAsync(); }
-            catch (Exception ex) { logger.LogError(ex, "Error en MatchNotificationJob"); }
+            catch (Exception ex) { logger.LogError(ex, "Error in MatchNotificationJob"); }
             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
         }
     }
 
-    // Argentina no usa horario de verano: UTC-3 todo el año.
+    // Argentina does not observe daylight saving: UTC-3 year-round.
     private const int ArgentinaUtcOffsetHours = -3;
 
     private static DateTime ToArgentinaDay(DateTime matchDateUtc) => matchDateUtc.AddHours(ArgentinaUtcOffsetHours).Date;
@@ -36,9 +36,9 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
         var now = DateTime.UtcNow;
         var changed = false;
 
-        // --- Notificación de inicio ---
-        // Buscar cualquier partido en los próximos 20-40 min cuyo día calendario (hora Argentina)
-        // todavía no mandó reminder.
+        // --- Match start reminder ---
+        // Find any match starting in 20-40 min whose calendar day (Argentina time)
+        // hasn't sent a reminder yet.
         var soonMatch = await db.Matches
             .Where(m => m.Status == MatchStatus.Scheduled
                      && m.MatchDate > now.AddMinutes(20)
@@ -56,18 +56,23 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
             if (!reminderAlreadySent)
             {
                 var minutesUntil = (int)(soonMatch.MatchDate - now).TotalMinutes;
-                var title = $"⚽ {soonMatch.HomeTeam} vs {soonMatch.AwayTeam}";
-                var body = $"Arranca en {minutesUntil} min. ¿Tenés tus predicciones cargadas?";
-                await SendToAllAsync(db, pushService, title, body, "/predicciones");
+                await pushService.BroadcastDataAsync(db, new
+                {
+                    type = "match_start",
+                    homeTeam = soonMatch.HomeTeam,
+                    awayTeam = soonMatch.AwayTeam,
+                    minutesUntil,
+                    url = "/predictions"
+                });
                 soonMatch.ReminderSent = true;
                 changed = true;
-                logger.LogInformation("Notificación de inicio del día {Day} enviada", ToArgentinaDay(soonMatch.MatchDate).ToString("yyyy-MM-dd"));
+                logger.LogInformation("Start-of-day notification sent for {Day}", ToArgentinaDay(soonMatch.MatchDate).ToString("yyyy-MM-dd"));
             }
         }
 
-        // --- Notificación de cierre ---
-        // Buscar días calendario (hora Argentina) donde todos los partidos terminaron
-        // y el último no mandó notificación.
+        // --- End-of-day results notification ---
+        // Find calendar days (Argentina time) where all matches finished
+        // and the last one hasn't sent a notification yet.
         var unsentFinishedDates = await db.Matches
             .Where(m => m.Status == MatchStatus.Finished && !m.ResultNotificationSent)
             .Select(m => m.MatchDate)
@@ -89,21 +94,22 @@ public class MatchNotificationJob(IServiceScopeFactory scopeFactory, ILogger<Mat
             if (dayMatches.Any(m => m.ResultNotificationSent)) continue;
 
             var lastMatch = dayMatches.Last();
-            var title = "🏁 Se terminaron los partidos de hoy";
-            var body = $"Último resultado: {lastMatch.HomeTeam} {lastMatch.HomeScore}-{lastMatch.AwayScore} {lastMatch.AwayTeam}. Mirá cómo quedó la tabla.";
-            await SendToAllAsync(db, pushService, title, body, "/torneos");
+            await pushService.BroadcastDataAsync(db, new
+            {
+                type = "match_end",
+                homeTeam = lastMatch.HomeTeam,
+                homeScore = lastMatch.HomeScore,
+                awayTeam = lastMatch.AwayTeam,
+                awayScore = lastMatch.AwayScore,
+                url = "/tournaments"
+            });
             foreach (var dm in dayMatches)
                 dm.ResultNotificationSent = true;
             changed = true;
-            logger.LogInformation("Notificación de cierre del día {Day} enviada", argentinaDay.ToString("yyyy-MM-dd"));
+            logger.LogInformation("End-of-day notification sent for {Day}", argentinaDay.ToString("yyyy-MM-dd"));
         }
 
         if (changed)
             await db.SaveChangesAsync();
-    }
-
-    private static async Task SendToAllAsync(ProdeaDbContext db, PushNotificationService pushService, string title, string body, string url)
-    {
-        await pushService.BroadcastAsync(db, title, body, url);
     }
 }

@@ -485,7 +485,7 @@ public class BadgeService(ProdeaDbContext db)
                 await push.SendDataAsync(
                     sub,
                     new { type = "card", phase = phase.ToString(), matchday,
-                          url = $"/torneos/{userTournamentMap[sub.UserId]}/perfil/{sub.UserId}" }
+                          url = $"/tournaments/{userTournamentMap[sub.UserId]}/profile/{sub.UserId}" }
                 );
             }
             catch (ExpiredSubscriptionException) { expired.Add(sub); }

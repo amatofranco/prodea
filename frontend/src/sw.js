@@ -117,8 +117,22 @@ const PUSH_PHASES = {
   en: { Group: 'Matchday', R32: 'Round of 32', R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', ThirdPlace: 'Third Place', Final: 'Final' },
 }
 const PUSH_STRINGS = {
-  es: { cardTitle: '🃏 ¡Llegó tu Carta!', cardBody: (phase) => `Terminó ${phase}. Fijate cómo te fue y compartila.` },
-  en: { cardTitle: '🃏 Your Card is here!', cardBody: (phase) => `${phase} is over. Check how you did and share it.` },
+  es: {
+    cardTitle: '🃏 ¡Llegó tu Carta!',
+    cardBody: (phase) => `Terminó ${phase}. Fijate cómo te fue y compartila.`,
+    matchStartTitle: (home, away) => `⚽ ${home} vs ${away}`,
+    matchStartBody: (min) => `Arranca en ${min} min. ¿Tenés tus predicciones cargadas?`,
+    matchEndTitle: '🏁 Se terminaron los partidos de hoy',
+    matchEndBody: (home, hs, away, as_) => `Último resultado: ${home} ${hs}-${as_} ${away}. Mirá cómo quedó la tabla.`,
+  },
+  en: {
+    cardTitle: '🃏 Your Card is here!',
+    cardBody: (phase) => `${phase} is over. Check how you did and share it.`,
+    matchStartTitle: (home, away) => `⚽ ${home} vs ${away}`,
+    matchStartBody: (min) => `Starts in ${min} min. Are your predictions in?`,
+    matchEndTitle: '🏁 Today\'s matches are done',
+    matchEndBody: (home, hs, away, as_) => `Last result: ${home} ${hs}-${as_} ${away}. Check the standings.`,
+  },
 }
 
 function getPushLang() {
@@ -137,11 +151,19 @@ function resolveCardPush(data) {
 
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {}
+  const lang = getPushLang()
+  const s = PUSH_STRINGS[lang]
   let title, body
   if (data.type === 'card') {
     const resolved = resolveCardPush(data)
     title = resolved.title
     body = resolved.body
+  } else if (data.type === 'match_start') {
+    title = s.matchStartTitle(data.homeTeam, data.awayTeam)
+    body = s.matchStartBody(data.minutesUntil)
+  } else if (data.type === 'match_end') {
+    title = s.matchEndTitle
+    body = s.matchEndBody(data.homeTeam, data.homeScore, data.awayTeam, data.awayScore)
   } else {
     title = data.title ?? 'Prodea'
     body = data.body ?? ''

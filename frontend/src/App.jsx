@@ -39,20 +39,20 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/join/:code" element={<JoinPage />} />
-        <Route path="/privacidad" element={<PrivacyPage />} />
-        <Route path="/como-se-juega" element={<LandingPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/how-to-play" element={<LandingPage />} />
 
         {/* Protected */}
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/torneos" element={<TorneosPage />} />
-            <Route path="/predicciones" element={<PredictionsPage />} />
-            <Route path="/predicciones/:matchId" element={<PredictionPage />} />
-            <Route path="/predicciones/campeon" element={<ChampionPickPage />} />
-            <Route path="/torneos/:id" element={<TournamentPage />} />
-            <Route path="/torneos/:tournamentId/perfil/:userId" element={<ProfilePage />} />
-            <Route path="/ajustes" element={<AjustesPage />} />
+            <Route path="/tournaments" element={<TorneosPage />} />
+            <Route path="/predictions" element={<PredictionsPage />} />
+            <Route path="/predictions/:matchId" element={<PredictionPage />} />
+            <Route path="/predictions/champion" element={<ChampionPickPage />} />
+            <Route path="/tournaments/:id" element={<TournamentPage />} />
+            <Route path="/tournaments/:tournamentId/profile/:userId" element={<ProfilePage />} />
+            <Route path="/settings" element={<AjustesPage />} />
           </Route>
         </Route>
 

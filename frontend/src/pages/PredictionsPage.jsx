@@ -71,7 +71,7 @@ function MatchCard({ match, navigate }) {
 
   return (
     <div
-      onClick={() => canPredict && navigate(`/predicciones/${match.id}`)}
+      onClick={() => canPredict && navigate(`/predictions/${match.id}`)}
       className={`relative p-3 rounded-2xl border transition-colors ${
         isLive
           ? 'bg-[#FF6B35]/5 border-[#FF6B35]/40'
@@ -165,7 +165,7 @@ function ChampionPickEntry({ navigate, myPick, isLocked }) {
   const flagUrl = myPick ? getFlagUrl(getTeam(myPick).flag) : null
   return (
     <div
-      onClick={() => navigate('/predicciones/campeon')}
+      onClick={() => navigate('/predictions/champion')}
       className="flex items-center gap-3 px-4 py-3 border-b border-[#1A1A2E] bg-[#0D0D0D] cursor-pointer active:bg-[#1A1A2E] transition-colors"
     >
       <div className="w-12 h-[34px] rounded-lg overflow-hidden bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex items-center justify-center text-xl flex-shrink-0">

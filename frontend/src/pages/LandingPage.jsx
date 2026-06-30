@@ -163,7 +163,7 @@ export default function LandingPage() {
       <footer className="border-t border-[#2A2A3E] px-6 py-8 text-center">
         <p className="text-[#8A8A9A] text-xs mb-2">{t('landing.footer')}</p>
         <div className="flex items-center justify-center gap-4 text-xs">
-          <Link to="/privacidad" className="text-[#8A8A9A] hover:text-white transition-colors">
+          <Link to="/privacy" className="text-[#8A8A9A] hover:text-white transition-colors">
             {t('common.privacyPolicy')}
           </Link>
           {!isLoggedIn && (

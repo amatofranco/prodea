@@ -58,6 +58,28 @@ public class PushNotificationService(IConfiguration config, ILogger<PushNotifica
         }
     }
 
+    public async Task<int> BroadcastDataAsync(ProdeaDbContext db, object data)
+    {
+        var subscriptions = await db.PushSubscriptions.ToListAsync();
+        var sent = 0;
+        var expired = new List<UserPushSubscription>();
+
+        foreach (var sub in subscriptions)
+        {
+            try { await SendDataAsync(sub, data); sent++; }
+            catch (ExpiredSubscriptionException) { expired.Add(sub); }
+            catch { }
+        }
+
+        if (expired.Count > 0)
+        {
+            db.PushSubscriptions.RemoveRange(expired);
+            await db.SaveChangesAsync();
+        }
+
+        return sent;
+    }
+
     public async Task<int> BroadcastAsync(ProdeaDbContext db, string title, string body, string url = "/")
     {
         var subscriptions = await db.PushSubscriptions.ToListAsync();

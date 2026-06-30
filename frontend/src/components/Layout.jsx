@@ -7,9 +7,9 @@ function useNavItems() {
   const { t } = useTranslation()
   return [
     { to: '/', icon: Home, label: t('nav.home'), end: true },
-    { to: '/predicciones', icon: Target, label: t('nav.predictions') },
-    { to: '/torneos', icon: Trophy, label: t('nav.tournaments') },
-    { to: '/ajustes', icon: Settings, label: t('nav.settings') },
+    { to: '/predictions', icon: Target, label: t('nav.predictions') },
+    { to: '/tournaments', icon: Trophy, label: t('nav.tournaments') },
+    { to: '/settings', icon: Settings, label: t('nav.settings') },
   ]
 }
 

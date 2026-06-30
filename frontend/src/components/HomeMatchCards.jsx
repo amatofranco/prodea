@@ -231,7 +231,7 @@ export function UpcomingCard({ match, navigate }) {
 
   return (
     <div
-      onClick={() => canPredict && navigate(`/predicciones/${match.id}`)}
+      onClick={() => canPredict && navigate(`/predictions/${match.id}`)}
       className={`p-3 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] transition-colors ${canPredict ? 'active:border-[#00FF87] cursor-pointer' : 'cursor-default'}`}
     >
       <div className="flex items-center gap-3">

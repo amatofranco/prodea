@@ -254,10 +254,10 @@ export default function PredictionPage() {
     const next = matches.slice(idx + 1).find(canPredictInTurbo)
     slideDir.current = 1
     if (next) {
-      navigate(`/predicciones/${next.id}`)
+      navigate(`/predictions/${next.id}`)
     } else {
       setTurboComplete(true)
-      setTimeout(() => navigate('/predicciones'), 1800)
+      setTimeout(() => navigate('/predictions'), 1800)
     }
   }
 
@@ -266,7 +266,7 @@ export default function PredictionPage() {
   const nextMatch = currentIndex < allMatches.length - 1 ? allMatches[currentIndex + 1] : null
   const pendingCount = allMatches.filter(canPredictMatch).length
 
-  function navTo(id, dir) { slideDir.current = dir; navigate(`/predicciones/${id}`) }
+  function navTo(id, dir) { slideDir.current = dir; navigate(`/predictions/${id}`) }
 
   const isKnockout = match?.phase && match.phase !== 'Group'
   const isDraw = home === away

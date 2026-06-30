@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Prodea.Api.DTOs;
 
 public record RegisterRequest(
-    [Required, MinLength(3), MaxLength(50), RegularExpression(@"^[a-zA-Z0-9_]+$", ErrorMessage = "El nombre de usuario solo puede contener letras, números y guión bajo")] string Username,
+    [Required, MinLength(3), MaxLength(50), RegularExpression(@"^[a-zA-Z0-9_]+$", ErrorMessage = "Username can only contain letters, numbers and underscores")] string Username,
     [Required, EmailAddress] string Email,
     [Required, MinLength(6)] string Password,
     [Required, MaxLength(100)] string FirstName,

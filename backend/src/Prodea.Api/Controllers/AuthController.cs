@@ -120,10 +120,11 @@ public class AuthController(
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
     {
+        var lang = ParseLang(Request.Headers["Accept-Language"]);
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         // Always return 200 to avoid email enumeration
         if (user == null || user.PasswordHash == null)
-            return Ok(new { message = "Si el email existe, te enviamos un link para recuperar tu contraseña." });
+            return Ok(new { message = "forgot_password_sent" });
 
         // Invalidate existing tokens for this user
         var existing = db.PasswordResetTokens.Where(t => t.UserId == user.Id && !t.Used);
@@ -138,11 +139,11 @@ public class AuthController(
         });
         await db.SaveChangesAsync();
 
-        _ = emailService.SendPasswordResetAsync(user.Email, token)
-            .ContinueWith(t => logger.LogError(t.Exception, "Error enviando email a {Email}", user.Email),
+        _ = emailService.SendPasswordResetAsync(user.Email, token, lang)
+            .ContinueWith(t => logger.LogError(t.Exception, "Error sending password reset email to {Email}", user.Email),
                 TaskContinuationOptions.OnlyOnFaulted);
 
-        return Ok(new { message = "Si el email existe, te enviamos un link para recuperar tu contraseña." });
+        return Ok(new { message = "forgot_password_sent" });
     }
 
     [HttpPost("reset-password")]
@@ -159,7 +160,13 @@ public class AuthController(
         resetToken.Used = true;
         await db.SaveChangesAsync();
 
-        return Ok(new { message = "Contraseña actualizada correctamente." });
+        return Ok(new { message = "password_updated" });
+    }
+
+    private static string ParseLang(string? acceptLanguage)
+    {
+        if (string.IsNullOrEmpty(acceptLanguage)) return "es";
+        return acceptLanguage.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? "en" : "es";
     }
 
     [HttpGet("me")]

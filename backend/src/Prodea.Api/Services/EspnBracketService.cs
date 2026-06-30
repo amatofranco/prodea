@@ -207,7 +207,7 @@ public class EspnBracketService(
     private static string FormatKickoffKey(DateTime dt) =>
         dt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
 
-    private static readonly Regex SlotLabelRegex = new(@"^([12])º Grupo ([A-L])$");
+    private static readonly Regex SlotLabelRegex = new(@"^([12])(?:st|nd) Group ([A-L])$");
 
     private static bool TryResolveSlot(string? label, Dictionary<string, Dictionary<int, string>> rankByGroup, out string team)
     {
@@ -229,14 +229,14 @@ public class EspnBracketService(
 
     private static readonly (string Prefix, string Suffix, MatchPhase Phase, string Tag)[] RoundPatterns =
     [
-        ("Round of 32 ", " Winner", MatchPhase.R32, "Gan."),
-        ("Round of 16 ", " Winner", MatchPhase.R16, "Gan."),
-        ("Quarterfinal ", " Winner", MatchPhase.QF, "Gan."),
-        ("Quarter-Final ", " Winner", MatchPhase.QF, "Gan."),
-        ("Semifinal ", " Winner", MatchPhase.SF, "Gan."),
-        ("Semi-Final ", " Winner", MatchPhase.SF, "Gan."),
-        ("Semifinal ", " Loser", MatchPhase.SF, "Per."),
-        ("Semi-Final ", " Loser", MatchPhase.SF, "Per."),
+        ("Round of 32 ", " Winner", MatchPhase.R32, "W."),
+        ("Round of 16 ", " Winner", MatchPhase.R16, "W."),
+        ("Quarterfinal ", " Winner", MatchPhase.QF, "W."),
+        ("Quarter-Final ", " Winner", MatchPhase.QF, "W."),
+        ("Semifinal ", " Winner", MatchPhase.SF, "W."),
+        ("Semi-Final ", " Winner", MatchPhase.SF, "W."),
+        ("Semifinal ", " Loser", MatchPhase.SF, "L."),
+        ("Semi-Final ", " Loser", MatchPhase.SF, "L."),
     ];
 
     private static (string Team, string? Label) ParseEspnBracketTeam(string? displayName)
@@ -247,21 +247,21 @@ public class EspnBracketService(
             && displayName.EndsWith(" Winner", StringComparison.OrdinalIgnoreCase))
         {
             var letter = displayName["Group ".Length..^" Winner".Length].Trim();
-            return ("TBD", $"1º Grupo {letter}");
+            return ("TBD", $"1st Group {letter}");
         }
 
         if (displayName.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)
             && displayName.EndsWith(" 2nd Place", StringComparison.OrdinalIgnoreCase))
         {
             var letter = displayName["Group ".Length..^" 2nd Place".Length].Trim();
-            return ("TBD", $"2º Grupo {letter}");
+            return ("TBD", $"2nd Group {letter}");
         }
 
         const string thirdPlace = "Third Place Group ";
         if (displayName.StartsWith(thirdPlace, StringComparison.OrdinalIgnoreCase))
         {
             var groups = displayName[thirdPlace.Length..].Trim();
-            return ("TBD", $"3º Grupos {groups}");
+            return ("TBD", $"3rd Groups {groups}");
         }
 
         foreach (var (prefix, suffix, phase, tag) in RoundPatterns)

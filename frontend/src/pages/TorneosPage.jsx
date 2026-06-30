@@ -44,7 +44,7 @@ export default function TorneosPage() {
       setCreateDesc('')
       setCreateStartingDate(todayStr())
       window.fbq?.('trackCustom', 'JoinTournament')
-      navigate(`/torneos/${tn.id}`)
+      navigate(`/tournaments/${tn.id}`)
     } catch (err) { setError(err.message) }
   }
 
@@ -57,7 +57,7 @@ export default function TorneosPage() {
       setShowJoin(false)
       setJoinCode('')
       window.fbq?.('trackCustom', 'JoinTournament')
-      navigate(`/torneos/${tn.id}`)
+      navigate(`/tournaments/${tn.id}`)
     } catch (err) { setError(err.message) }
   }
 
@@ -102,7 +102,7 @@ export default function TorneosPage() {
             {tournaments.map((tn) => (
               <button
                 key={tn.id}
-                onClick={() => navigate(`/torneos/${tn.id}`)}
+                onClick={() => navigate(`/tournaments/${tn.id}`)}
                 className="w-full text-left p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] active:border-[#00FF87] transition-colors"
               >
                 <div className="flex items-start justify-between">

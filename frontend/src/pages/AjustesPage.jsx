@@ -108,7 +108,7 @@ export default function AjustesPage() {
         </div>
 
         <button
-          onClick={() => navigate('/como-se-juega')}
+          onClick={() => navigate('/how-to-play')}
           className="flex items-center gap-3 bg-[#1A1A2E] rounded-2xl px-4 py-4 border border-[#2A2A3E] text-left w-full hover:border-[#00FF87]/40 transition-colors"
         >
           <HelpCircle size={20} className="text-[#00FF87]" />
