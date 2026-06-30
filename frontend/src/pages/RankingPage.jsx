@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Trophy } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
 export default function RankingPage() {
+  const { t } = useTranslation()
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(true)
   const currentUserId = useAuthStore((s) => s.user?.id)
@@ -22,9 +24,9 @@ export default function RankingPage() {
       <div className="px-5 pt-12 md:pt-6 pb-5 bg-gradient-to-b from-[#1A1A2E] to-[#0D0D0D]">
         <div className="flex items-center gap-3 mb-1">
           <Trophy size={22} className="text-[#F59E0B]" />
-          <h2 className="text-2xl font-bold text-white">Ranking Prodea</h2>
+          <h2 className="text-2xl font-bold text-white">{t('ranking.title')}</h2>
         </div>
-        <p className="text-[#8A8A9A] text-xs">Todos los jugadores de la app</p>
+        <p className="text-[#8A8A9A] text-xs">{t('ranking.subtitle')}</p>
       </div>
 
       {/* Mi posición sticky */}
@@ -33,7 +35,7 @@ export default function RankingPage() {
           <span className="text-lg font-black text-[#00FF87] w-8 text-center">#{myEntry.rank}</span>
           <div className="flex-1 min-w-0">
             <p className="text-white font-bold text-sm truncate">{myEntry.fullName ?? myEntry.username}</p>
-            <p className="text-[#8A8A9A] text-xs">Tu posición</p>
+            <p className="text-[#8A8A9A] text-xs">{t('ranking.yourPosition')}</p>
           </div>
           <span className="text-[#00FF87] font-black text-lg">{myEntry.totalPoints} pts</span>
         </div>
@@ -48,7 +50,7 @@ export default function RankingPage() {
         ) : ranking.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
             <Trophy size={40} className="text-[#2A2A3E]" />
-            <p className="text-[#8A8A9A] text-sm">Todavía no hay predicciones cargadas.</p>
+            <p className="text-[#8A8A9A] text-sm">{t('ranking.noData')}</p>
           </div>
         ) : (
           ranking.map((entry) => {
@@ -89,7 +91,7 @@ export default function RankingPage() {
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold text-sm truncate ${isMe ? 'text-[#00FF87]' : 'text-white'}`}>
                     {entry.fullName ?? entry.username}
-                    {isMe && <span className="text-[10px] text-[#00FF87]/70 ml-1">(vos)</span>}
+                    {isMe && <span className="text-[10px] text-[#00FF87]/70 ml-1">({t('tournaments.you')})</span>}
                   </p>
                   {entry.fullName && (
                     <p className="text-[#8A8A9A] text-[10px] truncate">@{entry.username}</p>

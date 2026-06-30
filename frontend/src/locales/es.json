@@ -304,6 +304,65 @@
     "ctaDesc": "Armá tu torneo, invitá a tus amigos, y que empiece la cargada.",
     "footer": "Prodea — El prode del Mundial 2026 con tus amigos"
   },
+  "install": {
+    "installApp": "¡Instalá Prodea en tu celular!",
+    "iosTip": "Tocá <1/> y \"Agregar a inicio\"",
+    "install": "Instalar"
+  },
+  "push": {
+    "title": "Activá las notificaciones",
+    "desc": "Te avisamos al inicio y al final de cada jornada para que no te pierdas nada.",
+    "activate": "Activar notificaciones",
+    "notNow": "Ahora no"
+  },
+  "inAppBrowser": {
+    "androidMsg": "Estás en el browser de Instagram. Para Google login o instalar la app, abrí en Chrome.",
+    "iosMsg": "Estás en el browser de Instagram. Para Google login o instalar la app, abrí en Safari.",
+    "copied": "¡Copiado!",
+    "openAndroid": "Abrir →",
+    "copyLink": "Copiar link →"
+  },
+  "join": {
+    "invited": "Te invitaron a un torneo",
+    "loginOrRegister": "Iniciá sesión o registrate para unirte.",
+    "loginBtn": "Iniciar sesión",
+    "registerBtn": "Registrarme",
+    "errorTitle": "No se pudo unir al torneo",
+    "errorDefault": "El link es inválido o ya no está disponible.",
+    "goToTournaments": "Ir a mis torneos",
+    "alreadyIn": "Ya sos parte de este torneo",
+    "viewTournaments": "Ver mis torneos",
+    "joining": "Uniéndote al torneo..."
+  },
+  "ranking": {
+    "title": "Ranking Prodea",
+    "subtitle": "Todos los jugadores de la app",
+    "yourPosition": "Tu posición",
+    "noData": "Todavía no hay predicciones cargadas."
+  },
+  "matchSheet": {
+    "noPick": "Sin elegir",
+    "noPred": "Sin pred",
+    "advances": "Pasa:",
+    "champPick": "Sin elegir"
+  },
+  "badgeTags": {
+    "Crack": "Mayor puntaje en la fecha",
+    "Mufa": "Menor puntaje en la fecha",
+    "Francotirador": "3 exactos en la fecha",
+    "Adivino": "4 exactos en la fecha",
+    "PechoFrio": "2° puntaje en la fecha",
+    "Goleador": "Más goles cargados",
+    "Rustico": "Menos goles cargados",
+    "Tambaleante": "Penúltimo de la fecha",
+    "Tibio": "Ni fu ni fa en la fecha",
+    "Payaso": "0 puntos",
+    "Dormido": "Sin predicciones",
+    "Ultimo": "Último del torneo",
+    "Penultimo": "Penúltimo del torneo",
+    "GoleadorTorneo": "Más goles cargados en total",
+    "RusticoTorneo": "Menos goles cargados en total"
+  },
   "errors": {
     "tournament_not_found": "Torneo no encontrado",
     "already_participant": "Ya sos participante de este torneo",

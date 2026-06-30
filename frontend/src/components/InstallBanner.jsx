@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Share, Download } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches
@@ -53,6 +54,8 @@ export default function InstallBanner({ className = '' }) {
     window.__pwaInstallPrompt = null
   }
 
+  const { t } = useTranslation()
+
   if (!show) return null
 
   return (
@@ -60,8 +63,8 @@ export default function InstallBanner({ className = '' }) {
       <img src="/logo-icon.png" alt="" className="w-7 h-7 object-contain shrink-0" />
       <p className="flex-1 text-[13px] text-[#8A8A9A]">
         {ios
-          ? <>¡<span className="text-white font-semibold">Instalá Prodea en tu celular!</span> Tocá <Share size={11} className="inline mb-0.5" /> y "Agregar a inicio"</>
-          : <span className="text-white font-semibold">¡Instalá Prodea en tu celular!</span>
+          ? <><span className="text-white font-semibold">{t('install.installApp')}</span> {t('install.iosTip', { defaultValue: '' }).replace('<1/>', '')} <Share size={11} className="inline mb-0.5" /></>
+          : <span className="text-white font-semibold">{t('install.installApp')}</span>
         }
       </p>
       {!ios && (
@@ -69,7 +72,7 @@ export default function InstallBanner({ className = '' }) {
           onClick={install}
           className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#00FF87] text-black text-xs font-bold active:scale-95 transition-transform"
         >
-          <Download size={11} /> Instalar
+          <Download size={11} /> {t('install.install')}
         </button>
       )}
     </div>

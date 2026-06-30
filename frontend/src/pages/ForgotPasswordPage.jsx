@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../services/api'
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -27,27 +29,27 @@ export default function ForgotPasswordPage() {
       <div className="mb-10 flex flex-col items-center gap-0">
         <img src="/logo-icon.png" alt="Prodea" className="w-[264px] h-[264px] object-contain" />
         <img src="/logo-wordmark.png" alt="Prodea" className="h-[70px] object-contain -mt-6" />
-        <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-3" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>Mundial 2026</p>
+        <p className="text-[#8A8A9A] text-lg font-semibold tracking-widest uppercase -mt-3" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>{t('common.worldCup')}</p>
       </div>
 
       {sent ? (
         <div className="w-full max-w-sm text-center space-y-4">
           <div className="text-4xl">📬</div>
-          <p className="text-white font-semibold">¡Revisá tu email!</p>
+          <p className="text-white font-semibold">{t('forgotPassword.checkEmail')}</p>
           <p className="text-[#8A8A9A] text-sm">
-            Si existe una cuenta con ese email, te enviamos un link para recuperar tu contraseña. Revisá también el spam.
+            {t('forgotPassword.checkEmailDesc')}
           </p>
           <Link
             to="/login"
             className="block mt-4 text-[#00FF87] font-semibold text-sm"
           >
-            ← Volver al login
+            {t('forgotPassword.backToLogin')}
           </Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col gap-4">
           <p className="text-[#8A8A9A] text-sm text-center">
-            Ingresá el email de tu cuenta y te mandamos un link para crear una nueva contraseña.
+            {t('forgotPassword.instructions')}
           </p>
           <input
             type="email"
@@ -65,11 +67,11 @@ export default function ForgotPasswordPage() {
             disabled={loading}
             className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-base disabled:opacity-50 active:scale-95 transition-transform"
           >
-            {loading ? 'Enviando...' : 'Enviar link'}
+            {loading ? t('common.sending') : t('forgotPassword.sendLink')}
           </button>
 
           <Link to="/login" className="text-center text-[#8A8A9A] text-sm hover:text-[#00FF87] transition-colors">
-            ← Volver al login
+            {t('forgotPassword.backToLogin')}
           </Link>
         </form>
       )}

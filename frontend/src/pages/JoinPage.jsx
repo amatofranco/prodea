@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { useTournamentStore } from '../store/tournamentStore'
 
 export default function JoinPage() {
+  const { t } = useTranslation()
   const { code } = useParams()
   const navigate = useNavigate()
   const token = useAuthStore((s) => s.token)
@@ -50,21 +52,21 @@ export default function JoinPage() {
           <img src="/logo-wordmark.png" alt="Prodea" className="h-10 object-contain -mt-3" />
         </div>
         <div className="space-y-2">
-          <p className="text-white font-bold text-lg">Te invitaron a un torneo</p>
-          <p className="text-[#8A8A9A] text-sm">Iniciá sesión o registrate para unirte.</p>
+          <p className="text-white font-bold text-lg">{t('join.invited')}</p>
+          <p className="text-[#8A8A9A] text-sm">{t('join.loginOrRegister')}</p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <Link
             to={`/login?redirect=/join/${code}`}
             className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-center"
           >
-            Iniciar sesión
+            {t('join.loginBtn')}
           </Link>
           <Link
             to={`/register?redirect=/join/${code}`}
             className="w-full py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] text-white font-semibold text-center"
           >
-            Registrarme
+            {t('join.registerBtn')}
           </Link>
         </div>
       </div>
@@ -74,9 +76,9 @@ export default function JoinPage() {
   if (status === 'error') {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D] gap-4 text-center">
-        <p className="text-red-400 font-semibold">No se pudo unir al torneo</p>
-        <p className="text-[#8A8A9A] text-sm">{errorMsg || 'El link es inválido o ya no está disponible.'}</p>
-        <Link to="/torneos" className="text-[#00FF87] font-semibold text-sm">Ir a mis torneos</Link>
+        <p className="text-red-400 font-semibold">{t('join.errorTitle')}</p>
+        <p className="text-[#8A8A9A] text-sm">{errorMsg || t('join.errorDefault')}</p>
+        <Link to="/torneos" className="text-[#00FF87] font-semibold text-sm">{t('join.goToTournaments')}</Link>
       </div>
     )
   }
@@ -84,8 +86,8 @@ export default function JoinPage() {
   if (status === 'already') {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-[#0D0D0D] gap-4 text-center">
-        <p className="text-white font-semibold">Ya sos parte de este torneo</p>
-        <Link to="/torneos" className="text-[#00FF87] font-semibold text-sm">Ver mis torneos</Link>
+        <p className="text-white font-semibold">{t('join.alreadyIn')}</p>
+        <Link to="/torneos" className="text-[#00FF87] font-semibold text-sm">{t('join.viewTournaments')}</Link>
       </div>
     )
   }
@@ -93,7 +95,7 @@ export default function JoinPage() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-[#0D0D0D] gap-3">
       <div className="w-8 h-8 border-2 border-[#00FF87] border-t-transparent rounded-full animate-spin" />
-      <p className="text-[#8A8A9A] text-sm">Uniéndote al torneo...</p>
+      <p className="text-[#8A8A9A] text-sm">{t('join.joining')}</p>
     </div>
   )
 }

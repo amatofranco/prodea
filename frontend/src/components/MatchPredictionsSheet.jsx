@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import FlagImg from './FlagImg'
 
 export default function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
+  const { t } = useTranslation()
   const pointColor = (pts) => pts === 3 ? 'text-[#00FF87]' : pts === 1 ? 'text-[#F59E0B]' : 'text-[#8A8A9A]'
   const pointBg   = (pts) => pts === 3 ? 'bg-[#00FF87]/10 border-[#00FF87]/30' : pts === 1 ? 'bg-[#F59E0B]/10 border-[#F59E0B]/30' : 'bg-[#1A1A2E] border-[#2A2A3E]'
 
@@ -59,7 +61,7 @@ export default function MatchPredictionsSheet({ match, predictions, loading, onC
                 <span className="text-white text-sm font-medium truncate block">{p.fullName ?? p.username}</span>
                 {match.phase === 'Final' && (
                   <span className="text-[9px] text-[#8A8A9A] truncate block">
-                    🏆 {p.championPick ?? 'Sin elegir'}
+                    🏆 {p.championPick ?? t('matchSheet.noPick')}
                   </span>
                 )}
               </div>
@@ -70,12 +72,12 @@ export default function MatchPredictionsSheet({ match, predictions, loading, onC
                   </span>
                   {p.predictedPenaltyWinner && (
                     <span className="text-[9px] text-[#F59E0B]">
-                      Pasa: {p.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
+                      {t('matchSheet.advances')} {p.predictedPenaltyWinner === 'home' ? match.homeTeam : match.awayTeam}
                     </span>
                   )}
                 </div>
               ) : (
-                <span className="text-[#8A8A9A] text-xs italic">Sin pred</span>
+                <span className="text-[#8A8A9A] text-xs italic">{t('matchSheet.noPred')}</span>
               )}
               <div className="flex flex-col items-end w-16">
                 <span className={`text-sm font-bold text-right ${pointColor(p.pointsEarned)}`}>

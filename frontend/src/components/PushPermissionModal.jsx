@@ -1,6 +1,8 @@
 import { Bell, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function PushPermissionModal({ onActivate, onDismiss }) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onDismiss} />
@@ -19,10 +21,10 @@ export default function PushPermissionModal({ onActivate, onDismiss }) {
 
           <div>
             <h2 className="text-white font-bold text-lg leading-tight mb-1">
-              Activá las notificaciones
+              {t('push.title')}
             </h2>
             <p className="text-[#8A8A9A] text-sm leading-relaxed">
-              Te avisamos al inicio y al final de cada jornada para que no te pierdas nada.
+              {t('push.desc')}
             </p>
           </div>
 
@@ -31,13 +33,13 @@ export default function PushPermissionModal({ onActivate, onDismiss }) {
               onClick={onActivate}
               className="w-full py-3 rounded-xl bg-[#00FF87] text-black font-bold text-sm hover:bg-[#00e07a] transition-colors"
             >
-              Activar notificaciones
+              {t('push.activate')}
             </button>
             <button
               onClick={onDismiss}
               className="w-full py-2.5 rounded-xl text-[#8A8A9A] text-sm hover:text-white transition-colors"
             >
-              Ahora no
+              {t('push.notNow')}
             </button>
           </div>
         </div>

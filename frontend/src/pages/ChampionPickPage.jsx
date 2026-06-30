@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, Search, Lock, Check } from 'lucide-react'
 import { api } from '../services/api'
 import { getTeam, getFlagUrl } from '../data/teamsData'
@@ -24,19 +25,21 @@ function Countdown({ lockTime }) {
     return () => clearInterval(id)
   }, [lockTime])
 
-  if (diff <= 0) return <span className="text-red-400 font-semibold text-xs">Cerrado</span>
+  const { t } = useTranslation()
+  if (diff <= 0) return <span className="text-red-400 font-semibold text-xs">{t('predictions.closed')}</span>
   const h = Math.floor(diff / 3600000)
   const m = Math.floor((diff % 3600000) / 60000)
   const s = Math.floor((diff % 60000) / 1000)
   const isUrgent = diff < 30 * 60 * 1000
   const label = h > 48
-    ? `Cierra en ${Math.floor(h / 24)}d ${h % 24}h`
-    : h > 0 ? `Cierra en ${h}h ${m}m`
-    : `Cierra en ${m}m ${s}s`
+    ? t('predictions.closesInDays', { days: Math.floor(h / 24), hours: h % 24 })
+    : h > 0 ? t('predictions.closesInHours', { hours: h, minutes: m })
+    : t('predictions.closesInMinutes', { minutes: m, seconds: s })
   return <span className={`text-xs font-semibold ${isUrgent ? 'text-[#FF6B35]' : 'text-[#8A8A9A]'}`}>{label}</span>
 }
 
 export default function ChampionPickPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -91,10 +94,10 @@ export default function ChampionPickPage() {
             <ChevronLeft size={24} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-white">🏆 Campeón del Torneo</h1>
+            <h1 className="text-xl font-bold text-white">{t('predictions.championTitle')}</h1>
             <div className="mt-0.5">
               {isLocked
-                ? <span className="flex items-center gap-1 text-xs text-[#8A8A9A]"><Lock size={11} /> Elección cerrada</span>
+                ? <span className="flex items-center gap-1 text-xs text-[#8A8A9A]"><Lock size={11} /> {t('predictions.electionClosed')}</span>
                 : <Countdown lockTime={lockTime} />
               }
             </div>
@@ -109,11 +112,11 @@ export default function ChampionPickPage() {
           <div className="mx-4 mt-4 p-4 rounded-2xl bg-[#1A1A2E] border border-[#F59E0B]/30 flex items-center gap-4">
             <FlagImg country={myPick} size={56} />
             <div className="flex-1 min-w-0">
-              <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-0.5">Tu candidato</p>
+              <p className="text-[#8A8A9A] text-xs uppercase tracking-wider mb-0.5">{t('predictions.yourCandidate')}</p>
               <p className="text-white font-bold text-lg leading-tight truncate">{myPick}</p>
               {saved && (
                 <p className="flex items-center gap-1 text-[#00FF87] text-xs font-semibold mt-0.5">
-                  <Check size={12} /> Guardado
+                  <Check size={12} /> {t('predictions.saved')}
                 </p>
               )}
             </div>
@@ -122,7 +125,7 @@ export default function ChampionPickPage() {
                 onClick={() => setChanging(true)}
                 className="text-[#00FF87] text-sm font-semibold shrink-0"
               >
-                Cambiar
+                {t('predictions.change')}
               </button>
             )}
           </div>
@@ -131,7 +134,7 @@ export default function ChampionPickPage() {
         {/* Locked: no pick */}
         {isLocked && !myPick && (
           <div className="mx-4 mt-4 p-4 rounded-2xl bg-[#1A1A2E] border border-[#2A2A3E] text-center">
-            <p className="text-[#8A8A9A] text-sm">No elegiste un campeón antes del cierre.</p>
+            <p className="text-[#8A8A9A] text-sm">{t('predictions.noPickBeforeClose')}</p>
           </div>
         )}
 
@@ -140,7 +143,7 @@ export default function ChampionPickPage() {
           <div className="mx-4 mt-3 p-4 rounded-2xl bg-[#F59E0B]/10 border border-[#F59E0B]/40 flex items-center gap-3">
             <FlagImg country={champion} size={40} />
             <div>
-              <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">¡Campeón del mundo!</p>
+              <p className="text-[#F59E0B] text-xs font-bold uppercase tracking-wider">{t('predictions.worldChampion')}</p>
               <p className="text-white font-bold">{champion}</p>
             </div>
           </div>
@@ -151,7 +154,7 @@ export default function ChampionPickPage() {
           <div className="mt-4">
             {!myPick && (
               <p className="text-center text-[#8A8A9A] text-sm px-4 mb-3">
-                Elegí el campeón del torneo
+                {t('predictions.pickChampion')}
               </p>
             )}
             {/* Search */}
@@ -162,7 +165,7 @@ export default function ChampionPickPage() {
                   autoFocus
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  placeholder="Buscar selección..."
+                  placeholder={t('predictions.searchTeam')}
                   className="bg-transparent text-white text-sm outline-none flex-1 placeholder:text-[#8A8A9A]"
                 />
               </div>
@@ -186,7 +189,7 @@ export default function ChampionPickPage() {
                 </button>
               ))}
               {filtered.length === 0 && (
-                <p className="text-[#8A8A9A] text-sm text-center py-8">Sin resultados</p>
+                <p className="text-[#8A8A9A] text-sm text-center py-8">{t('predictions.noResults')}</p>
               )}
             </div>
           </div>

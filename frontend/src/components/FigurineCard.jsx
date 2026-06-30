@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Share2 } from 'lucide-react'
-import { EMOJIS, BADGE_TAGS } from './BadgePill'
+import { useTranslation } from 'react-i18next'
+import { EMOJIS } from './BadgePill'
 import {
   BADGE_GRADIENTS, BADGE_ACCENT, BADGE_LABELS,
   isFinalResultBadge, jornadaLabel, generateCardBlob,
 } from '../utils/figurineCardGenerator'
 
 export default function FigurineCard({ badge, username, tournamentName, rank }) {
+  const { t } = useTranslation()
   const [sharing, setSharing] = useState(false)
   const [error,   setError]   = useState(null)
 
@@ -46,7 +48,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
       }
     } catch (err) {
       if (err?.name !== 'AbortError') {
-        setError('No se pudo generar la imagen. Intentá de nuevo.')
+        setError(t('errors.generic'))
         console.error('[FigurineCard]', err)
       }
     } finally {
@@ -81,10 +83,10 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
                  style={{ fontFamily: 'Bebas Neue, sans-serif', letterSpacing: '0.05em', color: accent }}>
                 {label}
               </p>
-              {BADGE_TAGS[badge.badgeType] && (
+              {t(`badgeTags.${badge.badgeType}`, '') && (
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                       style={{ border: `0.75px solid ${accent}70`, color: accent, background: accent + '25' }}>
-                  {BADGE_TAGS[badge.badgeType]}
+                  {t(`badgeTags.${badge.badgeType}`)}
                 </span>
               )}
             </div>
@@ -94,14 +96,14 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
                 <p className="text-3xl font-black leading-none" style={{ fontFamily: 'Bebas Neue, sans-serif', color: accent }}>
                   {badge.pointsInMatchday}
                 </p>
-                <p className="text-[9px] text-white/40 uppercase tracking-wide mt-0.5">{finalResult ? 'pts totales' : 'pts jornada'}</p>
+                <p className="text-[9px] text-white/40 uppercase tracking-wide mt-0.5">{t(finalResult ? 'common.points' : 'common.points')}</p>
               </div>
               {rank != null && !finalResult && (
                 <div className="text-center">
                   <p className="text-3xl font-black text-white leading-none" style={{ fontFamily: 'Bebas Neue, sans-serif' }}>
                     #{rank}
                   </p>
-                  <p className="text-[9px] text-white/40 uppercase tracking-wide mt-0.5">en tabla</p>
+                  <p className="text-[9px] text-white/40 uppercase tracking-wide mt-0.5">{t('profile.inTournament')}</p>
                 </div>
               )}
             </div>
@@ -112,7 +114,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
 
             <div className="w-full flex justify-center pt-2 border-t border-white/10">
               <p className="text-[9px] text-white/25 uppercase tracking-widest font-bold">
-                {tournamentName} · Mundial 2026
+                {tournamentName} · {t('common.worldCup')}
               </p>
             </div>
 
@@ -129,7 +131,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
           ? <span className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
           : <Share2 size={16} />
         }
-        {sharing ? 'Generando...' : 'Compartir carta'}
+        {sharing ? t('common.loading') : `${t('common.share')} ${t('profile.card').toLowerCase()}`}
       </button>
 
       {error && <p className="text-red-400 text-xs text-center px-4">{error}</p>}

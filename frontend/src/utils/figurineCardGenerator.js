@@ -1,4 +1,5 @@
-import { EMOJIS, BADGE_TAGS } from '../components/BadgePill'
+import i18next from 'i18next'
+import { EMOJIS } from '../components/BadgePill'
 
 export const BADGE_GRADIENTS = {
   Crack:         ['#FFD700', '#FFFDE7', '#F59E0B', '#78350F'],
@@ -42,34 +43,18 @@ export const BADGE_ACCENT = {
   RusticoTorneo:  '#92400E',
 }
 
-export const BADGE_LABELS = {
-  Crack:         'El Crack',
-  Mufa:          'El Mufa',
-  Adivino:       'El Adivino',
-  Francotirador: 'El Francotirador',
-  PechoFrio:     'El Pecho Frío',
-  Goleador:      'El Goleador',
-  Rustico:       'El Rústico',
-  Tambaleante:   'El Tambaleante',
-  Payaso:        'El Payaso',
-  Dormido:       'El Dormido',
-  Tibio:         'El Tibio',
-  Campeon:       'El Campeón',
-  Subcampeon:    'El Subcampeón',
-  TercerPuesto:  'Tercer Puesto',
-  Ultimo:        'Último',
-  Penultimo:     'Penúltimo',
-  GoleadorTorneo: 'El Goleador',
-  RusticoTorneo:  'El Rústico',
+export function getBadgeLabel(type) {
+  return i18next.t(`badges.${type}`, type)
 }
+export const BADGE_LABELS = new Proxy({}, { get: (_, key) => getBadgeLabel(key) })
 
 const FINAL_RESULT_TYPES = ['Campeon', 'Subcampeon', 'TercerPuesto', 'Ultimo', 'Penultimo', 'GoleadorTorneo', 'RusticoTorneo']
 export const isFinalResultBadge = (badgeType) => FINAL_RESULT_TYPES.includes(badgeType)
 
 export function jornadaLabel(phase, matchday, badgeType) {
-  if (isFinalResultBadge(badgeType)) return 'Mundial 2026'
-  if (phase === 'Group') return `Fecha ${matchday}`
-  return { R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', ThirdPlace: '3er Puesto', Final: 'Final' }[phase] ?? phase
+  if (isFinalResultBadge(badgeType)) return i18next.t('common.worldCup')
+  if (phase === 'Group') return i18next.t('phases.Group', { matchday })
+  return i18next.t(`phases.${phase}`, phase)
 }
 
 function roundedRect(ctx, x, y, w, h, r) {
@@ -129,7 +114,7 @@ export async function generateCardBlob({ badge, username, tournamentName, rank }
   const accent = BADGE_ACCENT[badge.badgeType]    || '#00FF87'
   const emoji  = EMOJIS[badge.badgeType]          || '❓'
   const label  = BADGE_LABELS[badge.badgeType]    || badge.badgeType
-  const tag    = BADGE_TAGS[badge.badgeType]      || null
+  const tag    = i18next.t(`badgeTags.${badge.badgeType}`, '') || null
   const finalResult = isFinalResultBadge(badge.badgeType)
   const jornada = jornadaLabel(badge.phase, badge.matchday, badge.badgeType)
   const phrase  = `"${badge.randomPhrase}"`

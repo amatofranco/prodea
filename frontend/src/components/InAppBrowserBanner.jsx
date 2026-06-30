@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const ua = navigator.userAgent
 const isInAppBrowser = /Instagram|FBAN|FBAV|FB_IAB|WhatsApp|TikTok|Twitter|LinkedIn/.test(ua)
 const isAndroid = /Android/.test(ua)
 
 export default function InAppBrowserBanner() {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
@@ -26,15 +28,13 @@ export default function InAppBrowserBanner() {
     <div className="w-full bg-[#1A1A2E] border-b border-[#2A2A3E] px-4 py-2.5 flex items-center gap-2.5">
       <span className="text-base shrink-0">🌐</span>
       <p className="text-[11px] text-[#8A8A9A] flex-1 leading-tight">
-        {isAndroid
-          ? 'Estás en el browser de Instagram. Para Google login o instalar la app, abrí en Chrome.'
-          : 'Estás en el browser de Instagram. Para Google login o instalar la app, abrí en Safari.'}
+        {isAndroid ? t('inAppBrowser.androidMsg') : t('inAppBrowser.iosMsg')}
       </p>
       <button
         onClick={handleOpen}
         className="text-[11px] font-bold text-[#00FF87] shrink-0 active:opacity-70"
       >
-        {copied ? '¡Copiado!' : isAndroid ? 'Abrir →' : 'Copiar link →'}
+        {copied ? t('inAppBrowser.copied') : isAndroid ? t('inAppBrowser.openAndroid') : t('inAppBrowser.copyLink')}
       </button>
       <button
         onClick={() => setDismissed(true)}
