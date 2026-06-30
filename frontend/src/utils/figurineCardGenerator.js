@@ -48,6 +48,18 @@ export function getBadgeLabel(type) {
 }
 export const BADGE_LABELS = new Proxy({}, { get: (_, key) => getBadgeLabel(key) })
 
+export function getBadgePhrase(badgeType, userId = 0, occurrenceIndex = 0) {
+  const phrases = i18next.t(`badgePhrases.${badgeType}`, { returnObjects: true })
+  if (!Array.isArray(phrases) || phrases.length === 0) return ''
+  const seed = (userId * 31 + badgeType.length * 17) >>> 0
+  const indices = phrases.map((_, i) => i)
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = (seed + i * 7) % (i + 1)
+    ;[indices[i], indices[j]] = [indices[j], indices[i]]
+  }
+  return phrases[indices[occurrenceIndex % phrases.length]]
+}
+
 const FINAL_RESULT_TYPES = ['Champion', 'RunnerUp', 'ThirdPlace', 'LastPlace', 'SecondToLast', 'TournamentGoalscorer', 'TournamentMiser']
 export const isFinalResultBadge = (badgeType) => FINAL_RESULT_TYPES.includes(badgeType)
 
@@ -117,7 +129,7 @@ export async function generateCardBlob({ badge, username, tournamentName, rank }
   const tag    = i18next.t(`badgeTags.${badge.badgeType}`, '') || null
   const finalResult = isFinalResultBadge(badge.badgeType)
   const jornada = jornadaLabel(badge.phase, badge.matchday, badge.badgeType)
-  const phrase  = `"${badge.randomPhrase}"`
+  const phrase  = `"${getBadgePhrase(badge.badgeType, badge.userId ?? 0, badge.occurrenceIndex ?? 0)}"`
 
   const tmp = document.createElement('canvas').getContext('2d')
   tmp.font = 'italic 11px "DM Sans", system-ui, sans-serif'

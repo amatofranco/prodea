@@ -6,6 +6,7 @@ import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
 import FigurineCard from '../components/FigurineCard'
+import { getBadgePhrase } from '../utils/figurineCardGenerator'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
 function SmallFlag({ name }) {
@@ -155,7 +156,7 @@ export default function ProfilePage() {
               <p className="text-[#8A8A9A] text-sm">{t('profile.noMatchdays')}</p>
             </div>
           ) : (
-            profile.matchdayBadges.map((b) => (
+            profile.matchdayBadges.map((b, i) => (
               <div
                 key={`${b.phase}-${b.matchday}`}
                 className="px-4 py-3 rounded-xl bg-[#1A1A2E] border border-[#2A2A3E] flex items-center gap-3"
@@ -167,7 +168,7 @@ export default function ProfilePage() {
                 <div className="flex-1 min-w-0">
                   <BadgePill type={b.badgeType} showTag={false} />
                   <span className="text-[#8A8A9A] text-xs mt-0.5 block">{jornadaLabel(b.phase, b.matchday)}</span>
-                  <p className="text-white/50 text-xs italic mt-0.5">"{b.randomPhrase}"</p>
+                  <p className="text-white/50 text-xs italic mt-0.5">"{getBadgePhrase(b.badgeType, profile.userId ?? 0, i)}"</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="text-right">

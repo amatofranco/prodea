@@ -395,6 +395,26 @@
     "staleScores": "Scores may take a moment to update",
     "offline": "Offline — showing saved data"
   },
+  "badgePhrases": {
+    "MVP": ["Playing a different game", "Are you the manager or what?", "Messi sends his regards", "The group lowkey hates you", "Ask for a raise, you're too good for this"],
+    "Jinx": ["You bet with your heart, not your brain", "Your predictions are abstract art", "VAR would've backed you... in another universe", "If you'd bet the opposite, you'd be champion", "The analysis was right. Football wasn't"],
+    "Sniper": ["More precise than a surgeon", "When you aim, you don't miss", "Sights calibrated", "VAR consults you", "You've got a GPS for goals"],
+    "Oracle": ["Crystal ball or what?", "Four exact results. Confirmed wizard.", "Pure clairvoyance", "Send me the lottery numbers", "The national team needs you on the coaching staff"],
+    "Choker": ["You made it to the door but didn't walk in", "So close, so far", "The podium watched from outside", "Second is the first of the losers", "The coach subbed you out just when you were getting started"],
+    "Goalscorer": ["You clearly like goals", "You predicted a World Cup with VAR turned off", "More goals than Bayern Munich", "Goalkeepers don't exist in your universe", "You went to the World Cup to attack"],
+    "Miser": ["The goalkeeper thanks your predictions", "Fighting with a knife between your teeth", "Bilardo would be proud", "Goal economist", "You predicted with the handbrake on"],
+    "Wobbler": ["You survived by a miracle", "In the relegation zone", "Fighting the playoffs", "At least you're not last", "One step from defeat"],
+    "Clown": ["Not a single one. Unbelievable.", "Football owes you an explanation", "Art of the error", "Were you watching a different match?", "Not even by accident"],
+    "Sleeper": ["The match started. You didn't", "Great strategy: you didn't play", "You showed up less than the ref in stoppage time", "Did you know there was a match today?", "Bold strategy: not existing"],
+    "Lukewarm": ["Neither hot nor cold", "You participated. That's it.", "Football watched you pass by", "Points: yes. Excitement: no.", "Neither up nor down, just there"],
+    "Champion": ["You know how heavy the trophy is. Congratulations!"],
+    "RunnerUp": ["What matters is competing... said no one ever"],
+    "ThirdPlace": ["You made the podium. It's something."],
+    "LastPlace": ["Maybe in 4 years you'll do better"],
+    "SecondToLast": ["On the edge of embarrassment... close call"],
+    "TournamentGoalscorer": ["The optimist of predictions"],
+    "TournamentMiser": ["Champion of austerity"]
+  },
   "errors": {
     "tournament_not_found": "Tournament not found",
     "already_participant": "You're already a participant in this tournament",

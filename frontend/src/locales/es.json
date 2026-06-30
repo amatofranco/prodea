@@ -396,6 +396,26 @@
     "staleScores": "Los marcadores pueden demorar en actualizarse",
     "offline": "Sin conexión — mostrando datos guardados"
   },
+  "badgePhrases": {
+    "MVP": ["Jugás a otra cosa", "¿Sos DT o qué?", "Messi te manda saludos", "El grupo te odia un poquito", "Pedí aumento en el laburo, porque acá sobrás"],
+    "Jinx": ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
+    "Sniper": ["Más preciso que un cirujano", "Cuando apuntás, no fallás", "La mira calibrada", "El VAR te consulta a vos", "Tenés el GPS de los goles"],
+    "Oracle": ["¿Bola de cristal o qué?", "Cuatro exactos. Brujo confirmado.", "Clarividencia pura y dura", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
+    "Choker": ["Llegaste hasta la puerta pero no entraste", "Tan cerca, tan lejos", "El podio te vio de afuera", "Segundo es el primero de los perdedores", "El técnico te sacó justo cuando arrancabas"],
+    "Goalscorer": ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
+    "Miser": ["El arquero agradeció tus predicciones", "Con el cuchillo entre los dientes", "Bilardo estaría orgulloso", "Economista del gol", "Predijiste con el freno de mano puesto"],
+    "Wobbler": ["Sobreviviste de milagro", "En zona de descenso", "Peleando la promoción", "Por lo menos no sos último", "A un paso de la derrota"],
+    "Clown": ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
+    "Sleeper": ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
+    "Lukewarm": ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
+    "Champion": ["Ya sabés cuánto pesa la copa. ¡Felicitaciones!"],
+    "RunnerUp": ["Lo importante es competir... dijo nunca nadie"],
+    "ThirdPlace": ["Entraste al podio. Algo es algo."],
+    "LastPlace": ["Por ahí en 4 años das menos vergüenza"],
+    "SecondToLast": ["Al borde del papelón... menos mal"],
+    "TournamentGoalscorer": ["El optimista de los resultados"],
+    "TournamentMiser": ["Campeón en austeridad"]
+  },
   "errors": {
     "tournament_not_found": "Torneo no encontrado",
     "already_participant": "Ya sos participante de este torneo",

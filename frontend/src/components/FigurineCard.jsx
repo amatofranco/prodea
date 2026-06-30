@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { EMOJIS } from './BadgePill'
 import {
   BADGE_GRADIENTS, BADGE_ACCENT, BADGE_LABELS,
-  isFinalResultBadge, jornadaLabel, generateCardBlob,
+  isFinalResultBadge, jornadaLabel, generateCardBlob, getBadgePhrase,
 } from '../utils/figurineCardGenerator'
 
 export default function FigurineCard({ badge, username, tournamentName, rank }) {
@@ -109,7 +109,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
             </div>
 
             <p className="text-[10px] italic text-white/50 text-center leading-snug mt-1">
-              &ldquo;{badge.randomPhrase}&rdquo;
+              &ldquo;{getBadgePhrase(badge.badgeType, badge.userId ?? 0, badge.occurrenceIndex ?? 0)}&rdquo;
             </p>
 
             <div className="w-full flex justify-center pt-2 border-t border-white/10">
