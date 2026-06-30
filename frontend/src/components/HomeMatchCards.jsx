@@ -165,6 +165,9 @@ export function FinishedCard({ match }) {
           <span className="text-2xl font-black text-white tabular-nums" style={{ fontFamily: 'Bebas Neue, Barlow Condensed, sans-serif' }}>
             {home}–{away}
           </span>
+          {match.homePenaltyScore != null && match.awayPenaltyScore != null && (
+            <span className="text-[9px] text-[#F59E0B] font-semibold">({match.homePenaltyScore}-{match.awayPenaltyScore})</span>
+          )}
           <span className="text-[8px] uppercase tracking-wider text-[#3A3A4E] font-semibold">{t('matches.final')}</span>
         </div>
         <div className="flex flex-col items-center gap-1 flex-1 min-w-0">

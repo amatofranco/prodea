@@ -31,7 +31,7 @@ export default function MatchPredictionsSheet({ match, predictions, loading, onC
                 {match.homeScore} – {match.awayScore}
               </span>
               {match.homePenaltyScore != null && match.awayPenaltyScore != null && (
-                <span className="text-[9px] text-[#F59E0B] font-semibold -mt-1">({match.homePenaltyScore}-{match.awayPenaltyScore} pen.)</span>
+                <span className="text-[9px] text-[#F59E0B] font-semibold -mt-1">({match.homePenaltyScore}-{match.awayPenaltyScore})</span>
               )}
             </div>
             <FlagImg name={match.awayTeam} label={match.awayTeamLabel} size={28} />

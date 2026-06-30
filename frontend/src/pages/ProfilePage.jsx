@@ -214,7 +214,7 @@ export default function ProfilePage() {
                       {m.homeScore}–{m.awayScore}
                     </span>
                     {m.homePenaltyScore != null && m.awayPenaltyScore != null && (
-                      <span className="text-[7px] text-[#F59E0B] font-semibold leading-tight">({m.homePenaltyScore}-{m.awayPenaltyScore} pen.)</span>
+                      <span className="text-[7px] text-[#F59E0B] font-semibold leading-tight">({m.homePenaltyScore}-{m.awayPenaltyScore})</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1 flex-1 min-w-0">

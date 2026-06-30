@@ -101,7 +101,7 @@ function MatchCard({ match, navigate }) {
                 {match.homeScore ?? '-'} – {match.awayScore ?? '-'}
               </span>
               {match.homePenaltyScore != null && match.awayPenaltyScore != null && (
-                <span className="text-[9px] text-[#F59E0B] font-semibold">({match.homePenaltyScore}-{match.awayPenaltyScore} pen.)</span>
+                <span className="text-[9px] text-[#F59E0B] font-semibold">({match.homePenaltyScore}-{match.awayPenaltyScore})</span>
               )}
             </div>
           ) : (
