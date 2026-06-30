@@ -116,17 +116,17 @@ html, body, #root {
 .rank-animate { animation: slideIn 0.3s ease forwards; }
 
 /* Badge colors */
-.badge-crack    { background: linear-gradient(135deg, #F59E0B, #D97706); }
-.badge-mufa     { background: linear-gradient(135deg, #DC2626, #991B1B); }
-.badge-adivino  { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
-.badge-franco   { background: linear-gradient(135deg, #0891B2, #0E7490); }
-.badge-pechofrio { background: linear-gradient(135deg, #0284C7, #0369A1); }
-.badge-goleador  { background: linear-gradient(135deg, #16A34A, #15803D); }
-.badge-rustico      { background: linear-gradient(135deg, #92400E, #78350F); }
-.badge-tambaleante  { background: linear-gradient(135deg, #EA580C, #C2410C); }
-.badge-payaso   { background: linear-gradient(135deg, #EC4899, #BE185D); }
-.badge-dormido  { background: linear-gradient(135deg, #6B7280, #374151); }
-.badge-tibio    { background: linear-gradient(135deg, #0EA5E9, #0369A1); }
-.badge-campeon      { background: linear-gradient(135deg, #FFD700, #DAA520); }
-.badge-subcampeon   { background: linear-gradient(135deg, #C0C0C0, #9CA3AF); }
-.badge-tercerpuesto { background: linear-gradient(135deg, #CD7F32, #A6651A); }
+.badge-mvp        { background: linear-gradient(135deg, #F59E0B, #D97706); }
+.badge-jinx       { background: linear-gradient(135deg, #DC2626, #991B1B); }
+.badge-oracle     { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
+.badge-sniper     { background: linear-gradient(135deg, #0891B2, #0E7490); }
+.badge-choker     { background: linear-gradient(135deg, #0284C7, #0369A1); }
+.badge-goalscorer { background: linear-gradient(135deg, #16A34A, #15803D); }
+.badge-miser      { background: linear-gradient(135deg, #92400E, #78350F); }
+.badge-wobbler    { background: linear-gradient(135deg, #EA580C, #C2410C); }
+.badge-clown      { background: linear-gradient(135deg, #EC4899, #BE185D); }
+.badge-sleeper    { background: linear-gradient(135deg, #6B7280, #374151); }
+.badge-lukewarm   { background: linear-gradient(135deg, #0EA5E9, #0369A1); }
+.badge-champion   { background: linear-gradient(135deg, #FFD700, #DAA520); }
+.badge-runnerup   { background: linear-gradient(135deg, #C0C0C0, #9CA3AF); }
+.badge-thirdplace { background: linear-gradient(135deg, #CD7F32, #A6651A); }

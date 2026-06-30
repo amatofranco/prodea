@@ -12,7 +12,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
   const [sharing, setSharing] = useState(false)
   const [error,   setError]   = useState(null)
 
-  const stops  = BADGE_GRADIENTS[badge.badgeType] || BADGE_GRADIENTS.Dormido
+  const stops  = BADGE_GRADIENTS[badge.badgeType] || BADGE_GRADIENTS.Sleeper
   const accent = BADGE_ACCENT[badge.badgeType]    || '#00FF87'
   const emoji  = EMOJIS[badge.badgeType]          || '❓'
   const label  = BADGE_LABELS[badge.badgeType]    || badge.badgeType
@@ -75,7 +75,7 @@ export default function FigurineCard({ badge, username, tournamentName, rank }) 
             <div className="w-full h-px" style={{ background: `linear-gradient(to right, transparent, ${accent}80, transparent)` }} />
 
             <div className="flex flex-col items-center gap-1 mt-1">
-              {badge.badgeType === 'Campeon'
+              {badge.badgeType === 'Champion'
                 ? <img src="/trophy.svg" alt="" className="h-16 w-auto" />
                 : <span className="text-6xl leading-none">{emoji}</span>
               }

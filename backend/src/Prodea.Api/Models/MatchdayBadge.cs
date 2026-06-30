@@ -2,24 +2,24 @@ namespace Prodea.Api.Models;
 
 public enum MatchdayBadgeType
 {
-    Crack,
-    Mufa,
-    Adivino,
-    Francotirador,
-    PechoFrio,
-    Goleador,
-    Rustico,
-    Tambaleante,
-    Payaso,
-    Dormido,
-    Tibio,
-    Campeon,
-    Subcampeon,
-    TercerPuesto,
-    Ultimo,
-    Penultimo,
-    GoleadorTorneo,
-    RusticoTorneo
+    MVP,
+    Jinx,
+    Oracle,
+    Sniper,
+    Choker,
+    Goalscorer,
+    Miser,
+    Wobbler,
+    Clown,
+    Sleeper,
+    Lukewarm,
+    Champion,
+    RunnerUp,
+    ThirdPlace,
+    LastPlace,
+    SecondToLast,
+    TournamentGoalscorer,
+    TournamentMiser
 }
 
 public class MatchdayBadge

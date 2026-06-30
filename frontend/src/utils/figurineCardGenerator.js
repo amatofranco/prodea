@@ -2,45 +2,45 @@ import i18next from 'i18next'
 import { EMOJIS } from '../components/BadgePill'
 
 export const BADGE_GRADIENTS = {
-  Crack:         ['#FFD700', '#FFFDE7', '#F59E0B', '#78350F'],
-  Mufa:          ['#EF4444', '#FECACA', '#B91C1C', '#450A0A'],
-  Adivino:       ['#A78BFA', '#EDE9FE', '#7C3AED', '#3B0764'],
-  Francotirador: ['#22D3EE', '#CFFAFE', '#0284C7', '#0C4A6E'],
-  PechoFrio:     ['#BAE6FD', '#F0F9FF', '#0284C7', '#0C4A6E'],
-  Goleador:      ['#22C55E', '#DCFCE7', '#16A34A', '#14532D'],
-  Rustico:       ['#92400E', '#FEF3C7', '#78350F', '#451A03'],
-  Tambaleante:   ['#F97316', '#FFF7ED', '#EA580C', '#7C2D12'],
-  Payaso:        ['#F472B6', '#FCE7F3', '#E11D48', '#4C0519'],
-  Dormido:       ['#94A3B8', '#F1F5F9', '#475569', '#0F172A'],
-  Tibio:         ['#38BDF8', '#E0F2FE', '#0284C7', '#0C4A6E'],
-  Campeon:       ['#FFD700', '#FFFDE7', '#DAA520', '#7A5C00'],
-  Subcampeon:    ['#C0C0C0', '#F5F5F5', '#9CA3AF', '#4B5563'],
-  TercerPuesto:  ['#CD7F32', '#FBE3C7', '#A6651A', '#5C3A12'],
-  Ultimo:        ['#EF4444', '#FECACA', '#B91C1C', '#450A0A'],
-  Penultimo:     ['#F97316', '#FFF7ED', '#EA580C', '#7C2D12'],
-  GoleadorTorneo: ['#22C55E', '#DCFCE7', '#16A34A', '#14532D'],
-  RusticoTorneo:  ['#92400E', '#FEF3C7', '#78350F', '#451A03'],
+  MVP:                  ['#FFD700', '#FFFDE7', '#F59E0B', '#78350F'],
+  Jinx:                 ['#EF4444', '#FECACA', '#B91C1C', '#450A0A'],
+  Oracle:               ['#A78BFA', '#EDE9FE', '#7C3AED', '#3B0764'],
+  Sniper:               ['#22D3EE', '#CFFAFE', '#0284C7', '#0C4A6E'],
+  Choker:               ['#BAE6FD', '#F0F9FF', '#0284C7', '#0C4A6E'],
+  Goalscorer:           ['#22C55E', '#DCFCE7', '#16A34A', '#14532D'],
+  Miser:                ['#92400E', '#FEF3C7', '#78350F', '#451A03'],
+  Wobbler:              ['#F97316', '#FFF7ED', '#EA580C', '#7C2D12'],
+  Clown:                ['#F472B6', '#FCE7F3', '#E11D48', '#4C0519'],
+  Sleeper:              ['#94A3B8', '#F1F5F9', '#475569', '#0F172A'],
+  Lukewarm:             ['#38BDF8', '#E0F2FE', '#0284C7', '#0C4A6E'],
+  Champion:             ['#FFD700', '#FFFDE7', '#DAA520', '#7A5C00'],
+  RunnerUp:             ['#C0C0C0', '#F5F5F5', '#9CA3AF', '#4B5563'],
+  ThirdPlace:           ['#CD7F32', '#FBE3C7', '#A6651A', '#5C3A12'],
+  LastPlace:            ['#EF4444', '#FECACA', '#B91C1C', '#450A0A'],
+  SecondToLast:         ['#F97316', '#FFF7ED', '#EA580C', '#7C2D12'],
+  TournamentGoalscorer: ['#22C55E', '#DCFCE7', '#16A34A', '#14532D'],
+  TournamentMiser:      ['#92400E', '#FEF3C7', '#78350F', '#451A03'],
 }
 
 export const BADGE_ACCENT = {
-  Crack:         '#F59E0B',
-  Mufa:          '#EF4444',
-  Adivino:       '#8B5CF6',
-  Francotirador: '#06B6D4',
-  PechoFrio:     '#38BDF8',
-  Goleador:      '#22C55E',
-  Rustico:       '#92400E',
-  Tambaleante:   '#F97316',
-  Payaso:        '#EC4899',
-  Dormido:       '#64748B',
-  Tibio:         '#38BDF8',
-  Campeon:       '#FFD700',
-  Subcampeon:    '#C0C0C0',
-  TercerPuesto:  '#CD7F32',
-  Ultimo:        '#EF4444',
-  Penultimo:     '#F97316',
-  GoleadorTorneo: '#22C55E',
-  RusticoTorneo:  '#92400E',
+  MVP:                  '#F59E0B',
+  Jinx:                 '#EF4444',
+  Oracle:               '#8B5CF6',
+  Sniper:               '#06B6D4',
+  Choker:               '#38BDF8',
+  Goalscorer:           '#22C55E',
+  Miser:                '#92400E',
+  Wobbler:              '#F97316',
+  Clown:                '#EC4899',
+  Sleeper:              '#64748B',
+  Lukewarm:             '#38BDF8',
+  Champion:             '#FFD700',
+  RunnerUp:             '#C0C0C0',
+  ThirdPlace:           '#CD7F32',
+  LastPlace:            '#EF4444',
+  SecondToLast:         '#F97316',
+  TournamentGoalscorer: '#22C55E',
+  TournamentMiser:      '#92400E',
 }
 
 export function getBadgeLabel(type) {
@@ -48,7 +48,7 @@ export function getBadgeLabel(type) {
 }
 export const BADGE_LABELS = new Proxy({}, { get: (_, key) => getBadgeLabel(key) })
 
-const FINAL_RESULT_TYPES = ['Campeon', 'Subcampeon', 'TercerPuesto', 'Ultimo', 'Penultimo', 'GoleadorTorneo', 'RusticoTorneo']
+const FINAL_RESULT_TYPES = ['Champion', 'RunnerUp', 'ThirdPlace', 'LastPlace', 'SecondToLast', 'TournamentGoalscorer', 'TournamentMiser']
 export const isFinalResultBadge = (badgeType) => FINAL_RESULT_TYPES.includes(badgeType)
 
 export function jornadaLabel(phase, matchday, badgeType) {
@@ -100,7 +100,7 @@ export async function generateCardBlob({ badge, username, tournamentName, rank }
   try { wordmarkImg = await loadImage('/logo-wordmark.png') } catch { /* fallback a texto */ }
 
   let trophyImg = null
-  if (badge.badgeType === 'Campeon') {
+  if (badge.badgeType === 'Champion') {
     try { trophyImg = await loadImage('/trophy.svg') } catch { /* fallback a emoji */ }
   }
 
@@ -110,7 +110,7 @@ export async function generateCardBlob({ badge, username, tournamentName, rank }
   const PAD    = 20
   const GAP    = 14
   const CX     = W / 2
-  const stops  = BADGE_GRADIENTS[badge.badgeType] || BADGE_GRADIENTS.Dormido
+  const stops  = BADGE_GRADIENTS[badge.badgeType] || BADGE_GRADIENTS.Sleeper
   const accent = BADGE_ACCENT[badge.badgeType]    || '#00FF87'
   const emoji  = EMOJIS[badge.badgeType]          || '❓'
   const label  = BADGE_LABELS[badge.badgeType]    || badge.badgeType

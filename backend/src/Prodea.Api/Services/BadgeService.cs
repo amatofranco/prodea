@@ -11,72 +11,72 @@ public class BadgeService(ProdeaDbContext db)
 
     private static readonly Dictionary<MatchdayBadgeType, string[]> Phrases = new()
     {
-        [MatchdayBadgeType.Crack] = ["Jugás a otra cosa", "¿Sos DT o qué?", "Messi te manda saludos", "El grupo te odia un poquito", "Pedí aumento en el laburo, porque acá sobrás"],
-        [MatchdayBadgeType.Mufa] = ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
-        [MatchdayBadgeType.Francotirador] = ["Más preciso que un cirujano", "Cuando apuntás, no fallás", "La mira calibrada", "El VAR te consulta a vos", "Tenés el GPS de los goles"],
-        [MatchdayBadgeType.Adivino] = ["¿Bola de cristal o qué?", "Cuatro exactos. Brujo confirmado.", "Clarividencia pura y dura", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
-        [MatchdayBadgeType.PechoFrio] = ["Llegaste hasta la puerta pero no entraste", "Tan cerca, tan lejos", "El podio te vio de afuera", "Segundo es el primero de los perdedores", "El técnico te sacó justo cuando arrancabas"],
-        [MatchdayBadgeType.Goleador] = ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
-        [MatchdayBadgeType.Rustico] = ["El arquero agradeció tus predicciones", "Con el cuchillo entre los dientes", "Bilardo estaría orgulloso", "Economista del gol", "Predijiste con el freno de mano puesto"],
-        [MatchdayBadgeType.Tambaleante] = ["Sobreviviste de milagro", "En zona de descenso", "Peleando la promoción", "Por lo menos no sos último", "A un paso de la derrota"],
-        [MatchdayBadgeType.Payaso] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
-        [MatchdayBadgeType.Dormido] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
-        [MatchdayBadgeType.Tibio] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
-        [MatchdayBadgeType.Campeon] = ["Ya sabés cuánto pesa la copa. ¡Felicitaciones!"],
-        [MatchdayBadgeType.Subcampeon] = ["Lo importante es competir... dijo nunca nadie. Te acompañamos en el sentimiento"],
-        [MatchdayBadgeType.TercerPuesto] = ["Entraste al podio. Algo es algo."],
-        [MatchdayBadgeType.Ultimo] = ["Por ahí en 4 años das menos vergüenza"],
-        [MatchdayBadgeType.Penultimo] = ["Al borde del papelón... menos mal"],
-        [MatchdayBadgeType.GoleadorTorneo] = ["El optimista de los resultados"],
-        [MatchdayBadgeType.RusticoTorneo] = ["Campeón en austeridad"],
+        [MatchdayBadgeType.MVP] = ["Jugás a otra cosa", "¿Sos DT o qué?", "Messi te manda saludos", "El grupo te odia un poquito", "Pedí aumento en el laburo, porque acá sobrás"],
+        [MatchdayBadgeType.Jinx] = ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
+        [MatchdayBadgeType.Sniper] = ["Más preciso que un cirujano", "Cuando apuntás, no fallás", "La mira calibrada", "El VAR te consulta a vos", "Tenés el GPS de los goles"],
+        [MatchdayBadgeType.Oracle] = ["¿Bola de cristal o qué?", "Cuatro exactos. Brujo confirmado.", "Clarividencia pura y dura", "Mandame los números de la quiniela", "La selección te necesita en el cuerpo técnico"],
+        [MatchdayBadgeType.Choker] = ["Llegaste hasta la puerta pero no entraste", "Tan cerca, tan lejos", "El podio te vio de afuera", "Segundo es el primero de los perdedores", "El técnico te sacó justo cuando arrancabas"],
+        [MatchdayBadgeType.Goalscorer] = ["Te gustan los goles, claramente", "Predijiste un mundial con el VAR apagado", "Más goles que el Bayern Munich", "El arquero no existe en tu universo", "Fuiste al mundial a atacar"],
+        [MatchdayBadgeType.Miser] = ["El arquero agradeció tus predicciones", "Con el cuchillo entre los dientes", "Bilardo estaría orgulloso", "Economista del gol", "Predijiste con el freno de mano puesto"],
+        [MatchdayBadgeType.Wobbler] = ["Sobreviviste de milagro", "En zona de descenso", "Peleando la promoción", "Por lo menos no sos último", "A un paso de la derrota"],
+        [MatchdayBadgeType.Clown] = ["Ni uno. Increíble.", "El fútbol te debe una explicación", "Arte del error", "¿Estabas viendo otro partido?", "Ni de casualidad"],
+        [MatchdayBadgeType.Sleeper] = ["El partido arrancó. Vos, no", "Gran estrategia: no jugaste", "Apareciste menos que el árbitro en el descuento", "¿Sabías que había partido hoy?", "Estrategia audaz: no existir"],
+        [MatchdayBadgeType.Lukewarm] = ["Ni frío ni caliente", "Participaste. Listo.", "El fútbol te vio pasar", "Puntos: sí. Emoción: no.", "Ni arriba ni abajo, ahí nomás"],
+        [MatchdayBadgeType.Champion] = ["Ya sabés cuánto pesa la copa. ¡Felicitaciones!"],
+        [MatchdayBadgeType.RunnerUp] = ["Lo importante es competir... dijo nunca nadie. Te acompañamos en el sentimiento"],
+        [MatchdayBadgeType.ThirdPlace] = ["Entraste al podio. Algo es algo."],
+        [MatchdayBadgeType.LastPlace] = ["Por ahí en 4 años das menos vergüenza"],
+        [MatchdayBadgeType.SecondToLast] = ["Al borde del papelón... menos mal"],
+        [MatchdayBadgeType.TournamentGoalscorer] = ["El optimista de los resultados"],
+        [MatchdayBadgeType.TournamentMiser] = ["Campeón en austeridad"],
     };
 
     private static readonly Dictionary<MatchdayBadgeType, string> Emojis = new()
     {
-        [MatchdayBadgeType.Crack] = "🏆",
-        [MatchdayBadgeType.Mufa] = "💀",
-        [MatchdayBadgeType.Adivino] = "🔮",
-        [MatchdayBadgeType.Francotirador] = "🎯",
-        [MatchdayBadgeType.PechoFrio] = "❄️",
-        [MatchdayBadgeType.Goleador] = "⚽",
-        [MatchdayBadgeType.Rustico] = "⛏️",
-        [MatchdayBadgeType.Tambaleante] = "🥴",
-        [MatchdayBadgeType.Payaso] = "🤡",
-        [MatchdayBadgeType.Dormido] = "😴",
-        [MatchdayBadgeType.Tibio] = "🌡️",
-        [MatchdayBadgeType.Campeon] = "🏆",
-        [MatchdayBadgeType.Subcampeon] = "🥈",
-        [MatchdayBadgeType.TercerPuesto] = "🥉",
-        [MatchdayBadgeType.Ultimo] = "💀",
-        [MatchdayBadgeType.Penultimo] = "🥴",
-        [MatchdayBadgeType.GoleadorTorneo] = "⚽",
-        [MatchdayBadgeType.RusticoTorneo] = "⛏️",
+        [MatchdayBadgeType.MVP] = "🏆",
+        [MatchdayBadgeType.Jinx] = "💀",
+        [MatchdayBadgeType.Oracle] = "🔮",
+        [MatchdayBadgeType.Sniper] = "🎯",
+        [MatchdayBadgeType.Choker] = "❄️",
+        [MatchdayBadgeType.Goalscorer] = "⚽",
+        [MatchdayBadgeType.Miser] = "⛏️",
+        [MatchdayBadgeType.Wobbler] = "🥴",
+        [MatchdayBadgeType.Clown] = "🤡",
+        [MatchdayBadgeType.Sleeper] = "😴",
+        [MatchdayBadgeType.Lukewarm] = "🌡️",
+        [MatchdayBadgeType.Champion] = "🏆",
+        [MatchdayBadgeType.RunnerUp] = "🥈",
+        [MatchdayBadgeType.ThirdPlace] = "🥉",
+        [MatchdayBadgeType.LastPlace] = "💀",
+        [MatchdayBadgeType.SecondToLast] = "🥴",
+        [MatchdayBadgeType.TournamentGoalscorer] = "⚽",
+        [MatchdayBadgeType.TournamentMiser] = "⛏️",
     };
 
     private static readonly Dictionary<AccumulativeBadgeType, string> AccumulativeEmojis = new()
     {
-        [AccumulativeBadgeType.PecheadaTotal] = "🥶",
-        [AccumulativeBadgeType.RachaInfernal] = "🔥",
-        [AccumulativeBadgeType.ElMuro] = "🧱",
-        [AccumulativeBadgeType.ElFantasma] = "👻",
-        [AccumulativeBadgeType.TripleMufa] = "💀🔥",
-        [AccumulativeBadgeType.TibiezaTotal] = "🌡️",
-        [AccumulativeBadgeType.GoleadorSerial] = "⚽",
-        [AccumulativeBadgeType.RusticoTotal] = "⛏️",
+        [AccumulativeBadgeType.TotalChoke] = "🥶",
+        [AccumulativeBadgeType.HotStreak] = "🔥",
+        [AccumulativeBadgeType.TheWall] = "🧱",
+        [AccumulativeBadgeType.TheGhost] = "👻",
+        [AccumulativeBadgeType.TripleJinx] = "💀🔥",
+        [AccumulativeBadgeType.TotalLukewarm] = "🌡️",
+        [AccumulativeBadgeType.SerialGoalscorer] = "⚽",
+        [AccumulativeBadgeType.TotalMiser] = "⛏️",
     };
 
     private static readonly (AccumulativeBadgeType Badge, MatchdayBadgeType Required)[] StreakRules =
     [
-        (AccumulativeBadgeType.RachaInfernal, MatchdayBadgeType.Crack),
-        (AccumulativeBadgeType.TripleMufa, MatchdayBadgeType.Mufa),
-        (AccumulativeBadgeType.PecheadaTotal, MatchdayBadgeType.PechoFrio),
-        (AccumulativeBadgeType.TibiezaTotal, MatchdayBadgeType.Tibio),
-        (AccumulativeBadgeType.GoleadorSerial, MatchdayBadgeType.Goleador),
-        (AccumulativeBadgeType.RusticoTotal, MatchdayBadgeType.Rustico),
+        (AccumulativeBadgeType.HotStreak, MatchdayBadgeType.MVP),
+        (AccumulativeBadgeType.TripleJinx, MatchdayBadgeType.Jinx),
+        (AccumulativeBadgeType.TotalChoke, MatchdayBadgeType.Choker),
+        (AccumulativeBadgeType.TotalLukewarm, MatchdayBadgeType.Lukewarm),
+        (AccumulativeBadgeType.SerialGoalscorer, MatchdayBadgeType.Goalscorer),
+        (AccumulativeBadgeType.TotalMiser, MatchdayBadgeType.Miser),
     ];
 
     private static readonly MatchdayBadgeType[] PodiumTypes =
-        [MatchdayBadgeType.Campeon, MatchdayBadgeType.Subcampeon, MatchdayBadgeType.TercerPuesto];
+        [MatchdayBadgeType.Champion, MatchdayBadgeType.RunnerUp, MatchdayBadgeType.ThirdPlace];
 
     public static string GetEmoji(MatchdayBadgeType type) => Emojis[type];
     public static string GetAccumulativeEmoji(AccumulativeBadgeType type) => AccumulativeEmojis[type];
@@ -237,26 +237,26 @@ public class BadgeService(ProdeaDbContext db)
     private static MatchdayBadgeType DetermineBadge(int userId, PlayerStats stats, MatchdayContext ctx) => stats switch
     {
         { HasAnyPrediction: false }
-            => MatchdayBadgeType.Dormido,
+            => MatchdayBadgeType.Sleeper,
         { TotalPoints: var p } when p == ctx.MaxPoints && ctx.MaxPoints > 0 && ctx.ParticipantCount > 1
-            => MatchdayBadgeType.Crack,
+            => MatchdayBadgeType.MVP,
         { TotalPoints: var p } when p == ctx.MinPoints && ctx.ParticipantCount > 1
-            => MatchdayBadgeType.Mufa,
+            => MatchdayBadgeType.Jinx,
         { ExactCount: >= 4 }
-            => MatchdayBadgeType.Adivino,
+            => MatchdayBadgeType.Oracle,
         { ExactCount: >= 3 }
-            => MatchdayBadgeType.Francotirador,
+            => MatchdayBadgeType.Sniper,
         _ when ctx.SecondPoints.HasValue && stats.TotalPoints == ctx.SecondPoints.Value
-            => MatchdayBadgeType.PechoFrio,
+            => MatchdayBadgeType.Choker,
         _ when ctx.GoleadorCount == 1 && ctx.PredictedGoals.GetValueOrDefault(userId) == ctx.MaxPredictedGoals
-            => MatchdayBadgeType.Goleador,
+            => MatchdayBadgeType.Goalscorer,
         _ when ctx.RusticoCount == 1 && ctx.PredictedGoals.GetValueOrDefault(userId) == ctx.MinPredictedGoals
-            => MatchdayBadgeType.Rustico,
+            => MatchdayBadgeType.Miser,
         _ when ctx.PenultimoPoints.HasValue && stats.TotalPoints == ctx.PenultimoPoints.Value
-            => MatchdayBadgeType.Tambaleante,
+            => MatchdayBadgeType.Wobbler,
         { AnyWinnerCorrect: false }
-            => MatchdayBadgeType.Payaso,
-        _ => MatchdayBadgeType.Tibio,
+            => MatchdayBadgeType.Clown,
+        _ => MatchdayBadgeType.Lukewarm,
     };
 
     private async Task<bool> UpsertMatchdayBadgeAsync(
@@ -321,9 +321,9 @@ public class BadgeService(ProdeaDbContext db)
             await OverrideFinalBadgeAsync(tournamentId, ranking[i], PodiumTypes[i], totalPointsMap, assigned);
 
         if (ranking.Count >= 4)
-            await OverrideFinalBadgeAsync(tournamentId, ranking[^1], MatchdayBadgeType.Ultimo, totalPointsMap, assigned);
+            await OverrideFinalBadgeAsync(tournamentId, ranking[^1], MatchdayBadgeType.LastPlace, totalPointsMap, assigned);
         if (ranking.Count >= 5)
-            await OverrideFinalBadgeAsync(tournamentId, ranking[^2], MatchdayBadgeType.Penultimo, totalPointsMap, assigned);
+            await OverrideFinalBadgeAsync(tournamentId, ranking[^2], MatchdayBadgeType.SecondToLast, totalPointsMap, assigned);
 
         await AwardGoalExtremesBadgesAsync(tournamentId, participants, assigned, totalPointsMap);
         await db.SaveChangesAsync();
@@ -391,12 +391,12 @@ public class BadgeService(ProdeaDbContext db)
         var maxGoals = goals.Max(g => g.Goals);
         var maxHolders = goals.Where(g => g.Goals == maxGoals).ToList();
         if (maxHolders.Count == 1 && !assigned.Contains(maxHolders[0].UserId))
-            await OverrideFinalBadgeAsync(tournamentId, maxHolders[0].UserId, MatchdayBadgeType.GoleadorTorneo, totalPointsMap, assigned);
+            await OverrideFinalBadgeAsync(tournamentId, maxHolders[0].UserId, MatchdayBadgeType.TournamentGoalscorer, totalPointsMap, assigned);
 
         var minGoals = goals.Min(g => g.Goals);
         var minHolders = goals.Where(g => g.Goals == minGoals).ToList();
         if (minHolders.Count == 1 && !assigned.Contains(minHolders[0].UserId))
-            await OverrideFinalBadgeAsync(tournamentId, minHolders[0].UserId, MatchdayBadgeType.RusticoTorneo, totalPointsMap, assigned);
+            await OverrideFinalBadgeAsync(tournamentId, minHolders[0].UserId, MatchdayBadgeType.TournamentMiser, totalPointsMap, assigned);
     }
 
     // ── Acumulativos ───────────────────────────────────────────────────
@@ -424,11 +424,11 @@ public class BadgeService(ProdeaDbContext db)
                 await UpsertAccumulativeBadge(tournamentId, userId, accType, hasStreak);
             }
 
-            int dormidoCount = userBadges.Count(b => b.BadgeType == MatchdayBadgeType.Dormido);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElFantasma, dormidoCount > 3);
+            int dormidoCount = userBadges.Count(b => b.BadgeType == MatchdayBadgeType.Sleeper);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.TheGhost, dormidoCount > 3);
 
-            bool neverLast = tournamentFinished && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Mufa);
-            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.ElMuro, neverLast);
+            bool neverLast = tournamentFinished && !userBadges.Any(b => b.BadgeType == MatchdayBadgeType.Jinx);
+            await UpsertAccumulativeBadge(tournamentId, userId, AccumulativeBadgeType.TheWall, neverLast);
         }
 
         await db.SaveChangesAsync();

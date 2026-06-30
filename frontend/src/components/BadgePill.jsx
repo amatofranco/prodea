@@ -1,26 +1,26 @@
 import { useTranslation } from 'react-i18next'
 
 const BADGE_BG = {
-  Crack: 'badge-crack', Mufa: 'badge-mufa', Adivino: 'badge-adivino',
-  Francotirador: 'badge-franco', PechoFrio: 'badge-pechofrio', Goleador: 'badge-goleador',
-  Rustico: 'badge-rustico', Tambaleante: 'badge-tambaleante', Payaso: 'badge-payaso',
-  Dormido: 'badge-dormido', Tibio: 'badge-tibio', Campeon: 'badge-campeon',
-  Subcampeon: 'badge-subcampeon', TercerPuesto: 'badge-tercerpuesto',
-  Ultimo: 'badge-mufa', Penultimo: 'badge-tambaleante',
-  GoleadorTorneo: 'badge-goleador', RusticoTorneo: 'badge-rustico',
+  MVP: 'badge-mvp', Jinx: 'badge-jinx', Oracle: 'badge-oracle',
+  Sniper: 'badge-sniper', Choker: 'badge-choker', Goalscorer: 'badge-goalscorer',
+  Miser: 'badge-miser', Wobbler: 'badge-wobbler', Clown: 'badge-clown',
+  Sleeper: 'badge-sleeper', Lukewarm: 'badge-lukewarm', Champion: 'badge-champion',
+  RunnerUp: 'badge-runnerup', ThirdPlace: 'badge-thirdplace',
+  LastPlace: 'badge-jinx', SecondToLast: 'badge-wobbler',
+  TournamentGoalscorer: 'badge-goalscorer', TournamentMiser: 'badge-miser',
 }
 
 const EMOJIS = {
-  Crack: '🏆', Mufa: '💀', Adivino: '🔮',
-  Francotirador: '🎯', PechoFrio: '❄️', Goleador: '⚽', Rustico: '⛏️', Tambaleante: '🥴', Payaso: '🤡', Dormido: '😴', Tibio: '🌡️',
-  PecheadaTotal: '🥶', RachaInfernal: '🔥', ElMuro: '🧱', ElFantasma: '👻', TripleMufa: '💀🔥', TibiezaTotal: '🌡️', GoleadorSerial: '⚽', RusticoTotal: '⛏️',
-  Campeon: '🏆', Subcampeon: '🥈', TercerPuesto: '🥉', Ultimo: '💀', Penultimo: '🥴',
-  GoleadorTorneo: '⚽', RusticoTorneo: '⛏️',
+  MVP: '🏆', Jinx: '💀', Oracle: '🔮',
+  Sniper: '🎯', Choker: '❄️', Goalscorer: '⚽', Miser: '⛏️', Wobbler: '🥴', Clown: '🤡', Sleeper: '😴', Lukewarm: '🌡️',
+  TotalChoke: '🥶', HotStreak: '🔥', TheWall: '🧱', TheGhost: '👻', TripleJinx: '💀🔥', TotalLukewarm: '🌡️', SerialGoalscorer: '⚽', TotalMiser: '⛏️',
+  Champion: '🏆', RunnerUp: '🥈', ThirdPlace: '🥉', LastPlace: '💀', SecondToLast: '🥴',
+  TournamentGoalscorer: '⚽', TournamentMiser: '⛏️',
 }
 
 export function BadgePill({ type, className = '', showTag = true }) {
   const { t } = useTranslation()
-  const bg = BADGE_BG[type] || 'badge-dormido'
+  const bg = BADGE_BG[type] || 'badge-sleeper'
   const emoji = EMOJIS[type] || '❓'
   const label = t(`badges.${type}`, type)
   const tag = t(`badgeTags.${type}`, '')

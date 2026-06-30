@@ -253,7 +253,7 @@ public class TournamentsController(ProdeaDbContext db, BadgeService badgeService
         if (!isMember) return Forbid();
 
         var crackBadges = await db.MatchdayBadges
-            .Where(mb => mb.TournamentId == id && mb.BadgeType == MatchdayBadgeType.Crack)
+            .Where(mb => mb.TournamentId == id && mb.BadgeType == MatchdayBadgeType.MVP)
             .Include(mb => mb.User)
             .ToListAsync();
 

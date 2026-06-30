@@ -2,14 +2,14 @@ namespace Prodea.Api.Models;
 
 public enum AccumulativeBadgeType
 {
-    PecheadaTotal,
-    RachaInfernal,
-    ElMuro,
-    ElFantasma,
-    TripleMufa,
-    TibiezaTotal,
-    GoleadorSerial,
-    RusticoTotal
+    TotalChoke,
+    HotStreak,
+    TheWall,
+    TheGhost,
+    TripleJinx,
+    TotalLukewarm,
+    SerialGoalscorer,
+    TotalMiser
 }
 
 public class AccumulativeBadge
