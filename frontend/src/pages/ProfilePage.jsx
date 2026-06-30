@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore'
 import { BadgePill, EMOJIS } from '../components/BadgePill'
 import FigurineCard from '../components/FigurineCard'
 import { getBadgePhrase } from '../utils/figurineCardGenerator'
+import { pointsColor } from '../utils/pointsColor'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
 function SmallFlag({ name }) {
@@ -224,15 +225,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-[#2A2A3E]">
                     <span className="text-xs font-semibold text-white">{pred.predictedHomeScore}-{pred.predictedAwayScore}</span>
-                    <span
-                      className={`text-[11px] font-bold ${
-                        pred.pointsEarned === 3
-                          ? 'text-[#00FF87]'
-                          : pred.pointsEarned > 0
-                          ? 'text-white'
-                          : 'text-[#8A8A9A]'
-                      }`}
-                    >
+                    <span className={`text-[11px] font-bold ${pointsColor(pred.pointsEarned)}`}>
                       +{pred.pointsEarned}
                     </span>
                   </div>

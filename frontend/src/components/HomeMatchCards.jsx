@@ -1,6 +1,7 @@
 import { Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getTeam, getFlagUrl } from '../data/teamsData'
+import { pointsColor } from '../utils/pointsColor'
 
 function FlagOnly({ name, label }) {
   const { flag } = getTeam(name)
@@ -180,7 +181,7 @@ export function FinishedCard({ match }) {
           <span className="text-[9px] text-[#8A8A9A]">
             PRED <span className="font-bold text-white">{pred.predictedHomeScore}–{pred.predictedAwayScore}</span>
           </span>
-          <span className={`text-xs font-black ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#3A3A4E]'}`}>
+          <span className={`text-xs font-black ${pred.pointsEarned > 0 ? pointsColor(pred.pointsEarned) : 'text-[#3A3A4E]'}`}>
             +{pred.pointsEarned}pts
           </span>
         </div>

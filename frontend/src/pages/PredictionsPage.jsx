@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Target, Lock } from 'lucide-react'
 import { api } from '../services/api'
+import { pointsColor } from '../utils/pointsColor'
 
 const PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
 import { getTeam, getFlagUrl } from '../data/teamsData'
@@ -136,7 +137,7 @@ function MatchCard({ match, navigate }) {
               </span>
             )}
             {isFinished && (
-              <span className={`text-xs font-bold ml-1 ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+              <span className={`text-xs font-bold ml-1 ${pointsColor(pred.pointsEarned)}`}>
                 +{pred.pointsEarned} pts
               </span>
             )}

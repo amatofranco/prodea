@@ -7,6 +7,7 @@ import { api } from '../services/api'
 import GoalPicker from '../components/GoalPicker'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import { pointsColor } from '../utils/pointsColor'
 
 const PREDICTION_CLOSE_BEFORE_MS = 15 * 60 * 1000
 const TURBO_COUNTDOWN_SECS = 5
@@ -469,7 +470,7 @@ export default function PredictionPage() {
                     )}
                   </div>
                   {match.status === 'Finished' && (
-                    <p className={`text-2xl font-black mt-3 ${match.userPrediction.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+                    <p className={`text-2xl font-black mt-3 ${pointsColor(match.userPrediction.pointsEarned)}`}>
                       +{match.userPrediction.pointsEarned} pts
                     </p>
                   )}

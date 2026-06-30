@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import FlagImg from './FlagImg'
+import { pointsColor } from '../utils/pointsColor'
 
 export default function TournamentMatchCard({ match, onTap }) {
   const { t } = useTranslation()
@@ -66,7 +67,7 @@ export default function TournamentMatchCard({ match, onTap }) {
               </span>
             )}
             {isFinished && (
-              <span className={`ml-2 font-bold ${pred.pointsEarned > 0 ? 'text-[#00FF87]' : 'text-[#8A8A9A]'}`}>
+              <span className={`ml-2 font-bold ${pointsColor(pred.pointsEarned)}`}>
                 +{pred.pointsEarned} pts
               </span>
             )}

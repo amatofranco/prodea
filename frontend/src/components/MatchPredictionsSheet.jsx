@@ -2,11 +2,10 @@ import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import FlagImg from './FlagImg'
+import { pointsColor, pointsBg } from '../utils/pointsColor'
 
 export default function MatchPredictionsSheet({ match, predictions, loading, onClose }) {
   const { t } = useTranslation()
-  const pointColor = (pts) => pts === 3 ? 'text-[#00FF87]' : pts === 1 ? 'text-[#F59E0B]' : 'text-[#8A8A9A]'
-  const pointBg   = (pts) => pts === 3 ? 'bg-[#00FF87]/10 border-[#00FF87]/30' : pts === 1 ? 'bg-[#F59E0B]/10 border-[#F59E0B]/30' : 'bg-[#1A1A2E] border-[#2A2A3E]'
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60" onClick={onClose}>
@@ -52,7 +51,7 @@ export default function MatchPredictionsSheet({ match, predictions, loading, onC
               <div key={i} className="h-14 rounded-2xl bg-[#1A1A2E] animate-pulse" />
             ))
           ) : predictions.map((p, i) => (
-            <div key={p.userId} className={`flex items-center gap-3 p-3 rounded-2xl border ${pointBg(p.pointsEarned)}`}>
+            <div key={p.userId} className={`flex items-center gap-3 p-3 rounded-2xl border ${pointsBg(p.pointsEarned)}`}>
               <span className="text-[#8A8A9A] text-xs w-4 text-center font-bold">{i + 1}</span>
               <div className="w-8 h-8 rounded-full bg-[#2A2A3E] flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {(p.fullName ?? p.username)[0].toUpperCase()}
@@ -80,7 +79,7 @@ export default function MatchPredictionsSheet({ match, predictions, loading, onC
                 <span className="text-[#8A8A9A] text-xs italic">{t('matchSheet.noPred')}</span>
               )}
               <div className="flex flex-col items-end w-16">
-                <span className={`text-sm font-bold text-right ${pointColor(p.pointsEarned)}`}>
+                <span className={`text-sm font-bold text-right ${pointsColor(p.pointsEarned)}`}>
                   +{p.pointsEarned} pts
                 </span>
                 {match.phase === 'Final' && p.championPick && (
