@@ -343,8 +343,9 @@ public class FootballDataService(
 
         await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
 
-        if (match.Phase == MatchPhase.Group)
-            _lastKnockoutSync = DateTime.UtcNow;
+        // Force immediate knockout sync on next poll when any knockout match finishes
+        if (match.Phase != MatchPhase.Group)
+            _lastKnockoutSync = DateTime.MinValue;
 
         using var finalizationScope = scopeFactory.CreateScope();
         var finalizationService = finalizationScope.ServiceProvider.GetRequiredService<MatchFinalizationService>();
