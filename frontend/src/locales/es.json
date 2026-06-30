@@ -363,6 +363,39 @@
     "GoleadorTorneo": "Más goles cargados en total",
     "RusticoTorneo": "Menos goles cargados en total"
   },
+  "matchCard": {
+    "live": "EN VIVO",
+    "final": "Final",
+    "prediction": "Predicción:",
+    "advances": "Pasa:",
+    "noPrediction": "Sin predicción",
+    "noPredictionYet": "Sin predicción cargada",
+    "viewAll": "Ver todos →",
+    "championPicked": "Campeón elegido:",
+    "noChampionPick": "Sin campeón elegido"
+  },
+  "championBanner": {
+    "title": "Campeón del Torneo",
+    "closed": "Cerrado",
+    "change": "Cambiar",
+    "noPickReadOnly": "Sin candidato elegido",
+    "saving": "Guardando...",
+    "choose": "🏆 Elegir",
+    "worldChampion": "¡Campeón del mundo!",
+    "noPick": "Sin pick",
+    "errorTitle": "Error cargando candidato",
+    "errorUnknown": "Error desconocido",
+    "pickChampion": "Elegir campeón",
+    "searchTeam": "Buscar selección...",
+    "noResults": "Sin resultados",
+    "closesInDays": "Cierra en {{days}}d {{hours}}h",
+    "closesInHours": "Cierra en {{hours}}h {{minutes}}m",
+    "closesInMinutes": "Cierra en {{minutes}}m {{seconds}}s"
+  },
+  "banners": {
+    "staleScores": "Los marcadores pueden demorar en actualizarse",
+    "offline": "Sin conexión — mostrando datos guardados"
+  },
   "errors": {
     "tournament_not_found": "Torneo no encontrado",
     "already_participant": "Ya sos participante de este torneo",

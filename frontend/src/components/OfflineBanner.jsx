@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { WifiOff } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function OfflineBanner() {
+  const { t } = useTranslation()
   const [offline, setOffline] = useState(!navigator.onLine)
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export default function OfflineBanner() {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 px-4 py-2 bg-[#FF6B35]/90 backdrop-blur-sm">
       <WifiOff size={14} className="text-white shrink-0" />
-      <p className="text-white text-xs font-semibold">Sin conexión — mostrando datos guardados</p>
+      <p className="text-white text-xs font-semibold">{t('banners.offline')}</p>
     </div>
   )
 }

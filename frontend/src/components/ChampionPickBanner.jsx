@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Trophy, Lock, Search, X, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../services/api'
 import { getTeam, getFlagUrl } from '../data/teamsData'
 
@@ -20,6 +21,7 @@ function FlagImg({ country, size = 28 }) {
 }
 
 function Countdown({ lockTime }) {
+  const { t } = useTranslation()
   const [diff, setDiff] = useState(new Date(lockTime) - Date.now())
 
   useEffect(() => {
@@ -35,29 +37,28 @@ function Countdown({ lockTime }) {
 
   if (h > 48) {
     const d = Math.floor(h / 24)
-    return <span>Cierra en {d}d {h % 24}h</span>
+    return <span>{t('championBanner.closesInDays', { days: d, hours: h % 24 })}</span>
   }
-  if (h > 0) return <span>Cierra en {h}h {m}m</span>
-  return <span>Cierra en {m}m {s}s</span>
+  if (h > 0) return <span>{t('championBanner.closesInHours', { hours: h, minutes: m })}</span>
+  return <span>{t('championBanner.closesInMinutes', { minutes: m, seconds: s })}</span>
 }
 
 function TeamPickerModal({ teams, onSelect, onClose }) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
-  const filtered = teams.filter((t) =>
-    t.toLowerCase().includes(query.toLowerCase())
+  const filtered = teams.filter((tm) =>
+    tm.toLowerCase().includes(query.toLowerCase())
   )
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0D0D0D]">
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-12 pb-3 border-b border-[#2A2A3E]">
         <button onClick={onClose} className="text-[#8A8A9A] active:text-white">
           <X size={22} />
         </button>
-        <h2 className="text-white font-bold flex-1">Elegir campeón</h2>
+        <h2 className="text-white font-bold flex-1">{t('championBanner.pickChampion')}</h2>
       </div>
 
-      {/* Search */}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 bg-[#1A1A2E] rounded-xl px-3 py-2 border border-[#2A2A3E]">
           <Search size={16} className="text-[#8A8A9A] shrink-0" />
@@ -65,13 +66,12 @@ function TeamPickerModal({ teams, onSelect, onClose }) {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar selección..."
+            placeholder={t('championBanner.searchTeam')}
             className="bg-transparent text-white text-sm outline-none flex-1 placeholder:text-[#8A8A9A]"
           />
         </div>
       </div>
 
-      {/* Team list */}
       <div className="flex-1 overflow-y-auto px-4 pb-8">
         {filtered.map((team) => (
           <button
@@ -85,7 +85,7 @@ function TeamPickerModal({ teams, onSelect, onClose }) {
           </button>
         ))}
         {filtered.length === 0 && (
-          <p className="text-[#8A8A9A] text-sm text-center py-8">Sin resultados</p>
+          <p className="text-[#8A8A9A] text-sm text-center py-8">{t('championBanner.noResults')}</p>
         )}
       </div>
     </div>
@@ -93,6 +93,7 @@ function TeamPickerModal({ teams, onSelect, onClose }) {
 }
 
 export default function ChampionPickBanner({ tournamentId, currentUserId, readOnly = false }) {
+  const { t } = useTranslation()
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(null)
@@ -103,9 +104,9 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
     setApiError(null)
     api.getTournamentChampionPick(tournamentId)
       .then(setStatus)
-      .catch((err) => setApiError(err.message || 'Error desconocido'))
+      .catch((err) => setApiError(err.message || t('championBanner.errorUnknown')))
       .finally(() => setLoading(false))
-  }, [tournamentId])
+  }, [tournamentId, t])
 
   useEffect(() => { fetchStatus() }, [fetchStatus])
 
@@ -128,7 +129,7 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
   if (apiError) {
     return (
       <div className="mx-4 mb-3 px-4 py-3 rounded-2xl border border-red-500/30 bg-red-500/10">
-        <p className="text-red-400 text-xs font-semibold">Error cargando candidato</p>
+        <p className="text-red-400 text-xs font-semibold">{t('championBanner.errorTitle')}</p>
         <p className="text-red-400/70 text-[10px] mt-0.5">{apiError}</p>
       </div>
     )
@@ -148,18 +149,16 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
       )}
 
       <div className="mx-4 mb-3 rounded-2xl border border-[#F59E0B]/30 bg-[#1A1A2E] overflow-hidden">
-        {/* Title row */}
         <div className="flex items-center gap-2 px-4 pt-3 pb-2">
           <Trophy size={16} className="text-[#F59E0B] shrink-0" />
-          <span className="text-white font-bold text-sm flex-1">Campeón del Torneo</span>
+          <span className="text-white font-bold text-sm flex-1">{t('championBanner.title')}</span>
           {isLocked && (
             <span className="flex items-center gap-1 text-[10px] text-[#8A8A9A] font-semibold uppercase">
-              <Lock size={10} /> Cerrado
+              <Lock size={10} /> {t('championBanner.closed')}
             </span>
           )}
         </div>
 
-        {/* ── NOT LOCKED ── */}
         {!isLocked && (
           <div className="px-4 pb-3">
             {myPick ? (
@@ -177,12 +176,12 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
                     disabled={saving}
                     className="text-[#00FF87] text-xs font-semibold shrink-0"
                   >
-                    Cambiar
+                    {t('championBanner.change')}
                   </button>
                 )}
               </div>
             ) : readOnly ? (
-              <p className="text-[#8A8A9A] text-xs italic">Sin candidato elegido</p>
+              <p className="text-[#8A8A9A] text-xs italic">{t('championBanner.noPickReadOnly')}</p>
             ) : (
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
@@ -195,21 +194,20 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
                   disabled={saving}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F59E0B] text-black text-xs font-bold active:opacity-80 shrink-0"
                 >
-                  {saving ? 'Guardando...' : '🏆 Elegir'}
+                  {saving ? t('championBanner.saving') : t('championBanner.choose')}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* ── LOCKED: all picks grid ── */}
         {isLocked && (
           <div className="px-4 pb-3">
             {champion && (
               <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30">
                 <FlagImg country={champion} size={28} />
                 <div>
-                  <p className="text-[#F59E0B] font-bold text-xs">¡Campeón del mundo!</p>
+                  <p className="text-[#F59E0B] font-bold text-xs">{t('championBanner.worldChampion')}</p>
                   <p className="text-white font-semibold text-sm">{champion}</p>
                 </div>
               </div>
@@ -245,7 +243,7 @@ export default function ChampionPickBanner({ tournamentId, currentUserId, readOn
                         {hit && <span className="text-[9px] text-[#00FF87] font-bold">+10 pts</span>}
                       </>
                     ) : (
-                      <p className="text-[9px] text-[#8A8A9A] italic">Sin pick</p>
+                      <p className="text-[9px] text-[#8A8A9A] italic">{t('championBanner.noPick')}</p>
                     )}
                   </div>
                 )

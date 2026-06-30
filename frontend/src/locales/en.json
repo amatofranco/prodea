@@ -362,6 +362,39 @@
     "GoleadorTorneo": "Most goals predicted overall",
     "RusticoTorneo": "Fewest goals predicted overall"
   },
+  "matchCard": {
+    "live": "LIVE",
+    "final": "Final",
+    "prediction": "Prediction:",
+    "advances": "Advances:",
+    "noPrediction": "No prediction",
+    "noPredictionYet": "No prediction submitted",
+    "viewAll": "View all →",
+    "championPicked": "Champion picked:",
+    "noChampionPick": "No champion picked"
+  },
+  "championBanner": {
+    "title": "Tournament Champion",
+    "closed": "Closed",
+    "change": "Change",
+    "noPickReadOnly": "No pick yet",
+    "saving": "Saving...",
+    "choose": "🏆 Pick",
+    "worldChampion": "World Champion!",
+    "noPick": "No pick",
+    "errorTitle": "Error loading candidate",
+    "errorUnknown": "Unknown error",
+    "pickChampion": "Pick champion",
+    "searchTeam": "Search team...",
+    "noResults": "No results",
+    "closesInDays": "Closes in {{days}}d {{hours}}h",
+    "closesInHours": "Closes in {{hours}}h {{minutes}}m",
+    "closesInMinutes": "Closes in {{minutes}}m {{seconds}}s"
+  },
+  "banners": {
+    "staleScores": "Scores may take a moment to update",
+    "offline": "Offline — showing saved data"
+  },
   "errors": {
     "tournament_not_found": "Tournament not found",
     "already_participant": "You're already a participant in this tournament",
