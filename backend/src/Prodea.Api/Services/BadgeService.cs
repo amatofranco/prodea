@@ -473,18 +473,6 @@ public class BadgeService(ProdeaDbContext db)
 
     private async Task SendCardNotificationsAsync(MatchPhase phase, int matchday, Dictionary<int, int> userTournamentMap, PushNotificationService push)
     {
-        var matchdayLabel = MatchdayLabel(phase, matchday);
-        var finished = phase switch
-        {
-            MatchPhase.Group      => $"Matchday {matchday} is over.",
-            MatchPhase.R32        => "Round of 32 is over.",
-            MatchPhase.R16        => "Round of 16 is over.",
-            MatchPhase.QF         => "Quarter-finals are over.",
-            MatchPhase.SF         => "Semi-finals are over.",
-            MatchPhase.ThirdPlace => "Third Place match is over.",
-            MatchPhase.Final      => "The Final is over.",
-            _                     => $"{matchdayLabel} is over.",
-        };
         var subscriptions = await db.PushSubscriptions
             .Where(s => userTournamentMap.Keys.Contains(s.UserId))
             .ToListAsync();
@@ -494,11 +482,10 @@ public class BadgeService(ProdeaDbContext db)
         {
             try
             {
-                await push.SendToUserAsync(
+                await push.SendDataAsync(
                     sub,
-                    "🃏 Your Card is here!",
-                    $"{finished} Check how you did and share it.",
-                    $"/torneos/{userTournamentMap[sub.UserId]}/perfil/{sub.UserId}"
+                    new { type = "card", phase = phase.ToString(), matchday,
+                          url = $"/torneos/{userTournamentMap[sub.UserId]}/perfil/{sub.UserId}" }
                 );
             }
             catch (ExpiredSubscriptionException) { expired.Add(sub); }

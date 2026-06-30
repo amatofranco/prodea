@@ -35,6 +35,29 @@ public class PushNotificationService(IConfiguration config, ILogger<PushNotifica
         }
     }
 
+    public async Task SendDataAsync(UserPushSubscription sub, object data)
+    {
+        var client = new WebPushClient();
+        client.SetVapidDetails(_subject, _publicKey, _privateKey);
+
+        var subscription = new PushSubscription(sub.Endpoint, sub.P256dh, sub.Auth);
+        var payload = System.Text.Json.JsonSerializer.Serialize(data);
+
+        try
+        {
+            await client.SendNotificationAsync(subscription, payload);
+        }
+        catch (WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone || ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            throw new ExpiredSubscriptionException();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error sending push to {Endpoint}", sub.Endpoint);
+            throw;
+        }
+    }
+
     public async Task<int> BroadcastAsync(ProdeaDbContext db, string title, string body, string url = "/")
     {
         var subscriptions = await db.PushSubscriptions.ToListAsync();

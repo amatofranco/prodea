@@ -111,12 +111,43 @@ registerRoute(
   })
 )
 
-// Push notifications
+// Push notifications — i18n helpers
+const PUSH_PHASES = {
+  es: { Group: 'Fecha', R32: 'Dieciseisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semis', ThirdPlace: '3er Puesto', Final: 'Final' },
+  en: { Group: 'Matchday', R32: 'Round of 32', R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', ThirdPlace: 'Third Place', Final: 'Final' },
+}
+const PUSH_STRINGS = {
+  es: { cardTitle: '🃏 ¡Llegó tu Carta!', cardBody: (phase) => `Terminó ${phase}. Fijate cómo te fue y compartila.` },
+  en: { cardTitle: '🃏 Your Card is here!', cardBody: (phase) => `${phase} is over. Check how you did and share it.` },
+}
+
+function getPushLang() {
+  try { return (self.navigator?.language ?? 'es').startsWith('en') ? 'en' : 'es' } catch { return 'es' }
+}
+
+function resolveCardPush(data) {
+  const lang = getPushLang()
+  const strings = PUSH_STRINGS[lang]
+  const phases = PUSH_PHASES[lang]
+  const phaseLabel = data.phase === 'Group'
+    ? `${phases.Group} ${data.matchday}`
+    : (phases[data.phase] ?? data.phase)
+  return { title: strings.cardTitle, body: strings.cardBody(phaseLabel) }
+}
+
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {}
-  const title = data.title ?? 'Prodea'
+  let title, body
+  if (data.type === 'card') {
+    const resolved = resolveCardPush(data)
+    title = resolved.title
+    body = resolved.body
+  } else {
+    title = data.title ?? 'Prodea'
+    body = data.body ?? ''
+  }
   const options = {
-    body: data.body ?? '',
+    body,
     icon: '/pwa-192x192.png',
     badge: '/pwa-192x192.png',
     data: { url: data.url ?? '/' },
