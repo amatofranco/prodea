@@ -202,7 +202,7 @@ public class FootballDataService(
             match.HomeScore = liveHome;
             match.AwayScore = liveAway;
             changed = true;
-            goals = await espn.FetchGoalsAsync(espnEvent.Id, ct);
+            goals = await FetchGoalsWithRetryAsync(espnEvent.Id, liveHome + liveAway, ct);
             if (goals.Count > 0)
                 match.GoalsJson = JsonSerializer.Serialize(goals);
         }
