@@ -159,7 +159,7 @@ public class FootballDataService(
         if (isFinal)
         {
             var (homeScore, awayScore, winner, homePen, awayPen) = EspnApiClient.ExtractScore(espnEvent, match);
-            var goals = await espn.FetchGoalsAsync(espnEvent.Id, ct);
+            var goals = await FetchGoalsWithRetryAsync(espnEvent.Id, homeScore + awayScore, ct);
             if (goals.Count > 0)
                 match.GoalsJson = JsonSerializer.Serialize(goals);
             match.HomePenaltyScore = homePen;
@@ -324,6 +324,19 @@ public class FootballDataService(
         }
 
         return MatchPollResult.Processed;
+    }
+
+    // ESPN puede tardar unos segundos en publicar el último gol en keyEvents
+    // aunque ya actualizó el marcador. Reintentamos hasta que el conteo coincida.
+    private async Task<List<EspnApiClient.GoalInfo>> FetchGoalsWithRetryAsync(
+        string eventId, int expectedGoals, CancellationToken ct)
+    {
+        var goals = await espn.FetchGoalsAsync(eventId, ct);
+        if (goals.Count >= expectedGoals || expectedGoals == 0) return goals;
+
+        await Task.Delay(TimeSpan.FromSeconds(5), ct);
+        var retry = await espn.FetchGoalsAsync(eventId, ct);
+        return retry.Count >= goals.Count ? retry : goals;
     }
 
     // ── Finalización ────────────────────────────────────────────────────
