@@ -57,7 +57,8 @@ public static class ServiceRegistrationExtensions
         services.AddSingleton<EspnApiClient>();
         services.AddSingleton<PollingStatusService>();
         services.AddHostedService<FootballDataService>();
-        services.AddHostedService<BackupService>();
+        services.AddSingleton<BackupService>();
+        services.AddHostedService(sp => sp.GetRequiredService<BackupService>());
         services.AddScoped<PushNotificationService>();
         services.AddHostedService<MatchNotificationJob>();
 
