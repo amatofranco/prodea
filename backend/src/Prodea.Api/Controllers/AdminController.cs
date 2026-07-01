@@ -1,5 +1,3 @@
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -22,9 +20,7 @@ public class AdminController(
     EspnApiClient espn,
     IHubContext<TournamentHub> hub,
     MatchFinalizationService finalizationService,
-    BackupService backupService,
-    IHttpClientFactory httpClientFactory,
-    IConfiguration config) : ControllerBase
+    BackupService backupService) : ControllerBase
 {
     [HttpPost("backups/run")]
     public async Task<IActionResult> RunBackup(CancellationToken ct)
@@ -274,70 +270,10 @@ public class AdminController(
     [HttpPost("full-backup")]
     public async Task<IActionResult> FullBackup(CancellationToken ct)
     {
-        var now = DateTime.UtcNow;
-
-        var payload = new
-        {
-            generatedAt          = now,
-            users                = await db.Users.AsNoTracking().ToListAsync(ct),
-            tournaments          = await db.Tournaments.AsNoTracking().ToListAsync(ct),
-            participants         = await db.TournamentParticipants.AsNoTracking().ToListAsync(ct),
-            matches              = await db.Matches.AsNoTracking().ToListAsync(ct),
-            predictions          = await db.Predictions.AsNoTracking().ToListAsync(ct),
-            matchdayBadges       = await db.MatchdayBadges.AsNoTracking().ToListAsync(ct),
-            accumulativeBadges   = await db.AccumulativeBadges.AsNoTracking().ToListAsync(ct),
-            championPicks        = await db.ChampionPicks.AsNoTracking().ToListAsync(ct),
-        };
-
-        var json     = JsonSerializer.Serialize(payload, JsonOptions);
-        var sizeKb   = Encoding.UTF8.GetByteCount(json) / 1024.0;
-        var filename = $"prodea-fullbackup-{now:yyyy-MM-dd}.json";
-
-        var adminEmail = config["Backup__AdminEmail"] ?? config["Backup:AdminEmail"];
-        var apiKey     = config["Resend__ApiKey"]     ?? config["Resend:ApiKey"];
-
-        if (string.IsNullOrEmpty(adminEmail) || string.IsNullOrEmpty(apiKey))
-            return BadRequest(new { message = "Backup__AdminEmail or Resend__ApiKey not configured" });
-
-        var body = new
-        {
-            from    = config["Resend__From"] ?? config["Resend:From"] ?? "Prodea <noreply@prodea.app>",
-            to      = new[] { adminEmail },
-            subject = $"[Prodea] Full DB backup — {now:yyyy-MM-dd}",
-            html    = $"""
-                <div style="font-family:monospace;background:#0D0D0D;color:#fff;padding:24px;border-radius:8px;max-width:600px;">
-                  <h2 style="color:#00FF87;margin:0 0 12px;">Prodea full database backup</h2>
-                  <p style="color:#8A8A9A;margin:0 0 8px;">Date: <strong style="color:#fff">{now:yyyy-MM-dd HH:mm} UTC</strong></p>
-                  <p style="color:#8A8A9A;margin:0 0 16px;">Size: <strong style="color:#fff">{sizeKb:F1} KB</strong></p>
-                  <p style="color:#C0C0D0;">Full backup attached as <code style="color:#00FF87">{filename}</code>.</p>
-                  <p style="margin-top:16px;color:#3A3A4E;font-size:12px;">Triggered manually via admin API.</p>
-                </div>
-                """,
-            attachments = new[]
-            {
-                new
-                {
-                    filename,
-                    content = Convert.ToBase64String(Encoding.UTF8.GetBytes(json)),
-                }
-            },
-        };
-
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
-        {
-            Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"),
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-        var client   = httpClientFactory.CreateClient();
-        var response = await client.SendAsync(request, ct);
-        if (!response.IsSuccessStatusCode)
-        {
-            var err = await response.Content.ReadAsStringAsync(ct);
-            return StatusCode(502, new { message = $"Email failed: {err}" });
-        }
-
-        return Ok(new { message = $"Full backup sent to {adminEmail} ({sizeKb:F1} KB)", filename });
+        var result = await backupService.RunFullBackupNowAsync(ct);
+        return result.StartsWith("Backup__AdminEmail")
+            ? BadRequest(new { message = result })
+            : Ok(new { message = result });
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()

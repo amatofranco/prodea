@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Prodea.Api.Data;
 using Prodea.Api.Models;
@@ -16,32 +15,46 @@ public class BackupService(
     : BackgroundService
 {
     private const string ResendEndpoint = "https://api.resend.com/emails";
-    private static readonly TimeSpan InitialDelay   = TimeSpan.FromHours(1);
-    private static readonly TimeSpan BackupInterval = TimeSpan.FromDays(3);
+    private static readonly TimeSpan InitialDelay       = TimeSpan.FromHours(1);
+    private static readonly TimeSpan PredictionsInterval = TimeSpan.FromDays(3);
+    private static readonly TimeSpan FullInterval        = TimeSpan.FromDays(7);
     private const int MaxStoredBackups = 10;
 
-    public Task<string> RunNowAsync(CancellationToken ct = default) => RunBackupAsync(ct);
+    public Task<string> RunNowAsync(CancellationToken ct = default)         => RunPredictionsBackupAsync(ct);
+    public Task<string> RunFullBackupNowAsync(CancellationToken ct = default) => RunFullBackupAsync(ct);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Delay(InitialDelay, stoppingToken);
 
+        var predictionsNext = DateTime.UtcNow;
+        var fullNext        = DateTime.UtcNow;
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
+            var now = DateTime.UtcNow;
+
+            if (now >= predictionsNext)
             {
-                await RunBackupAsync(stoppingToken);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error ejecutando backup de predicciones");
+                try { await RunPredictionsBackupAsync(stoppingToken); }
+                catch (Exception ex) { logger.LogError(ex, "Error en backup de predicciones"); }
+                predictionsNext = now + PredictionsInterval;
             }
 
-            await Task.Delay(BackupInterval, stoppingToken);
+            if (now >= fullNext)
+            {
+                try { await RunFullBackupAsync(stoppingToken); }
+                catch (Exception ex) { logger.LogError(ex, "Error en full backup"); }
+                fullNext = now + FullInterval;
+            }
+
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }
 
-    private async Task<string> RunBackupAsync(CancellationToken ct)
+    // ── Predictions backup ───────────────────────────────────────────────
+
+    private async Task<string> RunPredictionsBackupAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
@@ -78,15 +91,19 @@ public class BackupService(
         var sizeKb = Encoding.UTF8.GetByteCount(json) / 1024.0;
 
         await SaveToDbAsync(db, payload, json, ct);
+        logger.LogInformation("Backup predicciones en DB: {Count} ({KB:F1} KB)", predictions.Count, sizeKb);
 
-        logger.LogInformation("Backup guardado en DB: {Count} predicciones ({KB:F1} KB)", predictions.Count, sizeKb);
-
-        var adminEmail = config["Backup:AdminEmail"];
-        var apiKey     = config["Resend:ApiKey"];
-        var emailSent  = false;
-        if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(apiKey))
+        var (adminEmail, apiKey) = GetEmailConfig();
+        var emailSent = false;
+        if (adminEmail != null && apiKey != null)
         {
-            await SendBackupEmailAsync(adminEmail, apiKey, payload, json, sizeKb, ct);
+            await SendEmailAsync(adminEmail, apiKey,
+                subject:  $"[Prodea] Predictions backup — {payload.GeneratedAt:yyyy-MM-dd}",
+                heading:  "Prodea predictions backup",
+                details:  $"Predictions: <strong style=\"color:#fff\">{payload.Count}</strong> &nbsp;|&nbsp; Size: <strong style=\"color:#fff\">{sizeKb:F1} KB</strong>",
+                filename: $"prodea-backup-{payload.GeneratedAt:yyyy-MM-dd}.json",
+                json,
+                ct);
             emailSent = true;
         }
 
@@ -115,65 +132,97 @@ public class BackupService(
         }
     }
 
-    private async Task SendBackupEmailAsync(
-        string adminEmail, string apiKey,
-        BackupPayload payload, string json, double sizeKb,
+    // ── Full backup ──────────────────────────────────────────────────────
+
+    public async Task<string> RunFullBackupAsync(CancellationToken ct)
+    {
+        var (adminEmail, apiKey) = GetEmailConfig();
+        if (adminEmail == null || apiKey == null)
+            return "Backup__AdminEmail or Resend__ApiKey not configured";
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
+
+        var now = DateTime.UtcNow;
+        var payload = new
+        {
+            generatedAt        = now,
+            users              = await db.Users.AsNoTracking().ToListAsync(ct),
+            tournaments        = await db.Tournaments.AsNoTracking().ToListAsync(ct),
+            participants       = await db.TournamentParticipants.AsNoTracking().ToListAsync(ct),
+            matches            = await db.Matches.AsNoTracking().ToListAsync(ct),
+            predictions        = await db.Predictions.AsNoTracking().ToListAsync(ct),
+            matchdayBadges     = await db.MatchdayBadges.AsNoTracking().ToListAsync(ct),
+            accumulativeBadges = await db.AccumulativeBadges.AsNoTracking().ToListAsync(ct),
+            championPicks      = await db.ChampionPicks.AsNoTracking().ToListAsync(ct),
+        };
+
+        var json     = JsonSerializer.Serialize(payload, JsonOptions);
+        var sizeKb   = Encoding.UTF8.GetByteCount(json) / 1024.0;
+        var filename = $"prodea-fullbackup-{now:yyyy-MM-dd}.json";
+
+        await SendEmailAsync(adminEmail, apiKey,
+            subject:  $"[Prodea] Full DB backup — {now:yyyy-MM-dd}",
+            heading:  "Prodea full database backup",
+            details:  $"Size: <strong style=\"color:#fff\">{sizeKb:F1} KB</strong>",
+            filename,
+            json,
+            ct);
+
+        logger.LogInformation("Full backup enviado: {KB:F1} KB", sizeKb);
+        return $"Full backup sent to {adminEmail} ({sizeKb:F1} KB)";
+    }
+
+    // ── Shared email helper ──────────────────────────────────────────────
+
+    private async Task SendEmailAsync(
+        string to, string apiKey,
+        string subject, string heading, string details,
+        string filename, string json,
         CancellationToken ct)
     {
-        try
+        var from = config["Resend__From"] ?? config["Resend:From"] ?? "Prodea <noreply@prodea.app>";
+
+        var body = new
         {
-            var from     = config["Resend:From"] ?? "Prodea <noreply@prodea.app>";
-            var filename = $"prodea-backup-{payload.GeneratedAt:yyyy-MM-dd}.json";
+            from,
+            to      = new[] { to },
+            subject,
+            html    = $"""
+                <div style="font-family:monospace;background:#0D0D0D;color:#fff;padding:24px;border-radius:8px;max-width:600px;">
+                  <h2 style="color:#00FF87;margin:0 0 12px;">{heading}</h2>
+                  <p style="color:#8A8A9A;margin:0 0 8px;">Date: <strong style="color:#fff">{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC</strong></p>
+                  <p style="color:#8A8A9A;margin:0 0 16px;">{details}</p>
+                  <p style="color:#C0C0D0;">Attached as <code style="color:#00FF87">{filename}</code>.</p>
+                  <p style="margin-top:16px;color:#3A3A4E;font-size:12px;">Prodea backup system.</p>
+                </div>
+                """,
+            attachments = new[]
+            {
+                new { filename, content = Convert.ToBase64String(Encoding.UTF8.GetBytes(json)) }
+            },
+        };
 
-            var body = new
-            {
-                from,
-                to      = new[] { adminEmail },
-                subject = $"[Prodea] Predictions backup — {payload.GeneratedAt:yyyy-MM-dd}",
-                html    = $"""
-                    <div style="font-family:monospace;background:#0D0D0D;color:#fff;padding:24px;border-radius:8px;max-width:600px;">
-                      <h2 style="color:#00FF87;margin:0 0 12px;">Prodea predictions backup</h2>
-                      <p style="color:#8A8A9A;margin:0 0 8px;">Date: <strong style="color:#fff">{payload.GeneratedAt:yyyy-MM-dd HH:mm} UTC</strong></p>
-                      <p style="color:#8A8A9A;margin:0 0 16px;">Predictions: <strong style="color:#fff">{payload.Count}</strong> &nbsp;|&nbsp; Size: <strong style="color:#fff">{sizeKb:F1} KB</strong></p>
-                      <p style="color:#C0C0D0;">Full backup attached as <code style="color:#00FF87">{filename}</code>.</p>
-                      <p style="margin-top:16px;color:#3A3A4E;font-size:12px;">Auto-generated by Prodea.</p>
-                    </div>
-                    """,
-                attachments = new[]
-                {
-                    new
-                    {
-                        filename,
-                        content = Convert.ToBase64String(Encoding.UTF8.GetBytes(json)),
-                    }
-                },
-            };
-
-            var client  = httpClientFactory.CreateClient();
-            var request = new HttpRequestMessage(HttpMethod.Post, ResendEndpoint)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"),
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-            var response = await client.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode)
-            {
-                var err = await response.Content.ReadAsStringAsync(ct);
-                logger.LogWarning("Backup email failed: {Status} — {Error}", response.StatusCode, err);
-            }
-            else
-            {
-                logger.LogInformation("Backup email sent to {Email}", adminEmail);
-            }
-        }
-        catch (Exception ex)
+        var request = new HttpRequestMessage(HttpMethod.Post, ResendEndpoint)
         {
-            logger.LogWarning(ex, "Failed to send backup email (backup was saved to DB)");
+            Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+        var response = await httpClientFactory.CreateClient().SendAsync(request, ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync(ct);
+            logger.LogWarning("Email backup fallido: {Status} — {Error}", response.StatusCode, err);
         }
     }
 
-    // DTO compartido con AdminController para deserializar
+    private (string? Email, string? ApiKey) GetEmailConfig() => (
+        config["Backup__AdminEmail"] ?? config["Backup:AdminEmail"],
+        config["Resend__ApiKey"]     ?? config["Resend:ApiKey"]);
+
+    // ── DTOs ─────────────────────────────────────────────────────────────
+
     public record BackupPrediction
     {
         public int      UserId                 { get; init; }
