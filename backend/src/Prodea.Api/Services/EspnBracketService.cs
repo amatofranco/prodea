@@ -18,66 +18,18 @@ public class EspnBracketService(
     {
         try
         {
-            var client = httpClientFactory.CreateClient("Espn");
-            var response = await client.GetAsync(StandingsPath);
-            if (!response.IsSuccessStatusCode) return 0;
+            var nodes = await FetchEspnStandingsAsync();
+            if (nodes == null) return 0;
 
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<EspnStandingsResponse>(json, JsonOptions);
-            if (result?.Children == null) return 0;
-
-            var groupMatches = await db.Matches
-                .Where(m => m.Phase == MatchPhase.Group && m.Group != null)
-                .Select(m => new { m.Group, m.Status })
-                .ToListAsync();
-            var finishedLetters = groupMatches
-                .GroupBy(m => m.Group!)
-                .Where(g => g.All(m => m.Status == MatchStatus.Finished))
-                .Select(g => g.Key.Replace("GROUP_", "", StringComparison.OrdinalIgnoreCase))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var rankByGroup = new Dictionary<string, Dictionary<int, string>>(StringComparer.OrdinalIgnoreCase);
-            foreach (var g in result.Children)
-            {
-                if (g.Name == null || !g.Name.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)) continue;
-                var letter = g.Name["Group ".Length..].Trim();
-                if (!finishedLetters.Contains(letter)) continue;
-
-                var entries = g.Standings?.Entries;
-                if (entries == null) continue;
-
-                var ranks = new Dictionary<int, string>();
-                foreach (var e in entries)
-                {
-                    if (e.Note?.Rank is int rank && e.Team?.DisplayName is string teamName)
-                        ranks[rank] = EspnTeamMapping.Map(teamName);
-                }
-                rankByGroup[letter] = ranks;
-            }
-
-            int updated = 0;
-            foreach (var match in tbdMatches)
-            {
-                if (match.HomeTeam == "TBD" && TryResolveSlot(match.HomeTeamLabel, rankByGroup, out var homeTeam))
-                {
-                    match.HomeTeam = homeTeam;
-                    match.HomeTeamLabel = null;
-                    updated++;
-                }
-                if (match.AwayTeam == "TBD" && TryResolveSlot(match.AwayTeamLabel, rankByGroup, out var awayTeam))
-                {
-                    match.AwayTeam = awayTeam;
-                    match.AwayTeamLabel = null;
-                    updated++;
-                }
-            }
+            var finishedLetters = await GetFinishedGroupLettersAsync();
+            var rankByGroup = BuildRankByGroup(nodes, finishedLetters);
+            var updated = ApplySlotResolutions(tbdMatches, rankByGroup);
 
             if (updated > 0)
             {
                 await db.SaveChangesAsync();
                 logger.LogInformation("Knockout teams updated via ESPN standings: {Count}", updated);
             }
-
             return updated;
         }
         catch (Exception ex)
@@ -96,39 +48,14 @@ public class EspnBracketService(
 
         try
         {
-            var byKickoff = new Dictionary<string, Match>();
-            foreach (var m in stillTbd)
-                byKickoff.TryAdd(FormatKickoffKey(m.MatchDate), m);
-
+            var byKickoff = stillTbd.ToDictionary(m => FormatKickoffKey(m.MatchDate));
             var eventsByKickoff = await FetchEventsByKickoffAsync(stillTbd.Select(m => m.MatchDate));
 
             int updated = 0;
             foreach (var (key, ev) in eventsByKickoff)
             {
-                if (!byKickoff.TryGetValue(key, out var match)) continue;
-                var comp = ev.Competitions.FirstOrDefault();
-                if (comp == null) continue;
-
-                var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
-                var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
-
-                if (match.HomeTeam == "TBD"
-                    && homeComp != null
-                    && EspnTeamMapping.EspnToSpanish.ContainsKey(homeComp.Team.DisplayName))
-                {
-                    match.HomeTeam = EspnTeamMapping.Map(homeComp.Team.DisplayName);
-                    match.HomeTeamLabel = null;
-                    updated++;
-                }
-
-                if (match.AwayTeam == "TBD"
-                    && awayComp != null
-                    && EspnTeamMapping.EspnToSpanish.ContainsKey(awayComp.Team.DisplayName))
-                {
-                    match.AwayTeam = EspnTeamMapping.Map(awayComp.Team.DisplayName);
-                    match.AwayTeamLabel = null;
-                    updated++;
-                }
+                if (byKickoff.TryGetValue(key, out var match))
+                    updated += ResolveTeamsFromEvent(match, ev);
             }
 
             if (updated > 0)
@@ -136,7 +63,6 @@ public class EspnBracketService(
                 await db.SaveChangesAsync();
                 logger.LogInformation("Knockout teams updated via ESPN scoreboard: {Count}", updated);
             }
-
             return updated;
         }
         catch (Exception ex)
@@ -152,14 +78,13 @@ public class EspnBracketService(
         var result = new Dictionary<int, EspnBracketData>();
         if (knockoutMatches.Count == 0) return result;
 
-        var byKickoff = new Dictionary<string, int>();
-        foreach (var m in knockoutMatches)
-            byKickoff.TryAdd(FormatKickoffKey(m.UtcDate), m.ExternalId);
+        var byKickoff = knockoutMatches
+            .GroupBy(m => FormatKickoffKey(m.UtcDate))
+            .ToDictionary(g => g.Key, g => g.First().ExternalId);
 
         try
         {
-            var eventsByKickoff = await FetchEventsByKickoffAsync(
-                knockoutMatches.Select(m => m.UtcDate));
+            var eventsByKickoff = await FetchEventsByKickoffAsync(knockoutMatches.Select(m => m.UtcDate));
 
             foreach (var (key, ev) in eventsByKickoff)
             {
@@ -186,16 +111,115 @@ public class EspnBracketService(
         return result;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+    // ── Standings helpers ────────────────────────────────────────────────
+
+    private async Task<List<EspnGroupNode>?> FetchEspnStandingsAsync()
+    {
+        var client = httpClientFactory.CreateClient("Espn");
+        var response = await client.GetAsync(StandingsPath);
+        if (!response.IsSuccessStatusCode) return null;
+
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<EspnStandingsResponse>(json, JsonOptions);
+        return result?.Children;
+    }
+
+    private async Task<HashSet<string>> GetFinishedGroupLettersAsync()
+    {
+        var groupMatches = await db.Matches
+            .Where(m => m.Phase == MatchPhase.Group && m.Group != null)
+            .Select(m => new { m.Group, m.Status })
+            .ToListAsync();
+
+        return groupMatches
+            .GroupBy(m => m.Group!)
+            .Where(g => g.All(m => m.Status == MatchStatus.Finished))
+            .Select(g => g.Key.Replace("GROUP_", "", StringComparison.OrdinalIgnoreCase))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static Dictionary<string, Dictionary<int, string>> BuildRankByGroup(
+        List<EspnGroupNode> nodes, HashSet<string> finishedLetters)
+    {
+        var rankByGroup = new Dictionary<string, Dictionary<int, string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var g in nodes)
+        {
+            if (g.Name == null || !g.Name.StartsWith("Group ", StringComparison.OrdinalIgnoreCase)) continue;
+            var letter = g.Name["Group ".Length..].Trim();
+            if (!finishedLetters.Contains(letter)) continue;
+
+            var entries = g.Standings?.Entries;
+            if (entries == null) continue;
+
+            var ranks = new Dictionary<int, string>();
+            foreach (var e in entries)
+            {
+                if (e.Note?.Rank is int rank && e.Team?.DisplayName is string teamName)
+                    ranks[rank] = EspnTeamMapping.Map(teamName);
+            }
+            rankByGroup[letter] = ranks;
+        }
+        return rankByGroup;
+    }
+
+    private static int ApplySlotResolutions(
+        List<Match> tbdMatches, Dictionary<string, Dictionary<int, string>> rankByGroup)
+    {
+        int updated = 0;
+        foreach (var match in tbdMatches)
+        {
+            if (match.HomeTeam == "TBD" && TryResolveSlot(match.HomeTeamLabel, rankByGroup, out var homeTeam))
+            {
+                match.HomeTeam = homeTeam;
+                match.HomeTeamLabel = null;
+                updated++;
+            }
+            if (match.AwayTeam == "TBD" && TryResolveSlot(match.AwayTeamLabel, rankByGroup, out var awayTeam))
+            {
+                match.AwayTeam = awayTeam;
+                match.AwayTeamLabel = null;
+                updated++;
+            }
+        }
+        return updated;
+    }
+
+    // ── Scoreboard helpers ───────────────────────────────────────────────
+
+    private static int ResolveTeamsFromEvent(Match match, EspnApiClient.EspnEvent ev)
+    {
+        var comp = ev.Competitions.FirstOrDefault();
+        if (comp == null) return 0;
+
+        var homeComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+        var awayComp = comp.Competitors.FirstOrDefault(c => c.HomeAway == "away");
+        int resolved = 0;
+
+        if (match.HomeTeam == "TBD"
+            && homeComp != null
+            && EspnTeamMapping.EspnToSpanish.ContainsKey(homeComp.Team.DisplayName))
+        {
+            match.HomeTeam = EspnTeamMapping.Map(homeComp.Team.DisplayName);
+            match.HomeTeamLabel = null;
+            resolved++;
+        }
+
+        if (match.AwayTeam == "TBD"
+            && awayComp != null
+            && EspnTeamMapping.EspnToSpanish.ContainsKey(awayComp.Team.DisplayName))
+        {
+            match.AwayTeam = EspnTeamMapping.Map(awayComp.Team.DisplayName);
+            match.AwayTeamLabel = null;
+            resolved++;
+        }
+
+        return resolved;
+    }
 
     private async Task<Dictionary<string, EspnApiClient.EspnEvent>> FetchEventsByKickoffAsync(
         IEnumerable<DateTime> matchDates)
     {
-        var dates = matchDates
-            .Select(d => d.ToUniversalTime().Date)
-            .Distinct()
-            .ToList();
-
+        var dates = matchDates.Select(d => d.ToUniversalTime().Date).Distinct().ToList();
         var result = new Dictionary<string, EspnApiClient.EspnEvent>();
         foreach (var date in dates)
         {
@@ -205,6 +229,8 @@ public class EspnBracketService(
         }
         return result;
     }
+
+    // ── Parsing ──────────────────────────────────────────────────────────
 
     private static string FormatKickoffKey(DateTime dt) =>
         dt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
@@ -222,11 +248,7 @@ public class EspnBracketService(
         var rank = int.Parse(regexMatch.Groups[1].Value);
         var letter = regexMatch.Groups[2].Value;
 
-        if (!rankByGroup.TryGetValue(letter, out var ranks) || !ranks.TryGetValue(rank, out var teamName))
-            return false;
-
-        team = teamName;
-        return true;
+        return rankByGroup.TryGetValue(letter, out var ranks) && ranks.TryGetValue(rank, out team!);
     }
 
     private static readonly (string Prefix, string Suffix, MatchPhase Phase, string Tag)[] RoundPatterns =
@@ -261,10 +283,7 @@ public class EspnBracketService(
 
         const string thirdPlace = "Third Place Group ";
         if (displayName.StartsWith(thirdPlace, StringComparison.OrdinalIgnoreCase))
-        {
-            var groups = displayName[thirdPlace.Length..].Trim();
-            return ("TBD", $"3rd Groups {groups}");
-        }
+            return ("TBD", $"3rd Groups {displayName[thirdPlace.Length..].Trim()}");
 
         foreach (var (prefix, suffix, phase, tag) in RoundPatterns)
         {
@@ -282,8 +301,7 @@ public class EspnBracketService(
             }
         }
 
-        var translated = EspnTeamMapping.Map(displayName);
-        return (translated, null);
+        return (EspnTeamMapping.Map(displayName), null);
     }
 
     // ── DTOs ────────────────────────────────────────────────────────────
