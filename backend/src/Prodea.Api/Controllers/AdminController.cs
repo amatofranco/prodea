@@ -19,8 +19,16 @@ public class AdminController(
     PollingStatusService pollingStatus,
     EspnApiClient espn,
     IHubContext<TournamentHub> hub,
-    MatchFinalizationService finalizationService) : ControllerBase
+    MatchFinalizationService finalizationService,
+    BackupService backupService) : ControllerBase
 {
+    [HttpPost("backups/run")]
+    public async Task<IActionResult> RunBackup(CancellationToken ct)
+    {
+        var result = await backupService.RunNowAsync(ct);
+        return Ok(new { message = result });
+    }
+
     [HttpGet("matches")]
     public async Task<IActionResult> ListMatches([FromQuery] string? phase = null)
     {

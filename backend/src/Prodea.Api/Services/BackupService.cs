@@ -20,6 +20,8 @@ public class BackupService(
     private static readonly TimeSpan BackupInterval = TimeSpan.FromDays(3);
     private const int MaxStoredBackups = 10;
 
+    public Task<string> RunNowAsync(CancellationToken ct = default) => RunBackupAsync(ct);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Delay(InitialDelay, stoppingToken);
@@ -39,7 +41,7 @@ public class BackupService(
         }
     }
 
-    private async Task RunBackupAsync(CancellationToken ct)
+    private async Task<string> RunBackupAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
@@ -61,7 +63,7 @@ public class BackupService(
         if (predictions.Count == 0)
         {
             logger.LogInformation("Backup: sin predicciones que respaldar");
-            return;
+            return "no predictions to backup";
         }
 
         var payload = new BackupPayload
@@ -80,8 +82,15 @@ public class BackupService(
 
         var adminEmail = config["Backup:AdminEmail"];
         var apiKey     = config["Resend:ApiKey"];
+        var emailSent  = false;
         if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(apiKey))
+        {
             await SendBackupEmailAsync(adminEmail, apiKey, payload, json, sizeKb, ct);
+            emailSent = true;
+        }
+
+        return $"{predictions.Count} predictions backed up ({sizeKb:F1} KB)" +
+               (emailSent ? $", email sent to {adminEmail}" : ", no email configured");
     }
 
     private async Task SaveToDbAsync(ProdeaDbContext db, BackupPayload payload, string json, CancellationToken ct)
