@@ -24,10 +24,11 @@ public class FixtureService(
 
         if (tbdMatches.Count == 0) return 0;
 
+        int updatedFromDb = await TryResolveFromDbResultsAsync(tbdMatches);
         int updatedFromEspn = await espnBracket.TryResolveFromEspnStandingsAsync(tbdMatches);
         int updatedFromScoreboard = await espnBracket.TryResolveFromEspnScoreboardAsync(tbdMatches);
 
-        if (string.IsNullOrEmpty(config["FootballData:ApiKey"])) return updatedFromEspn + updatedFromScoreboard;
+        if (string.IsNullOrEmpty(config["FootballData:ApiKey"])) return updatedFromDb + updatedFromEspn + updatedFromScoreboard;
 
         try
         {
@@ -62,13 +63,82 @@ public class FixtureService(
                 logger.LogInformation("Knockout teams updated: {Count}", updated);
             }
 
-            return updatedFromEspn + updatedFromScoreboard + updated;
+            return updatedFromDb + updatedFromEspn + updatedFromScoreboard + updated;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Error syncing knockout teams");
             return updatedFromEspn + updatedFromScoreboard;
         }
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex SlotRefRegex =
+        new(@"^(?:Gan\.|W\.) P(\d+)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    private async Task<int> TryResolveFromDbResultsAsync(List<Match> tbdMatches)
+    {
+        var referencedIds = tbdMatches
+            .SelectMany(m => new[] { m.HomeTeamLabel, m.AwayTeamLabel })
+            .Where(l => l != null)
+            .Select(l => SlotRefRegex.Match(l!))
+            .Where(rx => rx.Success)
+            .Select(rx => int.Parse(rx.Groups[1].Value))
+            .Distinct()
+            .ToList();
+
+        if (referencedIds.Count == 0) return 0;
+
+        var finishedById = await db.Matches
+            .Where(m => referencedIds.Contains(m.Id) && m.Status == MatchStatus.Finished)
+            .ToDictionaryAsync(m => m.Id);
+
+        if (finishedById.Count == 0) return 0;
+
+        int updated = 0;
+        foreach (var match in tbdMatches)
+        {
+            if (match.HomeTeam == "TBD" && TryResolveWinner(match.HomeTeamLabel, finishedById, out var home))
+            {
+                match.HomeTeam = home;
+                match.HomeTeamLabel = null;
+                updated++;
+            }
+            if (match.AwayTeam == "TBD" && TryResolveWinner(match.AwayTeamLabel, finishedById, out var away))
+            {
+                match.AwayTeam = away;
+                match.AwayTeamLabel = null;
+                updated++;
+            }
+        }
+
+        if (updated > 0)
+        {
+            await db.SaveChangesAsync();
+            logger.LogInformation("Knockout teams resolved from DB results: {Count} slots updated", updated);
+        }
+        return updated;
+    }
+
+    private static bool TryResolveWinner(string? label, Dictionary<int, Match> finishedById, out string team)
+    {
+        team = "";
+        if (label == null) return false;
+        var rx = SlotRefRegex.Match(label);
+        if (!rx.Success) return false;
+        var id = int.Parse(rx.Groups[1].Value);
+        if (!finishedById.TryGetValue(id, out var source)) return false;
+
+        team = DetermineWinner(source);
+        return !string.IsNullOrEmpty(team);
+    }
+
+    private static string DetermineWinner(Match m)
+    {
+        if (m.Winner != null) return m.Winner; // penales
+        if (m.HomeScore == null || m.AwayScore == null) return "";
+        if (m.HomeScore > m.AwayScore) return m.HomeTeam;
+        if (m.AwayScore > m.HomeScore) return m.AwayTeam;
+        return "";
     }
 
     public async Task<(int count, string source)> ImportAsync(bool force = false)
