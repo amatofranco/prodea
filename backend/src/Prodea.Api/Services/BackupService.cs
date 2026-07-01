@@ -50,13 +50,14 @@ public class BackupService(
             .AsNoTracking()
             .Select(p => new BackupPrediction
             {
-                UserId             = p.UserId,
-                MatchId            = p.MatchId,
-                PredictedHomeScore = p.PredictedHomeScore,
-                PredictedAwayScore = p.PredictedAwayScore,
-                PointsEarned       = p.PointsEarned,
-                CreatedAt          = p.CreatedAt,
-                UpdatedAt          = p.UpdatedAt,
+                UserId                 = p.UserId,
+                MatchId                = p.MatchId,
+                PredictedHomeScore     = p.PredictedHomeScore,
+                PredictedAwayScore     = p.PredictedAwayScore,
+                PredictedPenaltyWinner = p.PredictedPenaltyWinner,
+                PointsEarned           = p.PointsEarned,
+                CreatedAt              = p.CreatedAt,
+                UpdatedAt              = p.UpdatedAt,
             })
             .ToListAsync(ct);
 
@@ -175,13 +176,14 @@ public class BackupService(
     // DTO compartido con AdminController para deserializar
     public record BackupPrediction
     {
-        public int      UserId             { get; init; }
-        public int      MatchId            { get; init; }
-        public int      PredictedHomeScore { get; init; }
-        public int      PredictedAwayScore { get; init; }
-        public int      PointsEarned       { get; init; }
-        public DateTime CreatedAt          { get; init; }
-        public DateTime UpdatedAt          { get; init; }
+        public int      UserId                 { get; init; }
+        public int      MatchId                { get; init; }
+        public int      PredictedHomeScore     { get; init; }
+        public int      PredictedAwayScore     { get; init; }
+        public string?  PredictedPenaltyWinner { get; init; }
+        public int      PointsEarned           { get; init; }
+        public DateTime CreatedAt              { get; init; }
+        public DateTime UpdatedAt              { get; init; }
     }
 
     public record BackupPayload
