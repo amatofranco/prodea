@@ -49,9 +49,25 @@ public class FootballDataService(
                 try
                 {
                     using var scope = scopeFactory.CreateScope();
-                    var fixtureService = scope.ServiceProvider.GetRequiredService<FixtureService>();
-                    await fixtureService.UpdateKnockoutTeamNamesAsync();
-                    _lastKnockoutSync = DateTime.UtcNow;
+                    var checkDb = scope.ServiceProvider.GetRequiredService<ProdeaDbContext>();
+                    var hasTbd = await checkDb.Matches.AnyAsync(
+                        m => m.Phase != MatchPhase.Group && m.Status == MatchStatus.Scheduled
+                             && (m.HomeTeam == "TBD" || m.AwayTeam == "TBD"), stoppingToken);
+
+                    if (!hasTbd)
+                    {
+                        _lastKnockoutSync = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        var fixtureService = scope.ServiceProvider.GetRequiredService<FixtureService>();
+                        var updated = await fixtureService.UpdateKnockoutTeamNamesAsync();
+                        if (updated > 0)
+                            _lastKnockoutSync = DateTime.UtcNow;
+                        else
+                            // Hay TBDs pero ESPN no los resolvió: retry en el próximo poll (~10 min)
+                            _lastKnockoutSync = DateTime.UtcNow - KnockoutSyncInterval + PollingInterval;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -356,9 +372,8 @@ public class FootballDataService(
 
         await BroadcastMatchUpdateAsync(db, match, goals, null, null, ct);
 
-        // Force immediate knockout sync on next poll when any knockout match finishes
-        if (match.Phase != MatchPhase.Group)
-            _lastKnockoutSync = DateTime.MinValue;
+        // Force knockout sync on next poll after any match finishes
+        _lastKnockoutSync = DateTime.MinValue;
 
         using var finalizationScope = scopeFactory.CreateScope();
         var finalizationService = finalizationScope.ServiceProvider.GetRequiredService<MatchFinalizationService>();
