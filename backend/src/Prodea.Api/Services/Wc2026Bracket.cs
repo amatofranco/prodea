@@ -50,9 +50,12 @@ public static class Wc2026Bracket
         [104] = ("W. P101",  "W. P102"),
     };
 
+    // Orden cronológico real de los números de partido FIFA dentro de cada fase. No siempre
+    // coincide con el orden numérico (ej. en Octavos el 76 se juega antes que el 74) —
+    // por eso no se puede inferir el número de partido como "PhaseStart + posición por fecha".
     private static readonly Dictionary<MatchPhase, int[]> ChronologicalOrder = new()
     {
-        [MatchPhase.R32]        = [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88],
+        [MatchPhase.R32]        = [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87],
         [MatchPhase.R16]        = [90, 89, 91, 92, 93, 94, 95, 96],
         [MatchPhase.QF]         = [97, 98, 99, 100],
         [MatchPhase.SF]         = [101, 102],

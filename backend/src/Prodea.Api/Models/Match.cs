@@ -35,6 +35,7 @@ public class Match
     public int? AwayScore { get; set; }
     public MatchStatus Status { get; set; } = MatchStatus.Scheduled;
     public int? ExternalId { get; set; }
+    public int? FifaMatchNumber { get; set; } // numero oficial FIFA (73-104) de partidos knockout, usado para resolver referencias "Gan. P{N}"
     public int? Minute { get; set; }
     public string? Winner { get; set; }
     public DateTime? StartedAt { get; set; }

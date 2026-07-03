@@ -89,21 +89,37 @@ public class FixtureService(
         if (referencedIds.Count == 0) return 0;
 
         var finishedById = await db.Matches
-            .Where(m => referencedIds.Contains(m.Id) && m.Status == MatchStatus.Finished)
-            .ToDictionaryAsync(m => m.Id);
+            .Where(m => m.FifaMatchNumber != null && referencedIds.Contains(m.FifaMatchNumber.Value) && m.Status == MatchStatus.Finished)
+            .ToDictionaryAsync(m => m.FifaMatchNumber!.Value);
 
         if (finishedById.Count == 0) return 0;
 
         int updated = 0;
         foreach (var match in tbdMatches)
         {
-            if (match.HomeTeam == "TBD" && TryResolveWinner(match.HomeTeamLabel, finishedById, out var home))
+            string? home = null, away = null;
+            if (match.HomeTeam == "TBD" && TryResolveWinner(match.HomeTeamLabel, finishedById, out var homeResult))
+                home = homeResult;
+            if (match.AwayTeam == "TBD" && TryResolveWinner(match.AwayTeamLabel, finishedById, out var awayResult))
+                away = awayResult;
+
+            var finalHome = home ?? match.HomeTeam;
+            var finalAway = away ?? match.AwayTeam;
+            if (finalHome != "TBD" && finalAway != "TBD" && finalHome == finalAway)
+            {
+                logger.LogError(
+                    "Cruce inconsistente detectado en Match {MatchId}: ambos lados resolvieron a {Team} (Home label={HomeLabel}, Away label={AwayLabel}). Se omite la resolución de este partido.",
+                    match.Id, finalHome, match.HomeTeamLabel, match.AwayTeamLabel);
+                continue;
+            }
+
+            if (home != null)
             {
                 match.HomeTeam = home;
                 match.HomeTeamLabel = null;
                 updated++;
             }
-            if (match.AwayTeam == "TBD" && TryResolveWinner(match.AwayTeamLabel, finishedById, out var away))
+            if (away != null)
             {
                 match.AwayTeam = away;
                 match.AwayTeamLabel = null;
@@ -195,6 +211,7 @@ public class FixtureService(
 
                     existing.HomeTeamLabel = m.HomeTeamLabel;
                     existing.AwayTeamLabel = m.AwayTeamLabel;
+                    existing.FifaMatchNumber = m.FifaMatchNumber;
                     existing.MatchDate     = m.MatchDate;
                     existing.Phase         = m.Phase;
                     existing.Matchday      = m.Matchday;
@@ -272,20 +289,9 @@ public class FixtureService(
             .ToDictionary(x => x.Id, x => x.Matchday);
     }
 
-    private static Dictionary<int, int> BuildKnockoutMatchNumbers(List<FdMatch> knockoutMatches)
-    {
-        var numbers = new Dictionary<int, int>();
-        int r32Num = 73;
-        foreach (var m in knockoutMatches.Where(m => MapKnockoutPhase(m.Stage) == MatchPhase.R32).OrderBy(m => m.UtcDate))
-            numbers[m.Id] = r32Num++;
-        var nonR32Map = Wc2026Bracket.BuildMatchNumberMap(
-            knockoutMatches
-                .Where(m => MapKnockoutPhase(m.Stage) != MatchPhase.R32)
-                .Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)));
-        foreach (var kv in nonR32Map)
-            numbers[kv.Key] = kv.Value;
-        return numbers;
-    }
+    private static Dictionary<int, int> BuildKnockoutMatchNumbers(List<FdMatch> knockoutMatches) =>
+        Wc2026Bracket.BuildMatchNumberMap(
+            knockoutMatches.Select(m => (m.Id, MapKnockoutPhase(m.Stage), m.UtcDate)));
 
     private static List<Match> BuildMatchList(
         List<FdMatch> allMatches,
@@ -302,6 +308,7 @@ public class FixtureService(
             bool isGroup = groupMatches.Contains(m);
             var phase = isGroup ? MatchPhase.Group : MapKnockoutPhase(m.Stage);
             int? matchday = isGroup ? (groupMatchdays.TryGetValue(m.Id, out var md) ? md : null) : null;
+            int? fifaMatchNumber = isGroup ? null : (knockoutMatchNumbers.TryGetValue(m.Id, out var fn) ? fn : null);
 
             var (homeTeam, awayTeam, homeLabel, awayLabel) = ResolveTeams(m, isGroup, espnBracketData, knockoutMatchNumbers);
 
@@ -320,6 +327,7 @@ public class FixtureService(
                 Group = isGroup ? m.Group : null,
                 HomeScore = m.Score?.FullTime?.Home,
                 AwayScore = m.Score?.FullTime?.Away,
+                FifaMatchNumber = fifaMatchNumber,
             });
         }
 
