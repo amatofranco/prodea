@@ -1,6 +1,12 @@
+import { useAuthStore } from '../store/authStore'
+
 const BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : '/api'
+
+// Endpoints donde un 401 significa "credenciales invalidas" (error de formulario),
+// no "sesion vencida" — no deben disparar el logout/redirect global.
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/google', '/auth/forgot-password', '/auth/reset-password']
 
 function getToken() {
   return localStorage.getItem('prodea_token')
@@ -17,6 +23,14 @@ async function request(path, options = {}) {
     ...options,
   })
 
+  if (res.status === 401 && !AUTH_ENDPOINTS.includes(path)) {
+    useAuthStore.getState().logout()
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+    }
+    throw new Error('session_expired')
+  }
+
   if (res.status === 204) return null
 
   const data = await res.json().catch(() => null)
@@ -24,6 +38,7 @@ async function request(path, options = {}) {
   if (!res.ok) {
     const err = new Error(data?.message || `error_${res.status}`)
     err.data = data ?? {}
+    err.status = res.status
     throw err
   }
 

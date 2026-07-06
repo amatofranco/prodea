@@ -18,13 +18,21 @@ export default function HomePage() {
   const user = useAuthStore((s) => s.user)
   const [matches, setMatches] = useState([])
   const [tournaments, setTournaments] = useState([])
+  const [loadError, setLoadError] = useState(false)
   const navigate = useNavigate()
   const pollRef = useRef(null)
   const { showModal, subscribe, dismiss } = usePushNotifications()
 
+  function loadHomeData() {
+    setLoadError(false)
+    Promise.all([
+      api.getMyPredictions().then(setMatches),
+      api.getTournaments().then(setTournaments),
+    ]).catch(() => setLoadError(true))
+  }
+
   useEffect(() => {
-    api.getMyPredictions().then(setMatches)
-    api.getTournaments().then(setTournaments).catch(() => {})
+    loadHomeData()
   }, [])
 
   useEffect(() => {
@@ -175,7 +183,17 @@ export default function HomePage() {
           </div>
         )}
 
-        {isEmpty && (
+        {loadError ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-24 px-5 text-center">
+            <p className="text-[#8A8A9A] text-sm">{t('errors.loadFailed')}</p>
+            <button
+              onClick={loadHomeData}
+              className="px-5 py-2.5 rounded-xl bg-[#00FF87] text-black font-bold text-sm active:scale-95 transition-transform"
+            >
+              {t('common.retry')}
+            </button>
+          </div>
+        ) : isEmpty && (
           <div className="flex flex-col items-center justify-center gap-3 py-24 px-5 text-center">
             <Zap size={40} className="text-[#2A2A3E]" />
             <p className="text-[#8A8A9A] text-sm">{t('home.noMatches')}</p>

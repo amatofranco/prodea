@@ -194,13 +194,20 @@ export default function PredictionsPage() {
   const [tournaments, setTournaments] = useState([])
   const [championPick, setChampionPick] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [selectedTab, setSelectedTab] = useState('group-1')
   const tabBarRef = useRef(null)
 
-  useEffect(() => {
-    api.getMyPredictions().then(setMatches).finally(() => setLoading(false))
+  function loadPredictionsData() {
+    setLoading(true)
+    setLoadError(false)
+    api.getMyPredictions().then(setMatches).catch(() => setLoadError(true)).finally(() => setLoading(false))
     api.getTournaments().then(setTournaments).catch(() => {})
     api.getChampionPick().then(setChampionPick).catch(() => {})
+  }
+
+  useEffect(() => {
+    loadPredictionsData()
   }, [])
 
   useEffect(() => {
@@ -233,6 +240,20 @@ export default function PredictionsPage() {
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-24 rounded-2xl bg-[#1A1A2E] animate-pulse" />
         ))}
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-4 pt-16 min-h-full bg-[#0D0D0D] text-center">
+        <p className="text-[#8A8A9A] text-sm">{t('errors.loadFailed')}</p>
+        <button
+          onClick={loadPredictionsData}
+          className="px-5 py-2.5 rounded-xl bg-[#00FF87] text-black font-bold text-sm active:scale-95 transition-transform"
+        >
+          {t('common.retry')}
+        </button>
       </div>
     )
   }

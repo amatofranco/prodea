@@ -15,7 +15,8 @@
     "download": "Descargar",
     "participants": "participantes",
     "points": "pts",
-    "privacyPolicy": "Política de Privacidad"
+    "privacyPolicy": "Política de Privacidad",
+    "retry": "Reintentar"
   },
   "nav": {
     "home": "Inicio",
@@ -405,6 +406,10 @@
     "staleScores": "Los marcadores pueden demorar en actualizarse",
     "offline": "Sin conexión — mostrando datos guardados"
   },
+  "update": {
+    "available": "Hay una nueva versión de Prodea disponible",
+    "reload": "Actualizar"
+  },
   "badgePhrases": {
     "MVP": ["Jugás a otra cosa", "¿Sos DT o qué?", "Messi te manda saludos", "El grupo te odia un poquito", "Pedí aumento en el laburo, porque acá sobrás"],
     "Jinx": ["Apostaste con el corazón, no con el cerebro", "Tus predicciones son una obra de arte... abstracto", "El VAR te hubiera dado la razón... en otro universo", "Si apostabas al revés, eras campeón", "El análisis estaba bien. El fútbol, no"],
@@ -442,6 +447,7 @@
     "predictions_close_before": "Las predicciones cierran 15 minutos antes del partido",
     "match_not_finished": "El partido no terminó aún.",
     "champion_pick_closed": "El pick de campeón ya está cerrado.",
-    "generic": "Ocurrió un error. Intentá de nuevo."
+    "generic": "Ocurrió un error. Intentá de nuevo.",
+    "loadFailed": "No pudimos cargar los datos."
   }
 }

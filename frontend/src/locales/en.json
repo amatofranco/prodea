@@ -15,7 +15,8 @@
     "download": "Download",
     "participants": "participants",
     "points": "pts",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "retry": "Retry"
   },
   "nav": {
     "home": "Home",
@@ -404,6 +405,10 @@
     "staleScores": "Scores may take a moment to update",
     "offline": "Offline — showing saved data"
   },
+  "update": {
+    "available": "A new version of Prodea is available",
+    "reload": "Update"
+  },
   "badgePhrases": {
     "MVP": ["Playing a different game", "Are you the manager or what?", "Messi sends his regards", "The group lowkey hates you", "Ask for a raise, you're too good for this"],
     "Jinx": ["You bet with your heart, not your brain", "Your predictions are abstract art", "VAR would've backed you... in another universe", "If you'd bet the opposite, you'd be champion", "The analysis was right. Football wasn't"],
@@ -441,6 +446,7 @@
     "predictions_close_before": "Predictions close 15 minutes before the match",
     "match_not_finished": "The match hasn't finished yet.",
     "champion_pick_closed": "Champion pick is already closed.",
-    "generic": "Something went wrong. Please try again."
+    "generic": "Something went wrong. Please try again.",
+    "loadFailed": "We couldn't load the data."
   }
 }
