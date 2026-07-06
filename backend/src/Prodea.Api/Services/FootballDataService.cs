@@ -300,9 +300,11 @@ public class FootballDataService(
             return MatchPollResult.Skipped;
         }
 
+        var swapped = IsHomeAwaySwapped(apiMatch, match);
+
         if (apiMatch.Status is "FINISHED" or "AWARDED")
         {
-            await FinalizeMatchAsync(db, push, match, apiMatch.Score, ct);
+            await FinalizeMatchAsync(db, push, match, apiMatch.Score, swapped, ct);
             return MatchPollResult.Processed;
         }
 
@@ -318,6 +320,7 @@ public class FootballDataService(
             }
 
             var (liveHome, liveAway) = FinalScore(apiMatch.Score);
+            if (swapped) (liveHome, liveAway) = (liveAway, liveHome);
             if (liveHome != null && (match.HomeScore != liveHome || match.AwayScore != liveAway))
             {
                 match.HomeScore = liveHome;
@@ -380,17 +383,30 @@ public class FootballDataService(
         await finalizationService.ProcessAsync(match);
     }
 
-    private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, CancellationToken ct)
+    private async Task FinalizeMatchAsync(ProdeaDbContext db, PushNotificationService push, Match match, FootballDataScore? apiScore, bool swapped, CancellationToken ct)
     {
         string? winner = apiScore?.Winner switch
         {
-            "HOME_TEAM" => match.HomeTeam,
-            "AWAY_TEAM" => match.AwayTeam,
+            "HOME_TEAM" => swapped ? match.AwayTeam : match.HomeTeam,
+            "AWAY_TEAM" => swapped ? match.HomeTeam : match.AwayTeam,
             _ => null
         };
 
         var (finalHome, finalAway) = FinalScore(apiScore);
+        if (swapped) (finalHome, finalAway) = (finalAway, finalHome);
         await FinalizeMatchCoreAsync(db, push, match, finalHome ?? match.HomeScore ?? 0, finalAway ?? match.AwayScore ?? 0, winner, null, ct);
+    }
+
+    // football-data.org a veces asigna homeTeam/awayTeam en orden distinto al de nuestro fixture
+    // (el "home" administrativo de un cruce de knockout no siempre coincide con el nuestro).
+    // Si el nombre viene invertido respecto a la DB, hay que invertir el marcador también.
+    private static bool IsHomeAwaySwapped(FootballDataSingleMatch apiMatch, Match match)
+    {
+        var apiHome = EspnApiClient.MapTeam(apiMatch.HomeTeam?.Name ?? apiMatch.HomeTeam?.ShortName ?? "");
+        var apiAway = EspnApiClient.MapTeam(apiMatch.AwayTeam?.Name ?? apiMatch.AwayTeam?.ShortName ?? "");
+
+        return string.Equals(apiHome, match.AwayTeam, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(apiAway, match.HomeTeam, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task BroadcastMatchUpdateAsync(ProdeaDbContext db, Match match, List<EspnApiClient.GoalInfo>? goals, string? livePhase, string? minuteDisplay, CancellationToken ct)
@@ -434,7 +450,14 @@ public class FootballDataService(
         [property: JsonPropertyName("extraTime")] FootballDataFullTime? ExtraTime
     );
     private record FootballDataFullTime(int? Home, int? Away);
-    private record FootballDataSingleMatch(string Status, FootballDataScore? Score, int? Minute, DateTime LastUpdated);
+    private record FootballDataTeam(string? Name, [property: JsonPropertyName("shortName")] string? ShortName);
+    private record FootballDataSingleMatch(
+        string Status,
+        [property: JsonPropertyName("homeTeam")] FootballDataTeam? HomeTeam,
+        [property: JsonPropertyName("awayTeam")] FootballDataTeam? AwayTeam,
+        FootballDataScore? Score,
+        int? Minute,
+        DateTime LastUpdated);
 
     private static (int? Home, int? Away) FinalScore(FootballDataScore? score)
     {
