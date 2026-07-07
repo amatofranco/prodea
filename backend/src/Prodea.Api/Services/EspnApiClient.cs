@@ -50,27 +50,41 @@ public class EspnApiClient(IHttpClientFactory httpClientFactory, ILogger<EspnApi
             var espnAway = MapTeam(awayComp.Team.DisplayName);
 
             var dateDiff = Math.Abs((e.Date - match.MatchDate).TotalHours);
-            return dateDiff < 4 &&
-                   string.Equals(espnHome, match.HomeTeam, StringComparison.OrdinalIgnoreCase) &&
-                   string.Equals(espnAway, match.AwayTeam, StringComparison.OrdinalIgnoreCase);
+            if (dateDiff >= 4) return false;
+
+            var sameOrder = string.Equals(espnHome, match.HomeTeam, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(espnAway, match.AwayTeam, StringComparison.OrdinalIgnoreCase);
+            var reversedOrder = string.Equals(espnHome, match.AwayTeam, StringComparison.OrdinalIgnoreCase) &&
+                                string.Equals(espnAway, match.HomeTeam, StringComparison.OrdinalIgnoreCase);
+            return sameOrder || reversedOrder;
         });
     }
 
+    // El "home" que asigna ESPN para un cruce de knockout no siempre coincide con el que
+    // tenemos cargado (ver Espana-Portugal Octavos 2026), por eso FindMatch acepta ambos
+    // ordenes. Acá hay que detectar cuál es para no invertir el marcador al extraerlo.
     public static (int Home, int Away, string? Winner, int? HomePen, int? AwayPen) ExtractScore(EspnEvent espnEvent, Match match)
     {
         var comp = espnEvent.Competitions.FirstOrDefault();
         var homeComp = comp?.Competitors.FirstOrDefault(c => c.HomeAway == "home");
         var awayComp = comp?.Competitors.FirstOrDefault(c => c.HomeAway == "away");
 
-        int.TryParse(homeComp?.Score, out var home);
-        int.TryParse(awayComp?.Score, out var away);
+        var swapped = string.Equals(MapTeam(homeComp?.Team.DisplayName ?? ""), match.AwayTeam, StringComparison.OrdinalIgnoreCase);
+
+        int.TryParse(homeComp?.Score, out var homeCompScore);
+        int.TryParse(awayComp?.Score, out var awayCompScore);
+        var (home, away) = swapped ? (awayCompScore, homeCompScore) : (homeCompScore, awayCompScore);
+
+        var homeCompWon = homeComp?.Winner == true;
+        var awayCompWon = awayComp?.Winner == true;
+        if (swapped) (homeCompWon, awayCompWon) = (awayCompWon, homeCompWon);
 
         string? winner = null;
-        if (homeComp?.Winner == true) winner = match.HomeTeam;
-        else if (awayComp?.Winner == true) winner = match.AwayTeam;
+        if (homeCompWon) winner = match.HomeTeam;
+        else if (awayCompWon) winner = match.AwayTeam;
 
-        int? homePen = homeComp?.ShootoutScore;
-        int? awayPen = awayComp?.ShootoutScore;
+        var homePen = swapped ? awayComp?.ShootoutScore : homeComp?.ShootoutScore;
+        var awayPen = swapped ? homeComp?.ShootoutScore : awayComp?.ShootoutScore;
 
         return (home, away, winner, homePen, awayPen);
     }
